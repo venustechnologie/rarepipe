@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Never commit case data or intake outputs (manifests can contain restricted case information).
+/secure/
+/work/
+/out/
+/runs/
+*.private.json
+*.vcf
+*.vcf.gz
+*.bcf
+*.bam
+*.cram
+*.bai
+*.crai
+*.tbi
+*.csi

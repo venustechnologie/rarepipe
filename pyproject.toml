@@ -1,0 +1,29 @@
+[project]
+name = "rarepipe"
+version = "0.1.0"
+description = "Reproducible rare-disease case resolution pipeline — stage 01: case intake"
+readme = "README.md"
+authors = [
+    { name = "venustechnologie", email = "xavier.ramos@techgenesis.ai" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.13.5",
+    "pysam>=0.24.1",
+    "typer>=0.27.2",
+]
+
+[project.scripts]
+rarepipe = "rarepipe.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["uv_build>=0.11.17,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

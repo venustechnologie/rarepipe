@@ -1,0 +1,2077 @@
+{
+  "$defs": {
+    "AlignmentMetadata": {
+      "properties": {
+        "kind": {
+          "const": "alignments",
+          "default": "alignments",
+          "title": "Kind",
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/$defs/Format"
+        },
+        "header_valid": {
+          "title": "Header Valid",
+          "type": "boolean"
+        },
+        "quickcheck_passed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quickcheck Passed"
+        },
+        "bgzf_eof_present": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bgzf Eof Present"
+        },
+        "sort_order": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sort Order"
+        },
+        "contigs": {
+          "items": {
+            "$ref": "#/$defs/Contig"
+          },
+          "title": "Contigs",
+          "type": "array"
+        },
+        "read_group_count": {
+          "default": 0,
+          "title": "Read Group Count",
+          "type": "integer"
+        },
+        "read_groups": {
+          "items": {
+            "$ref": "#/$defs/ReadGroup"
+          },
+          "title": "Read Groups",
+          "type": "array"
+        },
+        "sample_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sample Ids",
+          "type": "array"
+        },
+        "programs": {
+          "items": {
+            "$ref": "#/$defs/Program"
+          },
+          "title": "Programs",
+          "type": "array"
+        },
+        "genome_build": {
+          "$ref": "#/$defs/GenomeBuildCall"
+        },
+        "index": {
+          "$ref": "#/$defs/IndexStatus"
+        },
+        "cram_reference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CramReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "format",
+        "header_valid",
+        "genome_build",
+        "index"
+      ],
+      "title": "AlignmentMetadata",
+      "type": "object"
+    },
+    "AssertedValue": {
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "source_asset_id": {
+          "title": "Source Asset Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "source_asset_id"
+      ],
+      "title": "AssertedValue",
+      "type": "object"
+    },
+    "AssetBuild": {
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/GenomeBuild"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        }
+      },
+      "required": [
+        "asset_id",
+        "value",
+        "confidence"
+      ],
+      "title": "AssetBuild",
+      "type": "object"
+    },
+    "AssetRecord": {
+      "properties": {
+        "asset_id": {
+          "description": "Stable, machine-safe. Derived from the relative path, never the absolute path.",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "relative_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "POSIX path relative to case root (or 'external:<n>' for --reference inputs).",
+          "restricted": true,
+          "title": "Relative Path"
+        },
+        "filename": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Filename"
+        },
+        "extension": {
+          "title": "Extension",
+          "type": "string"
+        },
+        "extension_format": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Format"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the filename claims."
+        },
+        "detected_format": {
+          "$ref": "#/$defs/Format",
+          "description": "What the content is, independent of the name."
+        },
+        "compression": {
+          "$ref": "#/$defs/Compression"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "checksum_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Checksum Sha256"
+        },
+        "logical_role": {
+          "$ref": "#/$defs/LogicalRole"
+        },
+        "restricted": {
+          "title": "Restricted",
+          "type": "boolean"
+        },
+        "retention_class": {
+          "$ref": "#/$defs/RetentionClass"
+        },
+        "external": {
+          "default": false,
+          "title": "External",
+          "type": "boolean"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "alignments": "#/$defs/AlignmentMetadata",
+                  "checksum_sidecar": "#/$defs/ChecksumSidecarMetadata",
+                  "pedigree": "#/$defs/PedigreeMetadata",
+                  "phenotype": "#/$defs/PhenotypeMetadata",
+                  "reference_sequence": "#/$defs/FastaMetadata",
+                  "sequence_dictionary": "#/$defs/SequenceDictionaryMetadata",
+                  "variants": "#/$defs/VcfMetadata"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/VcfMetadata"
+                },
+                {
+                  "$ref": "#/$defs/AlignmentMetadata"
+                },
+                {
+                  "$ref": "#/$defs/FastaMetadata"
+                },
+                {
+                  "$ref": "#/$defs/SequenceDictionaryMetadata"
+                },
+                {
+                  "$ref": "#/$defs/PhenotypeMetadata"
+                },
+                {
+                  "$ref": "#/$defs/PedigreeMetadata"
+                },
+                {
+                  "$ref": "#/$defs/ChecksumSidecarMetadata"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "validation": {
+          "$ref": "#/$defs/Validation"
+        }
+      },
+      "required": [
+        "asset_id",
+        "extension",
+        "detected_format",
+        "compression",
+        "size_bytes",
+        "checksum_sha256",
+        "logical_role",
+        "restricted",
+        "retention_class",
+        "validation"
+      ],
+      "title": "AssetRecord",
+      "type": "object"
+    },
+    "AssetRelationship": {
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/RelationshipType"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "source",
+        "target"
+      ],
+      "title": "AssetRelationship",
+      "type": "object"
+    },
+    "CaseRef": {
+      "properties": {
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case_id"
+      ],
+      "title": "CaseRef",
+      "type": "object"
+    },
+    "ChecksumSidecarMetadata": {
+      "properties": {
+        "kind": {
+          "const": "checksum_sidecar",
+          "default": "checksum_sidecar",
+          "title": "Kind",
+          "type": "string"
+        },
+        "algorithm": {
+          "enum": [
+            "md5",
+            "sha256"
+          ],
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "target_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Asset Id"
+        },
+        "verified": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verified"
+        }
+      },
+      "required": [
+        "algorithm"
+      ],
+      "title": "ChecksumSidecarMetadata",
+      "type": "object"
+    },
+    "Compression": {
+      "enum": [
+        "none",
+        "bgzf",
+        "gzip",
+        "format_native"
+      ],
+      "title": "Compression",
+      "type": "string"
+    },
+    "Confidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "insufficient"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "Contig": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Length"
+        },
+        "md5": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Md5"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Contig",
+      "type": "object"
+    },
+    "ContigNaming": {
+      "enum": [
+        "chr_prefixed",
+        "numeric",
+        "mixed",
+        "nonstandard",
+        "unknown"
+      ],
+      "title": "ContigNaming",
+      "type": "string"
+    },
+    "CramReference": {
+      "properties": {
+        "all_sequences_have_md5": {
+          "title": "All Sequences Have Md5",
+          "type": "boolean"
+        },
+        "status": {
+          "$ref": "#/$defs/CramReferenceStatus"
+        },
+        "reference_asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reference Asset Ids",
+          "type": "array"
+        },
+        "declared_uris": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Declared Uris",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "all_sequences_have_md5",
+        "status"
+      ],
+      "title": "CramReference",
+      "type": "object"
+    },
+    "CramReferenceStatus": {
+      "enum": [
+        "available_verified_md5",
+        "available_unverified_name_length_match_only",
+        "unavailable"
+      ],
+      "title": "CramReferenceStatus",
+      "type": "string"
+    },
+    "Execution": {
+      "description": "Execution-specific metadata. Excluded from the semantic digest.",
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "checksum_cache_enabled": {
+          "title": "Checksum Cache Enabled",
+          "type": "boolean"
+        },
+        "checksum_cache_hits": {
+          "title": "Checksum Cache Hits",
+          "type": "integer"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds",
+        "checksum_cache_enabled",
+        "checksum_cache_hits"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "FastaMetadata": {
+      "properties": {
+        "kind": {
+          "const": "reference_sequence",
+          "default": "reference_sequence",
+          "title": "Kind",
+          "type": "string"
+        },
+        "compression": {
+          "$ref": "#/$defs/Compression"
+        },
+        "contig_source": {
+          "enum": [
+            "fai",
+            "sequence_dictionary",
+            "streamed_scan",
+            "none"
+          ],
+          "title": "Contig Source",
+          "type": "string"
+        },
+        "contigs": {
+          "items": {
+            "$ref": "#/$defs/Contig"
+          },
+          "title": "Contigs",
+          "type": "array"
+        },
+        "md5_computed": {
+          "default": false,
+          "title": "Md5 Computed",
+          "type": "boolean"
+        },
+        "genome_build": {
+          "$ref": "#/$defs/GenomeBuildCall"
+        },
+        "index": {
+          "$ref": "#/$defs/IndexStatus"
+        }
+      },
+      "required": [
+        "compression",
+        "contig_source",
+        "genome_build",
+        "index"
+      ],
+      "title": "FastaMetadata",
+      "type": "object"
+    },
+    "Fingerprints": {
+      "properties": {
+        "input_fingerprint": {
+          "description": "sha256 over sorted asset content digests \u2014 changes iff biological/technical content changes.",
+          "title": "Input Fingerprint",
+          "type": "string"
+        },
+        "inventory_fingerprint": {
+          "description": "sha256 over sorted (relative_path, digest) \u2014 also changes on renames/moves.",
+          "title": "Inventory Fingerprint",
+          "type": "string"
+        },
+        "configuration_digest": {
+          "title": "Configuration Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input_fingerprint",
+        "inventory_fingerprint",
+        "configuration_digest"
+      ],
+      "title": "Fingerprints",
+      "type": "object"
+    },
+    "Format": {
+      "enum": [
+        "VCF",
+        "BCF",
+        "BAM",
+        "CRAM",
+        "SAM",
+        "TBI",
+        "CSI",
+        "BAI",
+        "CRAI",
+        "GZI",
+        "FASTA",
+        "FAI",
+        "SEQUENCE_DICTIONARY",
+        "PED",
+        "JSON",
+        "CSV",
+        "TSV",
+        "TEXT",
+        "PDF",
+        "CHECKSUM_MD5",
+        "CHECKSUM_SHA256",
+        "GZIP_UNKNOWN",
+        "BINARY_UNKNOWN",
+        "EMPTY",
+        "UNKNOWN"
+      ],
+      "title": "Format",
+      "type": "string"
+    },
+    "GenomeBuild": {
+      "enum": [
+        "GRCh37",
+        "GRCh37+decoy",
+        "GRCh38",
+        "T2T-CHM13",
+        "custom",
+        "unknown"
+      ],
+      "title": "GenomeBuild",
+      "type": "string"
+    },
+    "GenomeBuildCall": {
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/GenomeBuild"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "naming_convention": {
+          "$ref": "#/$defs/ContigNaming",
+          "default": "unknown"
+        },
+        "markers": {
+          "description": "e.g. decoy_contigs, alt_contigs, hla_contigs, ebv_contig, hg19_style_chrM",
+          "items": {
+            "type": "string"
+          },
+          "title": "Markers",
+          "type": "array"
+        },
+        "claim_conflict": {
+          "default": false,
+          "description": "Header text claims a build other than the one contig lengths establish.",
+          "title": "Claim Conflict",
+          "type": "boolean"
+        },
+        "action_required": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Action Required",
+          "type": "array"
+        }
+      },
+      "required": [
+        "value",
+        "confidence"
+      ],
+      "title": "GenomeBuildCall",
+      "type": "object"
+    },
+    "HeaderDeclarations": {
+      "properties": {
+        "info": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Info",
+          "type": "array"
+        },
+        "format": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Format",
+          "type": "array"
+        },
+        "filter": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Filter",
+          "type": "array"
+        }
+      },
+      "title": "HeaderDeclarations",
+      "type": "object"
+    },
+    "HpoTerm": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "polarity": {
+          "enum": [
+            "observed",
+            "excluded",
+            "unspecified"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "polarity"
+      ],
+      "title": "HpoTerm",
+      "type": "object"
+    },
+    "IndexStatus": {
+      "properties": {
+        "present": {
+          "title": "Present",
+          "type": "boolean"
+        },
+        "index_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Format"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asset Id"
+        },
+        "usable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usable"
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "title": "IndexStatus",
+      "type": "object"
+    },
+    "IntakeConfiguration": {
+      "properties": {
+        "case_root": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Case Root"
+        },
+        "exclude_globs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclude Globs",
+          "type": "array"
+        },
+        "primary_variant_asset": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Primary Variant Asset"
+        },
+        "external_references": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "External References",
+          "type": "array"
+        }
+      },
+      "title": "IntakeConfiguration",
+      "type": "object"
+    },
+    "InventorySummary": {
+      "properties": {
+        "asset_count": {
+          "title": "Asset Count",
+          "type": "integer"
+        },
+        "total_size_bytes": {
+          "title": "Total Size Bytes",
+          "type": "integer"
+        },
+        "by_role": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "By Role",
+          "type": "object"
+        },
+        "by_format": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "By Format",
+          "type": "object"
+        }
+      },
+      "required": [
+        "asset_count",
+        "total_size_bytes",
+        "by_role",
+        "by_format"
+      ],
+      "title": "InventorySummary",
+      "type": "object"
+    },
+    "Issue": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/IssueCode"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "message": {
+          "description": "Operator-facing description. Must never contain genomic payload or raw sample labels.",
+          "title": "Message",
+          "type": "string"
+        },
+        "asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Asset Ids",
+          "type": "array"
+        },
+        "sample_ids": {
+          "description": "Internal sample aliases (SAMPLE_nnn) only.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Sample Ids",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "suggested_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Action"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "Issue",
+      "type": "object"
+    },
+    "IssueCode": {
+      "enum": [
+        "UNKNOWN_FILE",
+        "FILE_UNREADABLE",
+        "FORMAT_EXTENSION_MISMATCH",
+        "EMPTY_FILE",
+        "SYMLINK_OUTSIDE_CASE_ROOT",
+        "SYMLINKED_DIRECTORY_NOT_TRAVERSED",
+        "ADDITIONAL_METADATA_DETECTED",
+        "CHECKSUM_SIDECAR_MISMATCH",
+        "CHECKSUM_SIDECAR_UNPARSEABLE",
+        "PRIMARY_GENOMIC_INPUT_MISSING",
+        "VARIANT_CALLS_ABSENT",
+        "PRIMARY_VARIANT_ASSET_AMBIGUOUS",
+        "CONFIGURED_ASSET_NOT_FOUND",
+        "OPTIONAL_ALIGNMENTS_SUPPLIED",
+        "VCF_PARSE_FAILED",
+        "VCF_NO_RECORDS",
+        "VCF_NO_SAMPLES",
+        "VCF_NOT_BGZF",
+        "VCF_NO_CONTIG_HEADER",
+        "GVCF_DETECTED",
+        "BGZF_EOF_MISSING",
+        "ALIGNMENT_PARSE_FAILED",
+        "ALIGNMENT_QUICKCHECK_FAILED",
+        "ALIGNMENT_NOT_COORDINATE_SORTED",
+        "READ_GROUPS_ABSENT",
+        "READ_GROUP_SAMPLE_MISSING",
+        "READ_GROUP_SAMPLE_CONFLICT",
+        "CRAM_REFERENCE_UNAVAILABLE",
+        "CRAM_REFERENCE_UNVERIFIED",
+        "CRAM_REFERENCE_MD5_ABSENT",
+        "INDEX_MISSING",
+        "INDEX_UNUSABLE",
+        "ORPHAN_INDEX",
+        "GENOME_BUILD_UNKNOWN",
+        "GENOME_BUILD_UNCONFIRMED",
+        "GENOME_BUILD_CLAIM_CONFLICT",
+        "REFERENCE_BUILD_CONFLICT",
+        "REFERENCE_CONTIG_LENGTH_MISMATCH",
+        "CONTIG_NAMING_INCONSISTENT",
+        "NONSTANDARD_CONTIG_NAMING",
+        "FASTA_PARSE_FAILED",
+        "SAMPLE_UNMATCHED_ACROSS_ASSETS",
+        "SAMPLE_ID_NEAR_MATCH",
+        "SAMPLE_IDENTITY_UNDETERMINED",
+        "MULTIPLE_SAMPLES_PRESENT",
+        "PHENOTYPE_UNAVAILABLE",
+        "HPO_TERM_MALFORMED",
+        "HPO_NO_VALID_TERMS",
+        "HPO_PARSE_FAILED",
+        "PEDIGREE_UNAVAILABLE",
+        "PEDIGREE_PARSE_FAILED",
+        "PEDIGREE_INCONSISTENT",
+        "PEDIGREE_SAMPLE_WITHOUT_DATA"
+      ],
+      "title": "IssueCode",
+      "type": "string"
+    },
+    "LogicalRole": {
+      "enum": [
+        "genomic_variants",
+        "aligned_reads",
+        "variant_index",
+        "alignment_index",
+        "reference_sequence",
+        "reference_index",
+        "sequence_dictionary",
+        "phenotype_terms",
+        "pedigree",
+        "case_metadata",
+        "documentation",
+        "checksum_sidecar",
+        "system_file",
+        "unknown"
+      ],
+      "title": "LogicalRole",
+      "type": "string"
+    },
+    "PedigreeIndividual": {
+      "properties": {
+        "sample_id": {
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "asserted_sex": {
+          "enum": [
+            "male",
+            "female",
+            "unknown"
+          ],
+          "title": "Asserted Sex",
+          "type": "string"
+        },
+        "asserted_affected_status": {
+          "enum": [
+            "affected",
+            "unaffected",
+            "unknown"
+          ],
+          "title": "Asserted Affected Status",
+          "type": "string"
+        },
+        "source_family_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Source Family Label"
+        }
+      },
+      "required": [
+        "sample_id",
+        "asserted_sex",
+        "asserted_affected_status"
+      ],
+      "title": "PedigreeIndividual",
+      "type": "object"
+    },
+    "PedigreeMetadata": {
+      "properties": {
+        "kind": {
+          "const": "pedigree",
+          "default": "pedigree",
+          "title": "Kind",
+          "type": "string"
+        },
+        "individual_count": {
+          "title": "Individual Count",
+          "type": "integer"
+        },
+        "family_count": {
+          "title": "Family Count",
+          "type": "integer"
+        },
+        "individuals": {
+          "items": {
+            "$ref": "#/$defs/PedigreeIndividual"
+          },
+          "title": "Individuals",
+          "type": "array"
+        }
+      },
+      "required": [
+        "individual_count",
+        "family_count"
+      ],
+      "title": "PedigreeMetadata",
+      "type": "object"
+    },
+    "PedigreeSection": {
+      "properties": {
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Asset Ids",
+          "type": "array"
+        },
+        "relationships": {
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          },
+          "title": "Relationships",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "PedigreeSection",
+      "type": "object"
+    },
+    "PhenotypeMetadata": {
+      "properties": {
+        "kind": {
+          "const": "phenotype",
+          "default": "phenotype",
+          "title": "Kind",
+          "type": "string"
+        },
+        "parser": {
+          "enum": [
+            "line_list",
+            "delimited_table",
+            "phenopacket_json",
+            "json_scan"
+          ],
+          "title": "Parser",
+          "type": "string"
+        },
+        "valid_term_count": {
+          "title": "Valid Term Count",
+          "type": "integer"
+        },
+        "unique_valid_term_count": {
+          "title": "Unique Valid Term Count",
+          "type": "integer"
+        },
+        "malformed_identifier_count": {
+          "title": "Malformed Identifier Count",
+          "type": "integer"
+        },
+        "observed_count": {
+          "title": "Observed Count",
+          "type": "integer"
+        },
+        "excluded_count": {
+          "title": "Excluded Count",
+          "type": "integer"
+        },
+        "polarity_unspecified_count": {
+          "title": "Polarity Unspecified Count",
+          "type": "integer"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/HpoTerm"
+          },
+          "restricted": true,
+          "title": "Terms",
+          "type": "array"
+        },
+        "malformed_line_numbers": {
+          "items": {
+            "type": "integer"
+          },
+          "restricted": true,
+          "title": "Malformed Line Numbers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parser",
+        "valid_term_count",
+        "unique_valid_term_count",
+        "malformed_identifier_count",
+        "observed_count",
+        "excluded_count",
+        "polarity_unspecified_count"
+      ],
+      "title": "PhenotypeMetadata",
+      "type": "object"
+    },
+    "PhenotypeSection": {
+      "properties": {
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Asset Ids",
+          "type": "array"
+        },
+        "hpo_valid_identifier_count": {
+          "default": 0,
+          "title": "Hpo Valid Identifier Count",
+          "type": "integer"
+        },
+        "hpo_unique_valid_identifier_count": {
+          "default": 0,
+          "title": "Hpo Unique Valid Identifier Count",
+          "type": "integer"
+        },
+        "hpo_malformed_identifier_count": {
+          "default": 0,
+          "title": "Hpo Malformed Identifier Count",
+          "type": "integer"
+        },
+        "observed_count": {
+          "default": 0,
+          "title": "Observed Count",
+          "type": "integer"
+        },
+        "excluded_count": {
+          "default": 0,
+          "title": "Excluded Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "available"
+      ],
+      "title": "PhenotypeSection",
+      "type": "object"
+    },
+    "PipelineRef": {
+      "properties": {
+        "stage": {
+          "const": "case_intake",
+          "default": "case_intake",
+          "title": "Stage",
+          "type": "string"
+        },
+        "stage_version": {
+          "default": "0.1.0",
+          "title": "Stage Version",
+          "type": "string"
+        }
+      },
+      "title": "PipelineRef",
+      "type": "object"
+    },
+    "PrimaryInputs": {
+      "description": "Where downstream stages should look \u2014 so nobody re-derives it from filenames.",
+      "properties": {
+        "variant_asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Variant Asset Ids",
+          "type": "array"
+        },
+        "primary_variant_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set only when unambiguous (exactly one) or explicitly configured.",
+          "title": "Primary Variant Asset Id"
+        },
+        "primary_variant_selection": {
+          "default": "none",
+          "enum": [
+            "only_candidate",
+            "configured",
+            "ambiguous",
+            "none"
+          ],
+          "title": "Primary Variant Selection",
+          "type": "string"
+        },
+        "alignment_asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Alignment Asset Ids",
+          "type": "array"
+        },
+        "reference_sequence_asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reference Sequence Asset Ids",
+          "type": "array"
+        },
+        "phenotype_asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Phenotype Asset Ids",
+          "type": "array"
+        },
+        "pedigree_asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Pedigree Asset Ids",
+          "type": "array"
+        }
+      },
+      "title": "PrimaryInputs",
+      "type": "object"
+    },
+    "Program": {
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        }
+      },
+      "title": "Program",
+      "type": "object"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "configuration": {
+          "$ref": "#/$defs/IntakeConfiguration"
+        },
+        "fingerprints": {
+          "$ref": "#/$defs/Fingerprints"
+        },
+        "environment_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Environment Controls",
+          "type": "array"
+        }
+      },
+      "required": [
+        "software",
+        "configuration",
+        "fingerprints"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "ReadGroup": {
+      "properties": {
+        "sample_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Id"
+        },
+        "platform": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Platform"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Source Id"
+        },
+        "source_sample_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Source Sample Label"
+        },
+        "library": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Library"
+        }
+      },
+      "title": "ReadGroup",
+      "type": "object"
+    },
+    "Readiness": {
+      "properties": {
+        "normalization_ready": {
+          "title": "Normalization Ready",
+          "type": "boolean"
+        },
+        "blockers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blockers",
+          "type": "array"
+        },
+        "actions_required": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Actions Required",
+          "type": "array"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "normalization_ready",
+        "rationale"
+      ],
+      "title": "Readiness",
+      "type": "object"
+    },
+    "Redaction": {
+      "properties": {
+        "visibility": {
+          "enum": [
+            "private",
+            "sanitized"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "visibility",
+        "note"
+      ],
+      "title": "Redaction",
+      "type": "object"
+    },
+    "ReferenceSection": {
+      "properties": {
+        "genome_build": {
+          "$ref": "#/$defs/GenomeBuildCall"
+        },
+        "per_asset": {
+          "items": {
+            "$ref": "#/$defs/AssetBuild"
+          },
+          "title": "Per Asset",
+          "type": "array"
+        }
+      },
+      "required": [
+        "genome_build"
+      ],
+      "title": "ReferenceSection",
+      "type": "object"
+    },
+    "Relationship": {
+      "properties": {
+        "subject": {
+          "title": "Subject",
+          "type": "string"
+        },
+        "relation": {
+          "const": "child_of",
+          "title": "Relation",
+          "type": "string"
+        },
+        "object": {
+          "title": "Object",
+          "type": "string"
+        },
+        "source_asset_id": {
+          "title": "Source Asset Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "relation",
+        "object",
+        "source_asset_id"
+      ],
+      "title": "Relationship",
+      "type": "object"
+    },
+    "RelationshipType": {
+      "enum": [
+        "INDEX_OF",
+        "BGZF_INDEX_OF",
+        "SEQUENCE_DICTIONARY_OF",
+        "CHECKSUM_OF",
+        "CANDIDATE_REFERENCE_FOR",
+        "VERIFIED_REFERENCE_FOR"
+      ],
+      "title": "RelationshipType",
+      "type": "string"
+    },
+    "RetentionClass": {
+      "enum": [
+        "controlled_genomic_delete_required",
+        "controlled_case_material_review_required",
+        "external_reference"
+      ],
+      "title": "RetentionClass",
+      "type": "string"
+    },
+    "Sample": {
+      "properties": {
+        "sample_id": {
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "observed_in": {
+          "items": {
+            "$ref": "#/$defs/SampleObservation"
+          },
+          "title": "Observed In",
+          "type": "array"
+        },
+        "source_labels": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Source Labels",
+          "type": "array"
+        },
+        "asserted_role": {
+          "const": "unknown",
+          "default": "unknown",
+          "description": "Roles such as proband/mother/father are never inferred; see pedigree.relationships for explicit assertions.",
+          "title": "Asserted Role",
+          "type": "string"
+        },
+        "asserted_sex": {
+          "items": {
+            "$ref": "#/$defs/AssertedValue"
+          },
+          "title": "Asserted Sex",
+          "type": "array"
+        },
+        "asserted_affected_status": {
+          "items": {
+            "$ref": "#/$defs/AssertedValue"
+          },
+          "title": "Asserted Affected Status",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sample_id",
+        "observed_in"
+      ],
+      "title": "Sample",
+      "type": "object"
+    },
+    "SampleObservation": {
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "via": {
+          "enum": [
+            "vcf_sample_column",
+            "read_group_SM",
+            "pedigree_individual",
+            "vcf_pedigree_header"
+          ],
+          "title": "Via",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id",
+        "via"
+      ],
+      "title": "SampleObservation",
+      "type": "object"
+    },
+    "SchemaRef": {
+      "properties": {
+        "name": {
+          "const": "CaseManifest",
+          "default": "CaseManifest",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "default": "1.0.0",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "SchemaRef",
+      "type": "object"
+    },
+    "SequenceDictionaryMetadata": {
+      "properties": {
+        "kind": {
+          "const": "sequence_dictionary",
+          "default": "sequence_dictionary",
+          "title": "Kind",
+          "type": "string"
+        },
+        "contigs": {
+          "items": {
+            "$ref": "#/$defs/Contig"
+          },
+          "title": "Contigs",
+          "type": "array"
+        },
+        "genome_build": {
+          "$ref": "#/$defs/GenomeBuildCall"
+        }
+      },
+      "required": [
+        "genome_build"
+      ],
+      "title": "SequenceDictionaryMetadata",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "BLOCKER",
+        "ACTION_REQUIRED",
+        "WARNING",
+        "INFO"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "INTAKE_COMPLETE",
+        "INTAKE_COMPLETE_WITH_WARNINGS",
+        "INTAKE_BLOCKED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "Validation": {
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/ValidationStatus"
+        },
+        "issue_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Issue Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "Validation",
+      "type": "object"
+    },
+    "ValidationStatus": {
+      "enum": [
+        "valid",
+        "valid_with_warnings",
+        "requires_action",
+        "invalid",
+        "not_inspected"
+      ],
+      "title": "ValidationStatus",
+      "type": "string"
+    },
+    "VcfMetadata": {
+      "properties": {
+        "kind": {
+          "const": "variants",
+          "default": "variants",
+          "title": "Kind",
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/$defs/Format"
+        },
+        "compression": {
+          "$ref": "#/$defs/Compression"
+        },
+        "header_valid": {
+          "title": "Header Valid",
+          "type": "boolean"
+        },
+        "vcf_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vcf Version"
+        },
+        "is_gvcf": {
+          "default": false,
+          "title": "Is Gvcf",
+          "type": "boolean"
+        },
+        "has_records": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether at least one record parsed. Record content is never stored.",
+          "title": "Has Records"
+        },
+        "sample_count": {
+          "default": 0,
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "sample_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sample Ids",
+          "type": "array"
+        },
+        "source_sample_labels": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Source Sample Labels",
+          "type": "array"
+        },
+        "contigs": {
+          "items": {
+            "$ref": "#/$defs/Contig"
+          },
+          "title": "Contigs",
+          "type": "array"
+        },
+        "contigs_with_records_per_index": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contigs With Records Per Index"
+        },
+        "reference_claim": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Raw ##reference value (may be a local path).",
+          "restricted": true,
+          "title": "Reference Claim"
+        },
+        "genome_build": {
+          "$ref": "#/$defs/GenomeBuildCall"
+        },
+        "index": {
+          "$ref": "#/$defs/IndexStatus"
+        },
+        "declarations": {
+          "$ref": "#/$defs/HeaderDeclarations"
+        },
+        "source_tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Tools",
+          "type": "array"
+        },
+        "processing_hints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Processing Hints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format",
+        "compression",
+        "header_valid",
+        "genome_build",
+        "index"
+      ],
+      "title": "VcfMetadata",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema": {
+      "$ref": "#/$defs/SchemaRef"
+    },
+    "pipeline": {
+      "$ref": "#/$defs/PipelineRef"
+    },
+    "redaction": {
+      "$ref": "#/$defs/Redaction"
+    },
+    "case": {
+      "$ref": "#/$defs/CaseRef"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "readiness": {
+      "$ref": "#/$defs/Readiness"
+    },
+    "inventory": {
+      "$ref": "#/$defs/InventorySummary"
+    },
+    "primary_inputs": {
+      "$ref": "#/$defs/PrimaryInputs"
+    },
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/AssetRecord"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
+    "relationships": {
+      "items": {
+        "$ref": "#/$defs/AssetRelationship"
+      },
+      "title": "Relationships",
+      "type": "array"
+    },
+    "samples": {
+      "items": {
+        "$ref": "#/$defs/Sample"
+      },
+      "title": "Samples",
+      "type": "array"
+    },
+    "phenotype": {
+      "$ref": "#/$defs/PhenotypeSection"
+    },
+    "pedigree": {
+      "$ref": "#/$defs/PedigreeSection"
+    },
+    "reference": {
+      "$ref": "#/$defs/ReferenceSection"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/Issue"
+      },
+      "title": "Issues",
+      "type": "array"
+    },
+    "issue_counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Issue Counts",
+      "type": "object"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "sha256 of this manifest excluding `execution` and this field.",
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "redaction",
+    "case",
+    "status",
+    "readiness",
+    "inventory",
+    "primary_inputs",
+    "assets",
+    "relationships",
+    "samples",
+    "phenotype",
+    "pedigree",
+    "reference",
+    "issues",
+    "issue_counts",
+    "provenance",
+    "execution"
+  ],
+  "title": "CaseManifest",
+  "type": "object",
+  "$id": "https://rarepipe.local/schemas/case_manifest/1.0.0.json",
+  "description": "CaseManifest v1.0.0 \u2014 output of the case_intake stage. Properties carrying `restricted: true` are populated only in the private manifest."
+}
