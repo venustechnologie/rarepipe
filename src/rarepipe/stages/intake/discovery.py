@@ -10,6 +10,7 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -27,7 +28,7 @@ from rarepipe.stages.intake.manifest import (
 SYSTEM_FILES = {".ds_store", "thumbs.db", "desktop.ini"}
 DOC_NAMES = ("readme", "license", "changelog", "data_use", "terms")
 
-GENOMIC = {Format.VCF, Format.BCF, Format.BAM, Format.CRAM, Format.SAM}
+GENOMIC = {Format.VCF, Format.BCF, Format.BAM, Format.CRAM, Format.SAM, Format.FASTQ}
 GENOMIC_INDEXES = {Format.TBI, Format.CSI, Format.BAI, Format.CRAI}
 OPAQUE = {Format.BINARY_UNKNOWN, Format.GZIP_UNKNOWN}
 
@@ -105,12 +106,14 @@ def discover(case_root: Path, exclude_globs: list[str], external_references: lis
 def assign_role(a: Discovered, is_phenotype: bool) -> None:
     f = a.fmt
     lower = a.filename.lower()
-    if lower in SYSTEM_FILES or lower.startswith("._"):
+    if lower in SYSTEM_FILES or lower.startswith("._") or f == Format.APPLEDOUBLE:
         a.role = LogicalRole.SYSTEM_FILE
     elif f in (Format.VCF, Format.BCF):
         a.role = LogicalRole.GENOMIC_VARIANTS
     elif f in (Format.BAM, Format.CRAM, Format.SAM):
         a.role = LogicalRole.ALIGNED_READS
+    elif f == Format.FASTQ:
+        a.role = LogicalRole.RAW_READS
     elif f in (Format.TBI, Format.CSI):
         a.role = LogicalRole.VARIANT_INDEX  # re-labelled to ALIGNMENT_INDEX if it indexes a BAM
     elif f in (Format.BAI, Format.CRAI):
@@ -129,7 +132,7 @@ def assign_role(a: Discovered, is_phenotype: bool) -> None:
         a.role = LogicalRole.PHENOTYPE_TERMS
     elif f == Format.PDF or lower.startswith(DOC_NAMES) or a.extension == ".md":
         a.role = LogicalRole.DOCUMENTATION
-    elif f in (Format.JSON, Format.CSV, Format.TSV, Format.TEXT):
+    elif f in (Format.JSON, Format.CSV, Format.TSV, Format.TEXT, Format.DOCX):
         a.role = LogicalRole.CASE_METADATA
     else:
         a.role = LogicalRole.UNKNOWN
@@ -138,6 +141,9 @@ def assign_role(a: Discovered, is_phenotype: bool) -> None:
 def retention(a: Discovered) -> tuple[bool, RetentionClass]:
     if a.external:
         return False, RetentionClass.EXTERNAL_REFERENCE
+    if a.role == LogicalRole.SYSTEM_FILE:
+        # OS metadata (e.g. macOS ._ AppleDouble on exFAT) — no case content, but it lives with the case.
+        return True, RetentionClass.CONTROLLED_CASE_MATERIAL_REVIEW_REQUIRED
     if a.fmt in GENOMIC | GENOMIC_INDEXES | OPAQUE:
         # Opaque binaries in a controlled genomic dataset are treated as genomic until shown otherwise.
         return True, RetentionClass.CONTROLLED_GENOMIC_DELETE_REQUIRED
@@ -164,6 +170,8 @@ class Links:
     gzi_of: dict[str, str] = field(default_factory=dict)
     dict_of: dict[str, str] = field(default_factory=dict)  # fasta asset_id → dict asset_id
     sidecar_of: dict[str, str] = field(default_factory=dict)  # target asset_id → sidecar asset_id
+    mate_of: dict[str, str] = field(default_factory=dict)  # FASTQ asset_id → its mate's asset_id (both directions)
+    fastq_name_hints: dict[str, tuple[int | None, int | None]] = field(default_factory=dict)  # asset_id → (read number, lane)
     relationships: list[AssetRelationship] = field(default_factory=list)
 
 
@@ -217,6 +225,43 @@ def link(assets: list[Discovered]) -> tuple[Links, list[Issue]]:
                     links.relationships.append(AssetRelationship(type=RelationshipType.CHECKSUM_OF, source=a.asset_id, target=t.asset_id,
                                                                  evidence=["filename pairing"]))
     return links, issues
+
+
+# bcl2fastq/BCL Convert: <stem>_L001_R1_001.fastq.gz ; SRA-style: <stem>_1.fastq.gz
+_FASTQ_ILLUMINA = re.compile(r"^(?P<stem>.*?)(?:_L(?P<lane>\d{3}))?_R(?P<read>[12])(?P<tail>_\d{3})?\.(?:fastq|fq)(?:\.gz)?$", re.I)
+_FASTQ_SRA = re.compile(r"^(?P<stem>.*)_(?P<read>[12])\.(?:fastq|fq)(?:\.gz)?$", re.I)
+
+
+def pair_fastqs(assets: list[Discovered], links: Links) -> list[Issue]:
+    """Mate pairing by the standard naming convention; recorded as filename-derived evidence."""
+    groups: dict[tuple, dict[int, Discovered]] = {}
+    unparsed = []
+    for a in assets:
+        if a.fmt != Format.FASTQ:
+            continue
+        name = formats.strip_partial_suffix(a.filename)
+        m = _FASTQ_ILLUMINA.match(name) or _FASTQ_SRA.match(name)
+        if not m:
+            unparsed.append(a)
+            continue
+        gd = m.groupdict()
+        read, lane = int(gd["read"]), int(gd["lane"]) if gd.get("lane") else None
+        links.fastq_name_hints[a.asset_id] = (read, lane)
+        key = (str(Path(a.rel).parent), gd["stem"], lane, gd.get("tail"))
+        groups.setdefault(key, {})[read] = a
+    issues = []
+    for mates in groups.values():
+        if 1 in mates and 2 in mates:
+            r1, r2 = mates[1], mates[2]
+            links.mate_of[r1.asset_id], links.mate_of[r2.asset_id] = r2.asset_id, r1.asset_id
+            links.relationships.append(AssetRelationship(type=RelationshipType.MATE_OF, source=r2.asset_id, target=r1.asset_id,
+                                                         evidence=["paired-end filename convention (R1/R2, same lane)"]))
+        else:
+            (only,) = mates.values()
+            issues.append(Issue(code=IssueCode.FASTQ_MATE_MISSING, severity=Severity.WARNING, asset_ids=[only.asset_id],
+                                message="FASTQ is named as one mate of a paired-end set, but its mate file is not in the case.",
+                                suggested_action="Confirm whether the other read file is missing or the data is single-end."))
+    return issues
 
 
 def read_sidecar_digest(path: Path, algorithm: str) -> str | None:

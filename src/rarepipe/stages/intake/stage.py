@@ -36,6 +36,7 @@ from rarepipe.stages.intake.manifest import (
     Execution,
     FastaMetadata,
     Fingerprints,
+    Compression,
     Format,
     IndexStatus,
     IntakeConfiguration,
@@ -168,7 +169,7 @@ def _run(req: IntakeRequest, console: Console, run_id: str, started, t0: float, 
         discovery.assign_role(a, phenotype.looks_like_phenotype(a.path, a.fmt))
     by_id: dict[str, Discovered] = {a.asset_id: a for a in assets}
     links, link_issues = discovery.link(assets)
-    issues += link_issues
+    issues += link_issues + discovery.pair_fastqs(assets, links)
     total_bytes = sum(a.size for a in assets)
     console.info(f"{len(assets)} files found ({total_bytes / 1e9:.2f} GB)")
     for a in assets:
@@ -208,7 +209,27 @@ def _run(req: IntakeRequest, console: Console, run_id: str, started, t0: float, 
             vcf_ped_pairs[a.asset_id] = pedigree.vcf_pedigree_pairs(a.path)
 
     # ── 3. alignments + reference ───────────────────────────────────────────
-    console.step(3, TOTAL_STEPS, "Inspecting alignment and reference files...")
+    console.step(3, TOTAL_STEPS, "Inspecting reads (FASTQ/BAM/CRAM) and reference files...")
+    fastqs = [a for a in assets if a.role == LogicalRole.RAW_READS]
+    for a in fastqs:
+        res = genomic.inspect_fastq(a.path, a.asset_id, a.sniff.compression, a.sniff.bgzf_eof_present,
+                                    links.fastq_name_hints.get(a.asset_id), links.mate_of.get(a.asset_id))
+        metas[a.asset_id] = res.metadata
+        issues += res.issues
+        md = res.metadata
+        (console.ok if md.structure_valid else console.fail)(
+            f"{a.asset_id}: FASTQ {'structure valid' if md.structure_valid else 'structure INVALID'} over first {md.records_sampled} record(s); "
+            f"read {md.read_number_from_header or md.read_number_from_filename or '?'}, lane {md.lane_from_header or md.lane_from_filename or '?'}, "
+            f"mate {'paired' if md.mate_asset_id else 'unpaired'}")
+    if fastqs:
+        issues.append(Issue(code=IssueCode.FASTQ_SAMPLE_UNDECLARED, severity=Severity.WARNING, asset_ids=[a.asset_id for a in fastqs],
+                            message="FASTQ files carry no sample metadata; their link to any variant-file sample is not established by intake.",
+                            suggested_action="Confirm with the data provider which sample these reads belong to."))
+        plain = [a.asset_id for a in fastqs if a.sniff.compression == Compression.GZIP]
+        if plain:
+            issues.append(Issue(code=IssueCode.FASTQ_INTEGRITY_UNVERIFIED, severity=Severity.WARNING, asset_ids=plain,
+                                message="Plain-gzip FASTQ: truncation cannot be detected without decompressing each whole file; only leading records were checked.",
+                                suggested_action="Verify against provider checksums (md5) if available."))
     alns = [a for a in assets if a.role == LogicalRole.ALIGNED_READS]
     crams = [a for a in alns if a.fmt == Format.CRAM]
     if not alns:
@@ -338,8 +359,11 @@ def _run(req: IntakeRequest, console: Console, run_id: str, started, t0: float, 
     primary, primary_issues = _primary_inputs(req, assets, pheno_ids, ped_section)
     issues += primary_issues
     if not pheno_ids:
-        issues.append(Issue(code=IssueCode.PHENOTYPE_UNAVAILABLE, severity=Severity.WARNING, message="No HPO phenotype artifact was identified in the case.",
-                            suggested_action="Confirm whether phenotype data was supplied under an unrecognized format."))
+        docs = [a.asset_id for a in assets if a.fmt == Format.DOCX]
+        issues.append(Issue(code=IssueCode.PHENOTYPE_UNAVAILABLE, severity=Severity.WARNING, asset_ids=docs,
+                            message="No structured HPO identifiers were found in the case."
+                            + (" A document is present whose free text may describe the phenotype; intake does not interpret prose." if docs else ""),
+                            suggested_action="Map clinical text to HPO terms in a later stage, or supply an HPO term list."))
     if ped_section.status == "unavailable":
         issues.append(Issue(code=IssueCode.PEDIGREE_UNAVAILABLE, severity=Severity.INFO, message="No pedigree information supplied; no family relationships are asserted."))
 
@@ -423,7 +447,13 @@ def _format_issues(a: Discovered) -> list[Issue]:
     issues = []
     if a.fmt == Format.EMPTY:
         issues.append(Issue(code=IssueCode.EMPTY_FILE, severity=Severity.WARNING, asset_ids=[a.asset_id], message="File is empty."))
-    if formats.is_mismatch(a.ext_fmt, a.fmt):
+    # A leftover ._ AppleDouble twin of a partial file is OS metadata, not an unfinished transfer.
+    partial = None if a.role == LogicalRole.SYSTEM_FILE else formats.partial_download_suffix(a.filename)
+    if partial:
+        issues.append(Issue(code=IssueCode.INCOMPLETE_DOWNLOAD, severity=Severity.BLOCKER, asset_ids=[a.asset_id],
+                            message=f"Filename ends in '{partial}', which download clients use for unfinished transfers; the file is likely incomplete.",
+                            suggested_action="Finish or restart the download, verify it against provider checksums, then re-run intake."))
+    if a.role != LogicalRole.SYSTEM_FILE and formats.is_mismatch(a.ext_fmt, a.fmt):
         claims_genomic = a.ext_fmt in discovery.GENOMIC
         is_genomic = a.fmt in discovery.GENOMIC
         if claims_genomic and not is_genomic:
@@ -438,7 +468,10 @@ def _format_issues(a: Discovered) -> list[Issue]:
         issues.append(Issue(code=IssueCode.UNKNOWN_FILE, severity=Severity.WARNING, asset_ids=[a.asset_id],
                             message=f"File role could not be determined (detected content: {a.fmt.value}). Recorded, not interpreted.",
                             suggested_action="Confirm whether this file belongs to the case."))
-    if a.role == LogicalRole.CASE_METADATA:
+    if a.role == LogicalRole.CASE_METADATA and a.fmt == Format.DOCX:
+        issues.append(Issue(code=IssueCode.CLINICAL_DOCUMENT_WITHOUT_HPO, severity=Severity.INFO, asset_ids=[a.asset_id],
+                            message="Word document detected with no HPO identifiers; its free text was not interpreted."))
+    elif a.role == LogicalRole.CASE_METADATA:
         issues.append(Issue(code=IssueCode.ADDITIONAL_METADATA_DETECTED, severity=Severity.INFO, asset_ids=[a.asset_id],
                             message=f"Additional {a.fmt.value} metadata file detected; recorded but not interpreted by intake."))
     return issues
@@ -465,19 +498,25 @@ def _primary_inputs(req: IntakeRequest, assets: list[Discovered], pheno_ids: lis
             issues.append(Issue(code=IssueCode.PRIMARY_VARIANT_ASSET_AMBIGUOUS, severity=Severity.ACTION_REQUIRED, asset_ids=[a.asset_id for a in variants],
                                 message=f"{len(variants)} variant files are present; which one downstream analysis should use is not established.",
                                 suggested_action="Re-run with --primary-variant <relative path> once the intended file is confirmed."))
-    if not variants and not alns:
+    raw = [a for a in assets if a.role == LogicalRole.RAW_READS]
+    if not variants and not alns and not raw:
         issues.append(Issue(code=IssueCode.PRIMARY_GENOMIC_INPUT_MISSING, severity=Severity.BLOCKER,
-                            message="No readable-format variant (VCF/BCF) or alignment (BAM/CRAM) file was identified.",
+                            message="No variant (VCF/BCF), alignment (BAM/CRAM) or raw read (FASTQ) file was identified.",
                             suggested_action="Confirm the case root and that genomic files were fully transferred."))
     elif not variants:
-        issues.append(Issue(code=IssueCode.VARIANT_CALLS_ABSENT, severity=Severity.WARNING, asset_ids=[a.asset_id for a in alns],
-                            message="Alignments are present but no variant calls; a variant-calling stage would be required."))
-    elif alns:
-        issues.append(Issue(code=IssueCode.OPTIONAL_ALIGNMENTS_SUPPLIED, severity=Severity.INFO, asset_ids=[a.asset_id for a in alns],
-                            message=f"{len(alns)} alignment file(s) supplied in addition to variant calls."))
+        issues.append(Issue(code=IssueCode.VARIANT_CALLS_ABSENT, severity=Severity.WARNING, asset_ids=[a.asset_id for a in alns + raw],
+                            message="Reads are present but no variant calls; alignment and/or variant-calling stages would be required."))
+    else:
+        if alns:
+            issues.append(Issue(code=IssueCode.OPTIONAL_ALIGNMENTS_SUPPLIED, severity=Severity.INFO, asset_ids=[a.asset_id for a in alns],
+                                message=f"{len(alns)} alignment file(s) supplied in addition to variant calls."))
+        if raw:
+            issues.append(Issue(code=IssueCode.OPTIONAL_RAW_READS_SUPPLIED, severity=Severity.INFO, asset_ids=[a.asset_id for a in raw],
+                                message=f"{len(raw)} raw read (FASTQ) file(s) supplied in addition to variant calls."))
     return PrimaryInputs(
         variant_asset_ids=[a.asset_id for a in variants], primary_variant_asset_id=primary_id, primary_variant_selection=selection,
         alignment_asset_ids=[a.asset_id for a in alns],
+        raw_read_asset_ids=[a.asset_id for a in raw],
         reference_sequence_asset_ids=[a.asset_id for a in assets if a.role == LogicalRole.REFERENCE_SEQUENCE],
         phenotype_asset_ids=pheno_ids, pedigree_asset_ids=ped.asset_ids,
     ), issues

@@ -11,6 +11,7 @@ from rarepipe.stages.intake.manifest import (
     AlignmentMetadata,
     CaseManifest,
     FastaMetadata,
+    FastqMetadata,
     LogicalRole,
     PhenotypeMetadata,
     RetentionClass,
@@ -72,8 +73,20 @@ def render(m: CaseManifest) -> str:
 
     w("## Raw sequencing\n")
     alns = [a for a in m.assets if a.logical_role == LogicalRole.ALIGNED_READS]
-    if not alns:
+    fastqs = [a for a in m.assets if a.logical_role == LogicalRole.RAW_READS]
+    if not alns and not fastqs:
         w("- not supplied\n")
+    if fastqs:
+        w("| FASTQ asset | size | read | lane | mate | records checked | read length | structure | validation |")
+        w("|---|---|---|---|---|---|---|---|---|")
+        for a in fastqs:
+            md = a.metadata
+            if isinstance(md, FastqMetadata):
+                length = f"{md.read_length_min}–{md.read_length_max}" if md.read_length_min != md.read_length_max else f"{md.read_length_min}"
+                w(f"| {a.asset_id} | {_gb(a.size_bytes)} | R{md.read_number_from_header or md.read_number_from_filename or '?'} "
+                  f"| {md.lane_from_header or md.lane_from_filename or '?'} | {md.mate_asset_id or 'none'} | {md.records_sampled} | {length} "
+                  f"| {_mark(md.structure_valid)} | {a.validation.status.value} |")
+        w("")
     for a in alns:
         md = a.metadata
         w(f"**{a.asset_id}** — {a.detected_format.value}, {_gb(a.size_bytes)}, validation `{a.validation.status.value}`\n")
@@ -140,7 +153,7 @@ def render(m: CaseManifest) -> str:
         w("")
 
     w("## Other assets\n")
-    others = [a for a in m.assets if a.logical_role not in (LogicalRole.GENOMIC_VARIANTS, LogicalRole.ALIGNED_READS)]
+    others = [a for a in m.assets if a.logical_role not in (LogicalRole.GENOMIC_VARIANTS, LogicalRole.ALIGNED_READS, LogicalRole.RAW_READS)]
     if not others:
         w("- none\n")
     else:

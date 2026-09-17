@@ -150,6 +150,35 @@ def test_no_genomic_input_blocks(build_case, intake):
     assert "PRIMARY_GENOMIC_INPUT_MISSING" in codes(m, "BLOCKER")
 
 
+def test_fastq_exfat_partial_download(build_case, intake):
+    m = intake(build_case("O_fastq_exfat_partial")).manifest
+    assert m.status == Status.INTAKE_BLOCKED
+    # the tiny synthetic partial file also truncates within the sampled records → FASTQ_PARSE_FAILED is correct too
+    assert "INCOMPLETE_DOWNLOAD" in codes(m, "BLOCKER") and codes(m, "BLOCKER") <= {"INCOMPLETE_DOWNLOAD", "FASTQ_PARSE_FAILED"}
+    assert "FORMAT_EXTENSION_MISMATCH" not in codes(m)  # ._ AppleDouble files no longer raise mismatches
+    assert [i.asset_ids for i in m.issues if i.code.value == "INCOMPLETE_DOWNLOAD"] == [[a.asset_id for a in m.assets if a.filename.endswith("R2_001.fastq.gz.download-part") and not a.filename.startswith("._")]]
+    fq = [a for a in m.assets if a.logical_role == LogicalRole.RAW_READS]
+    assert len(fq) == 4 and all(a.detected_format.value == "FASTQ" for a in fq)
+    assert all(a.metadata.mate_asset_id for a in fq)
+    assert sum(1 for r in m.relationships if r.type.value == "MATE_OF") == 2
+    full = [a for a in fq if a.metadata.records_sampled == 50]
+    assert len(full) == 3 and all(a.metadata.structure_valid and a.metadata.header_style == "illumina_casava_1.8" for a in full)
+    sysf = [a for a in m.assets if a.logical_role == LogicalRole.SYSTEM_FILE]
+    assert len(sysf) == 5 and all(a.retention_class.value == "controlled_case_material_review_required" for a in sysf)
+    docx = next(a for a in m.assets if a.detected_format.value == "DOCX")
+    assert docx.logical_role == LogicalRole.CASE_METADATA and docx.retention_class.value == "controlled_case_material_review_required"
+    assert "PHENOTYPE_UNAVAILABLE" in codes(m) and "FASTQ_SAMPLE_UNDECLARED" in codes(m)
+    assert m.primary_inputs.raw_read_asset_ids and m.reference.genome_build.value == GenomeBuild.GRCH38
+
+
+def test_fastq_complete_with_docx_hpo(build_case, intake):
+    m = intake(build_case("P_fastq_complete_docx_hpo")).manifest
+    assert m.status == Status.INTAKE_COMPLETE_WITH_WARNINGS and not codes(m, "BLOCKER")
+    assert m.phenotype.available and m.phenotype.hpo_valid_identifier_count == 2 and m.phenotype.hpo_malformed_identifier_count == 1
+    docx = next(a for a in m.assets if a.detected_format.value == "DOCX")
+    assert docx.logical_role == LogicalRole.PHENOTYPE_TERMS and docx.metadata.parser == "docx_text_scan"
+
+
 @pytest.mark.parametrize("word", ["pathogenic", "benign", "causal", "candidate gene", "diagnosis", "treatment", "drug"])
 def test_no_biological_interpretation_vocabulary(build_case, intake, word):
     result = intake(build_case("J_trio_with_pedigree"))

@@ -48,6 +48,7 @@ class Format(StrEnum):
     BAM = "BAM"
     CRAM = "CRAM"
     SAM = "SAM"
+    FASTQ = "FASTQ"
     TBI = "TBI"
     CSI = "CSI"
     BAI = "BAI"
@@ -62,6 +63,8 @@ class Format(StrEnum):
     TSV = "TSV"
     TEXT = "TEXT"
     PDF = "PDF"
+    DOCX = "DOCX"
+    APPLEDOUBLE = "APPLEDOUBLE"
     CHECKSUM_MD5 = "CHECKSUM_MD5"
     CHECKSUM_SHA256 = "CHECKSUM_SHA256"
     GZIP_UNKNOWN = "GZIP_UNKNOWN"
@@ -80,6 +83,7 @@ class Compression(StrEnum):
 class LogicalRole(StrEnum):
     GENOMIC_VARIANTS = "genomic_variants"
     ALIGNED_READS = "aligned_reads"
+    RAW_READS = "raw_reads"
     VARIANT_INDEX = "variant_index"
     ALIGNMENT_INDEX = "alignment_index"
     REFERENCE_SEQUENCE = "reference_sequence"
@@ -140,6 +144,7 @@ class RelationshipType(StrEnum):
     BGZF_INDEX_OF = "BGZF_INDEX_OF"  # .gzi
     SEQUENCE_DICTIONARY_OF = "SEQUENCE_DICTIONARY_OF"
     CHECKSUM_OF = "CHECKSUM_OF"
+    MATE_OF = "MATE_OF"  # R2 → R1 of the same read set
     CANDIDATE_REFERENCE_FOR = "CANDIDATE_REFERENCE_FOR"
     VERIFIED_REFERENCE_FOR = "VERIFIED_REFERENCE_FOR"
 
@@ -267,7 +272,7 @@ class HpoTerm(BaseModel):
 
 class PhenotypeMetadata(BaseModel):
     kind: Literal["phenotype"] = "phenotype"
-    parser: Literal["line_list", "delimited_table", "phenopacket_json", "json_scan"]
+    parser: Literal["line_list", "delimited_table", "phenopacket_json", "json_scan", "docx_text_scan"]
     valid_term_count: int
     unique_valid_term_count: int
     malformed_identifier_count: int
@@ -292,6 +297,25 @@ class PedigreeMetadata(BaseModel):
     individuals: list[PedigreeIndividual] = Field(default_factory=list)
 
 
+class FastqMetadata(BaseModel):
+    kind: Literal["raw_reads"] = "raw_reads"
+    compression: Compression
+    records_sampled: int = Field(description="Leading records parsed for structure only; sequences/qualities are never stored.")
+    structure_valid: bool
+    header_style: Literal["illumina_casava_1.8", "unrecognized"]
+    read_number_from_header: int | None = None
+    read_number_from_filename: int | None = None
+    lane_from_header: int | None = None
+    lane_from_filename: int | None = None
+    read_length_min: int | None = None
+    read_length_max: int | None = None
+    quality_encoding: Literal["phred33", "ambiguous", "unknown"] = "unknown"
+    end_of_file_verified: bool | None = Field(None, description="BGZF EOF marker check; None for plain gzip (not verifiable without full decompression).")
+    mate_asset_id: str | None = None
+    instrument: str | None = restricted(None)
+    flowcell: str | None = restricted(None)
+
+
 class ChecksumSidecarMetadata(BaseModel):
     kind: Literal["checksum_sidecar"] = "checksum_sidecar"
     algorithm: Literal["md5", "sha256"]
@@ -306,6 +330,7 @@ AssetMetadata = Annotated[
     | SequenceDictionaryMetadata
     | PhenotypeMetadata
     | PedigreeMetadata
+    | FastqMetadata
     | ChecksumSidecarMetadata,
     Field(discriminator="kind"),
 ]
@@ -409,6 +434,7 @@ class PrimaryInputs(BaseModel):
     primary_variant_asset_id: str | None = Field(None, description="Set only when unambiguous (exactly one) or explicitly configured.")
     primary_variant_selection: Literal["only_candidate", "configured", "ambiguous", "none"] = "none"
     alignment_asset_ids: list[str] = Field(default_factory=list)
+    raw_read_asset_ids: list[str] = Field(default_factory=list)
     reference_sequence_asset_ids: list[str] = Field(default_factory=list)
     phenotype_asset_ids: list[str] = Field(default_factory=list)
     pedigree_asset_ids: list[str] = Field(default_factory=list)

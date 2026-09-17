@@ -29,7 +29,8 @@ EXTENSION_FORMATS: dict[str, Format] = {
     ".tbi": Format.TBI, ".csi": Format.CSI, ".bai": Format.BAI, ".crai": Format.CRAI, ".gzi": Format.GZI,
     ".fa": Format.FASTA, ".fasta": Format.FASTA, ".fna": Format.FASTA,
     ".fa.gz": Format.FASTA, ".fasta.gz": Format.FASTA, ".fna.gz": Format.FASTA,
-    ".fai": Format.FAI, ".dict": Format.SEQUENCE_DICTIONARY,
+    ".fastq": Format.FASTQ, ".fq": Format.FASTQ, ".fastq.gz": Format.FASTQ, ".fq.gz": Format.FASTQ,
+    ".docx": Format.DOCX, ".fai": Format.FAI, ".dict": Format.SEQUENCE_DICTIONARY,
     ".ped": Format.PED, ".fam": Format.PED,
     ".json": Format.JSON, ".csv": Format.CSV, ".tsv": Format.TSV,
     ".txt": Format.TEXT, ".md": Format.TEXT, ".obo": Format.TEXT,
@@ -37,6 +38,10 @@ EXTENSION_FORMATS: dict[str, Format] = {
 }
 
 TEXTUAL_COMPATIBLE = {Format.TEXT, Format.TSV, Format.CSV}
+# Suffixes browsers/transfer clients append to files that have not finished downloading.
+PARTIAL_DOWNLOAD_SUFFIXES = (".download-part", ".crdownload", ".partial", ".part", ".download", ".aria2", ".!ut", ".filepart")
+APPLEDOUBLE_MAGIC = b"\x00\x05\x16\x07"
+
 PLAIN_TEXT_KINDS = TEXTUAL_COMPATIBLE | {Format.PED, Format.JSON, Format.CHECKSUM_MD5, Format.CHECKSUM_SHA256}
 
 _FASTA_SEQ = re.compile(r"^[A-Za-z*\-.]+$")
@@ -52,8 +57,18 @@ class Sniff:
     note: str | None = None
 
 
-def split_extension(filename: str) -> str:
+def partial_download_suffix(filename: str) -> str | None:
     lower = filename.lower()
+    return next((s for s in PARTIAL_DOWNLOAD_SUFFIXES if lower.endswith(s)), None)
+
+
+def strip_partial_suffix(filename: str) -> str:
+    suffix = partial_download_suffix(filename)
+    return filename[: -len(suffix)] if suffix else filename
+
+
+def split_extension(filename: str) -> str:
+    lower = strip_partial_suffix(filename).lower()
     best = ""
     for ext in EXTENSION_FORMATS:
         if lower.endswith(ext) and len(ext) > len(best):
@@ -130,6 +145,8 @@ def _classify_text(text: str, full: bool, path: Path, ext_fmt: Format | None) ->
         return Format.VCF
     if first.startswith(">") and len(lines) > 1 and _FASTA_SEQ.match(lines[1].strip()):
         return Format.FASTA
+    if _looks_like_fastq(lines):
+        return Format.FASTQ
     if first.startswith(("@HD", "@SQ")):
         return Format.SEQUENCE_DICTIONARY if all(ln.startswith("@") for ln in lines) else Format.SAM
     if len(lines) == 1 and _MD5_LINE.match(first.strip()):
@@ -149,6 +166,23 @@ def _classify_text(text: str, full: bool, path: Path, ext_fmt: Format | None) ->
     if _looks_like_ped(lines, ext_fmt):
         return Format.PED
     return _delimited(lines)
+
+
+def _looks_like_fastq(lines: list[str]) -> bool:
+    records = [lines[i : i + 4] for i in range(0, min(len(lines), 40) - 3, 4)]
+    if not records:
+        return False
+    return all(r[0].startswith("@") and r[2].startswith("+") and len(r[1]) == len(r[3]) for r in records)
+
+
+def _is_docx(path: Path) -> bool:
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(path) as zf:
+            return "word/document.xml" in zf.namelist()
+    except (zipfile.BadZipFile, OSError):
+        return False
 
 
 def _looks_like_fai(lines: list[str]) -> bool:
@@ -196,6 +230,10 @@ def sniff(path: Path, ext_fmt: Format | None) -> Sniff:
         return Sniff(Format.BAI, Compression.NONE)
     if raw[:4] == b"%PDF":
         return Sniff(Format.PDF, Compression.NONE)
+    if raw[:4] == APPLEDOUBLE_MAGIC:
+        return Sniff(Format.APPLEDOUBLE, Compression.NONE)
+    if raw[:4] == b"PK\x03\x04" and _is_docx(path):
+        return Sniff(Format.DOCX, Compression.FORMAT_NATIVE)
 
     if raw[:2] == b"\x1f\x8b":
         bgzf = _is_bgzf(raw)
@@ -218,6 +256,8 @@ def sniff(path: Path, ext_fmt: Format | None) -> Sniff:
             return Sniff(Format.VCF, compression, eof)
         if text.startswith(">"):
             return Sniff(Format.FASTA, compression, eof)
+        if _looks_like_fastq(lines):
+            return Sniff(Format.FASTQ, compression, eof)
         if lines and all(len(ln.split("\t")) == 6 and all(c.lstrip("-").isdigit() for c in ln.split("\t")) for ln in lines[:200]):
             return Sniff(Format.CRAI, compression, eof)
         return Sniff(Format.GZIP_UNKNOWN, compression, eof, note="gzip-compressed content of unrecognized type")

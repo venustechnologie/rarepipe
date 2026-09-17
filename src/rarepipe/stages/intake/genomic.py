@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import re
+import zlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -21,6 +23,7 @@ from rarepipe.stages.intake.manifest import (
     Compression,
     Contig,
     FastaMetadata,
+    FastqMetadata,
     Format,
     HeaderDeclarations,
     IndexStatus,
@@ -241,6 +244,69 @@ def inspect_alignments(path: Path, asset_id: str, fmt: Format, eof_present: bool
         out.issues.append(_issue(IssueCode.READ_GROUP_SAMPLE_CONFLICT, Severity.ACTION_REQUIRED,
                                  f"Read groups name {len(labels)} different samples within one alignment file.", asset_id,
                                  "Confirm whether this file intentionally merges multiple samples."))
+    return out
+
+
+# ── FASTQ ────────────────────────────────────────────────────────────────────
+
+FASTQ_SAMPLE_RECORDS = 1000
+# @<instrument>:<run>:<flowcell>:<lane>:<tile>:<x>:<y> <read>:<filtered>:<control>:<index>
+_CASAVA18 = re.compile(r"^@(?P<instrument>[^:\s]+):(?P<run>\d+):(?P<flowcell>[^:\s]+):(?P<lane>\d+):\d+:\d+:\d+(?:\s+(?P<read>[123]):[YN]:\d+)?")
+
+
+def inspect_fastq(path: Path, asset_id: str, compression: Compression, eof_present: bool | None,
+                  name_hint: tuple[int | None, int | None] | None, mate_asset_id: str | None) -> Inspection:
+    """Structure of the leading records only. Sequence, quality and index strings are never retained."""
+    out = Inspection()
+    opener = gzip.open if compression in (Compression.GZIP, Compression.BGZF) else open
+    n, valid, lengths, min_q, max_q = 0, True, [], 255, 0
+    header = None
+    try:
+        with opener(path, "rb") as fh:
+            while n < FASTQ_SAMPLE_RECORDS:
+                h = fh.readline()
+                if not h:
+                    break
+                seq, plus, qual = fh.readline().rstrip(b"\r\n"), fh.readline(), fh.readline().rstrip(b"\r\n")
+                if not h.startswith(b"@") or not plus.startswith(b"+") or len(seq) != len(qual) or not seq:
+                    valid = False
+                    break
+                if header is None:
+                    header = h.decode("ascii", "replace").rstrip()
+                lengths.append(len(seq))
+                min_q, max_q = min(min_q, min(qual)), max(max_q, max(qual))
+                n += 1
+    except (OSError, EOFError, ValueError, zlib.error) as exc:
+        out.issues.append(_issue(IssueCode.FASTQ_PARSE_FAILED, Severity.BLOCKER, f"FASTQ could not be decompressed/read ({type(exc).__name__}).",
+                                 asset_id, "Re-transfer the file and verify its checksum against the source."))
+        valid = False
+
+    m = _CASAVA18.match(header or "")
+    read_hdr = int(m.group("read")) if m and m.group("read") else None
+    lane_hdr = int(m.group("lane")) if m else None
+    read_fn, lane_fn = name_hint or (None, None)
+    encoding = "unknown" if not n else "phred33" if min_q < 59 else "ambiguous"  # chars below ';' only exist in Phred+33
+    out.metadata = FastqMetadata(
+        compression=compression, records_sampled=n, structure_valid=valid and n > 0,
+        header_style="illumina_casava_1.8" if m else "unrecognized",
+        read_number_from_header=read_hdr, read_number_from_filename=read_fn, lane_from_header=lane_hdr, lane_from_filename=lane_fn,
+        read_length_min=min(lengths) if lengths else None, read_length_max=max(lengths) if lengths else None,
+        quality_encoding=encoding, end_of_file_verified=eof_present if compression == Compression.BGZF else None, mate_asset_id=mate_asset_id,
+        instrument=m.group("instrument") if m else None, flowcell=m.group("flowcell") if m else None,
+    )
+    if not valid and not out.issues:
+        out.issues.append(_issue(IssueCode.FASTQ_PARSE_FAILED, Severity.BLOCKER, "Leading records do not have valid 4-line FASTQ structure.",
+                                 asset_id, "Verify file integrity."))
+    if read_hdr and read_fn and read_hdr != read_fn:
+        out.issues.append(_issue(IssueCode.FASTQ_READ_NUMBER_MISMATCH, Severity.ACTION_REQUIRED,
+                                 f"Filename marks this as read {read_fn} but record headers say read {read_hdr}.", asset_id,
+                                 "Confirm mate assignment before any alignment."))
+    if lane_hdr and lane_fn and lane_hdr != lane_fn:
+        out.issues.append(_issue(IssueCode.FASTQ_READ_NUMBER_MISMATCH, Severity.WARNING,
+                                 f"Filename lane ({lane_fn}) differs from record-header lane ({lane_hdr}).", asset_id))
+    if compression == Compression.BGZF and eof_present is False:
+        out.issues.append(_issue(IssueCode.BGZF_EOF_MISSING, Severity.BLOCKER, "BGZF end-of-file marker is absent; the file is likely truncated.", asset_id,
+                                 "Re-transfer the file and verify its checksum against the source."))
     return out
 
 

@@ -7,8 +7,10 @@ recorded only where the source states it explicitly.
 
 from __future__ import annotations
 
+import html
 import json
 import re
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,6 +28,19 @@ POLARITY_COLUMNS = {"excluded", "negated", "observed", "present", "status", "pol
 NEGATION_PREFIX = re.compile(r"^\s*(NOT\s+|!)", re.I)  # "- HP:..." is a bullet, not a negation
 
 MAX_TEXT_BYTES = 16 * 1024 * 1024
+# In prose, only a separator-bearing token is plausibly an intended HPO ID ("HPO 2020" is not).
+DOCX_CANDIDATE = re.compile(r"(?<![A-Za-z0-9])HPO?[:_]\s?\d{3,9}(?![0-9])", re.I)
+
+
+def docx_text(path: Path) -> str:
+    """Paragraph text of word/document.xml. Bounded; never logged."""
+    with zipfile.ZipFile(path) as zf:
+        info = zf.getinfo("word/document.xml")
+        if info.file_size > MAX_TEXT_BYTES * 4:
+            raise ValueError("document.xml too large")
+        xml = zf.read(info).decode("utf-8", "replace")
+    xml = re.sub(r"</w:p>|<w:br[^>]*/>|<w:tab[^>]*/>", "\n", xml)
+    return html.unescape(re.sub(r"<[^>]+>", "", xml))
 LINE_LIST_THRESHOLD = 0.5
 
 
@@ -45,6 +60,11 @@ class _Tally:
 
 
 def looks_like_phenotype(path: Path, detected: Format) -> bool:
+    if detected == Format.DOCX:
+        try:
+            return bool(STRICT_TOKEN.search(docx_text(path)))
+        except (OSError, ValueError, KeyError, zipfile.BadZipFile):
+            return False
     if detected not in (Format.TEXT, Format.TSV, Format.CSV, Format.JSON):
         return False
     if path.stat().st_size > MAX_TEXT_BYTES:
@@ -133,9 +153,14 @@ def inspect_phenotype(path: Path, asset_id: str, detected: Format) -> tuple[Phen
     issues: list[Issue] = []
     tally = _Tally()
     try:
-        text = path.read_text(encoding="utf-8")
+        text = "" if detected == Format.DOCX else path.read_text(encoding="utf-8")
         if detected == Format.JSON:
             parser = _parse_json(json.loads(text), tally)
+        elif detected == Format.DOCX:
+            for n, line in enumerate(docx_text(path).splitlines(), start=1):
+                for m in DOCX_CANDIDATE.finditer(line):
+                    tally.candidate(m.group(0).replace(" ", ""), "unspecified", n)
+            parser = "docx_text_scan"
         else:
             lines = text.splitlines()
             data_lines = [ln for ln in lines if ln.strip()]
@@ -143,7 +168,7 @@ def inspect_phenotype(path: Path, asset_id: str, detected: Format) -> tuple[Phen
                 parser = _parse_delimited(data_lines, "\t" if detected == Format.TSV else ",", tally)
             else:
                 parser = _parse_lines(lines, tally)
-    except (OSError, ValueError, UnicodeDecodeError) as exc:
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, zipfile.BadZipFile) as exc:
         issues.append(Issue(code=IssueCode.HPO_PARSE_FAILED, severity=Severity.ACTION_REQUIRED, asset_ids=[asset_id],
                             message=f"Phenotype file could not be parsed ({type(exc).__name__}).", suggested_action="Verify file encoding/structure."))
         return None, issues

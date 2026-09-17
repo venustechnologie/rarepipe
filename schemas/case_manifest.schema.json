@@ -246,6 +246,7 @@
                   "checksum_sidecar": "#/$defs/ChecksumSidecarMetadata",
                   "pedigree": "#/$defs/PedigreeMetadata",
                   "phenotype": "#/$defs/PhenotypeMetadata",
+                  "raw_reads": "#/$defs/FastqMetadata",
                   "reference_sequence": "#/$defs/FastaMetadata",
                   "sequence_dictionary": "#/$defs/SequenceDictionaryMetadata",
                   "variants": "#/$defs/VcfMetadata"
@@ -270,6 +271,9 @@
                 },
                 {
                   "$ref": "#/$defs/PedigreeMetadata"
+                },
+                {
+                  "$ref": "#/$defs/FastqMetadata"
                 },
                 {
                   "$ref": "#/$defs/ChecksumSidecarMetadata"
@@ -603,6 +607,177 @@
       "title": "FastaMetadata",
       "type": "object"
     },
+    "FastqMetadata": {
+      "properties": {
+        "kind": {
+          "const": "raw_reads",
+          "default": "raw_reads",
+          "title": "Kind",
+          "type": "string"
+        },
+        "compression": {
+          "$ref": "#/$defs/Compression"
+        },
+        "records_sampled": {
+          "description": "Leading records parsed for structure only; sequences/qualities are never stored.",
+          "title": "Records Sampled",
+          "type": "integer"
+        },
+        "structure_valid": {
+          "title": "Structure Valid",
+          "type": "boolean"
+        },
+        "header_style": {
+          "enum": [
+            "illumina_casava_1.8",
+            "unrecognized"
+          ],
+          "title": "Header Style",
+          "type": "string"
+        },
+        "read_number_from_header": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Read Number From Header"
+        },
+        "read_number_from_filename": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Read Number From Filename"
+        },
+        "lane_from_header": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lane From Header"
+        },
+        "lane_from_filename": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lane From Filename"
+        },
+        "read_length_min": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Read Length Min"
+        },
+        "read_length_max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Read Length Max"
+        },
+        "quality_encoding": {
+          "default": "unknown",
+          "enum": [
+            "phred33",
+            "ambiguous",
+            "unknown"
+          ],
+          "title": "Quality Encoding",
+          "type": "string"
+        },
+        "end_of_file_verified": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "BGZF EOF marker check; None for plain gzip (not verifiable without full decompression).",
+          "title": "End Of File Verified"
+        },
+        "mate_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mate Asset Id"
+        },
+        "instrument": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Instrument"
+        },
+        "flowcell": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Flowcell"
+        }
+      },
+      "required": [
+        "compression",
+        "records_sampled",
+        "structure_valid",
+        "header_style"
+      ],
+      "title": "FastqMetadata",
+      "type": "object"
+    },
     "Fingerprints": {
       "properties": {
         "input_fingerprint": {
@@ -635,6 +810,7 @@
         "BAM",
         "CRAM",
         "SAM",
+        "FASTQ",
         "TBI",
         "CSI",
         "BAI",
@@ -649,6 +825,8 @@
         "TSV",
         "TEXT",
         "PDF",
+        "DOCX",
+        "APPLEDOUBLE",
         "CHECKSUM_MD5",
         "CHECKSUM_SHA256",
         "GZIP_UNKNOWN",
@@ -960,6 +1138,7 @@
         "FILE_UNREADABLE",
         "FORMAT_EXTENSION_MISMATCH",
         "EMPTY_FILE",
+        "INCOMPLETE_DOWNLOAD",
         "SYMLINK_OUTSIDE_CASE_ROOT",
         "SYMLINKED_DIRECTORY_NOT_TRAVERSED",
         "ADDITIONAL_METADATA_DETECTED",
@@ -970,6 +1149,12 @@
         "PRIMARY_VARIANT_ASSET_AMBIGUOUS",
         "CONFIGURED_ASSET_NOT_FOUND",
         "OPTIONAL_ALIGNMENTS_SUPPLIED",
+        "OPTIONAL_RAW_READS_SUPPLIED",
+        "FASTQ_PARSE_FAILED",
+        "FASTQ_MATE_MISSING",
+        "FASTQ_READ_NUMBER_MISMATCH",
+        "FASTQ_SAMPLE_UNDECLARED",
+        "FASTQ_INTEGRITY_UNVERIFIED",
         "VCF_PARSE_FAILED",
         "VCF_NO_RECORDS",
         "VCF_NO_SAMPLES",
@@ -1005,6 +1190,7 @@
         "HPO_TERM_MALFORMED",
         "HPO_NO_VALID_TERMS",
         "HPO_PARSE_FAILED",
+        "CLINICAL_DOCUMENT_WITHOUT_HPO",
         "PEDIGREE_UNAVAILABLE",
         "PEDIGREE_PARSE_FAILED",
         "PEDIGREE_INCONSISTENT",
@@ -1017,6 +1203,7 @@
       "enum": [
         "genomic_variants",
         "aligned_reads",
+        "raw_reads",
         "variant_index",
         "alignment_index",
         "reference_sequence",
@@ -1154,7 +1341,8 @@
             "line_list",
             "delimited_table",
             "phenopacket_json",
-            "json_scan"
+            "json_scan",
+            "docx_text_scan"
           ],
           "title": "Parser",
           "type": "string"
@@ -1313,6 +1501,13 @@
             "type": "string"
           },
           "title": "Alignment Asset Ids",
+          "type": "array"
+        },
+        "raw_read_asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Raw Read Asset Ids",
           "type": "array"
         },
         "reference_sequence_asset_ids": {
@@ -1574,6 +1769,7 @@
         "BGZF_INDEX_OF",
         "SEQUENCE_DICTIONARY_OF",
         "CHECKSUM_OF",
+        "MATE_OF",
         "CANDIDATE_REFERENCE_FOR",
         "VERIFIED_REFERENCE_FOR"
       ],

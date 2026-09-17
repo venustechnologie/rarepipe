@@ -76,6 +76,10 @@ no second list to maintain.
 | all files | streamed SHA-256, content sniffing (magic bytes / first decompressed block), extension-vs-content comparison | copying, renaming, recompressing |
 | VCF/BCF | header (version, samples, contigs+lengths, `##reference`, FILTER/INFO/FORMAT IDs, tool lines), BGZF EOF, index loadability, whether the first record parses (discarded) | iterating, filtering, annotating, ranking variants |
 | BAM/CRAM | header (`@HD SO`, `@SQ` incl. M5/UR/AS, `@RG` SM/PL, `@PG`), `samtools quickcheck`, EOF, index loadability | reading alignments, coverage, locus inspection, decoding CRAM |
+| FASTQ | structure of the first 1,000 records (4-line shape, seq/qual lengths, Phred+33 range), Illumina header lane/read number vs filename, R1↔R2 mate pairing by naming convention, BGZF EOF when applicable | storing reads, counting all reads, decompressing whole files |
+| DOCX | text of `word/document.xml` scanned for HPO identifiers | interpreting prose |
+| partial downloads | `.download-part`, `.crdownload`, `.part`, … → BLOCKER `INCOMPLETE_DOWNLOAD` | — |
+| macOS `._` files | recognised as AppleDouble system files (exFAT drives); no format checks | — |
 | FASTA | contig names/lengths (from `.fai`, or a streamed scan); per-sequence MD5 **only when a CRAM is present** | creating `.fai`/`.dict` |
 | HPO | identifier syntax (`HP:` + 7 digits), explicit polarity (phenopacket `excluded`, polarity column, `NOT`/`!` prefix) | ontology validation, parent expansion, similarity |
 | pedigree | PED/FAM rows, VCF `##PEDIGREE` Father/Mother | any relationship not explicitly written |
@@ -127,6 +131,8 @@ but not readable as one), `CHECKSUM_SIDECAR_MISMATCH` (on a primary genomic file
 - A `.gzi` for a BGZF FASTA is linked but not validated. Plain-gzip FASTA cannot be indexed and is scanned instead.
 - Pedigree: PED/FAM and VCF `##PEDIGREE` only. Phenopacket `subject`/family blocks and free-text clinical metadata are recorded as assets, not parsed for relationships.
 - HPO detection in free text needs ≥50% of non-comment lines to carry an HPO-like token; a README that mentions a term is not treated as a phenotype file.
+- FASTQ: plain-gzip files cannot be checked for truncation without full decompression (reported as `FASTQ_INTEGRITY_UNVERIFIED`); FASTQs carry no sample metadata, so their link to the VCF sample is never asserted. Instrument/flowcell IDs are private-only.
+- DOCX: only explicit `HP:nnnnnnn` identifiers are extracted; clinical prose is left for a later stage.
 - Index staleness (index older than data) is not checked — mtimes are unreliable after data transfers. Index *loadability* is checked.
 - The first VCF record is parsed to prove the body is readable; a corrupt record deeper in the file will not be detected by intake.
 - `asset_id` derives from the relative path, so a rename changes the ID (content identity is `checksum_sha256`).

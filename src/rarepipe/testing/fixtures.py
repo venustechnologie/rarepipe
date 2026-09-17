@@ -256,6 +256,54 @@ def md5_sidecar(root: Path) -> None:
     write_hpo(root / "hpo.txt", VALID_HPO)
 
 
+def write_fastq_gz(path: Path, *, lane: int, read: int, n: int = 50, seed: str = "fq", truncate: bool = False) -> Path:
+    import gzip
+
+    rng = _rng(f"{seed}-{lane}-{read}")
+    lines = []
+    for i in range(n):
+        lines.append(f"@SYNTHSEQ01:7:SYNTHFLOWCELL:{lane}:1101:{1000 + i}:{2000 + i} {read}:N:0:ACGTACGT\n{_random_seq(rng, 100)}\n+\n{'F' * 100}\n")
+    data = gzip.compress("".join(lines).encode())
+    path.write_bytes(data[: len(data) // 2] if truncate else data)
+    return path
+
+
+def write_docx(path: Path, paragraphs: list[str]) -> Path:
+    import zipfile
+    from xml.sax.saxutils import escape
+
+    body = "".join(f"<w:p><w:r><w:t>{escape(p)}</w:t></w:r></w:p>" for p in paragraphs)
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("[Content_Types].xml", '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+        zf.writestr("word/document.xml", f'<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}</w:body></w:document>')
+    return path
+
+
+def _appledouble(path: Path) -> None:
+    path.write_bytes(b"\x00\x05\x16\x07\x00\x02\x00\x00" + b"Mac OS X        " + b"\x00" * 4072)
+
+
+def fastq_exfat_partial(root: Path) -> None:
+    """Mirrors a real-world shape: VCF+tbi, paired-end FASTQ over two lanes with one mate still
+    downloading, a prose clinical .docx without HPO IDs, and macOS ._ files from an exFAT drive."""
+    write_vcf(root / "case.vcf.gz", samples=[PROBAND], contigs=_contigs(GenomeBuild.GRCH38, prefix=""))
+    stem = "SYNTHLIB_S1"
+    write_fastq_gz(root / f"{stem}_L001_R1_001.fastq.gz", lane=1, read=1)
+    write_fastq_gz(root / f"{stem}_L001_R2_001.fastq.gz", lane=1, read=2)
+    write_fastq_gz(root / f"{stem}_L002_R1_001.fastq.gz", lane=2, read=1)
+    write_fastq_gz(root / f"{stem}_L002_R2_001.fastq.gz.download-part", lane=2, read=2, truncate=True)
+    write_docx(root / "Clinical_Phenotype.docx", ["Clinical summary", "Developmental delay noted in infancy.", "No structured terms supplied."])
+    for name in ("case.vcf.gz", "case.vcf.gz.tbi", "Clinical_Phenotype.docx", f"{stem}_L001_R1_001.fastq.gz", "orphan_L009_R1_001.fastq.gz.download-part"):
+        _appledouble(root / f"._{name}")
+
+
+def fastq_complete_docx_hpo(root: Path) -> None:
+    write_vcf(root / "case.vcf.gz", samples=[PROBAND], contigs=_contigs(GenomeBuild.GRCH38, prefix=""))
+    write_fastq_gz(root / "SYNTHLIB_S1_L001_R1_001.fastq.gz", lane=1, read=1)
+    write_fastq_gz(root / "SYNTHLIB_S1_L001_R2_001.fastq.gz", lane=1, read=2)
+    write_docx(root / "phenotype.docx", ["Phenotype", "Seizures (HP:0001250)", "Global developmental delay HP:0001263", "Typo HP:12345"])
+
+
 def no_genomic_input(root: Path) -> None:
     write_hpo(root / "hpo.txt", VALID_HPO)
 
@@ -275,6 +323,8 @@ CASES: dict[str, Callable] = {
     "L_extension_mismatch": extension_mismatch,
     "M_md5_sidecar": md5_sidecar,
     "N_no_genomic_input": no_genomic_input,
+    "O_fastq_exfat_partial": fastq_exfat_partial,
+    "P_fastq_complete_docx_hpo": fastq_complete_docx_hpo,
 }
 
 

@@ -101,7 +101,7 @@ def test_shareable_outputs_leak_nothing_restricted(build_case, intake, tmp_path,
     forbidden = [str(tmp_path), str(tmp_path.resolve()), str(case), str(case.resolve())]
     for f in ("intake_report.md", "case_manifest.sanitized.json", "intake.log"):
         text = (result.run_dir / f).read_text()
-        for label in fixtures.ALL_SOURCE_LABELS:
+        for label in [*fixtures.ALL_SOURCE_LABELS, "SYNTHSEQ01", "SYNTHFLOWCELL"]:
             assert label.lower() not in text.lower(), f"{f} leaks a source sample label"
         for path in forbidden:
             assert path not in text, f"{f} leaks an absolute path"
