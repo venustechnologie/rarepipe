@@ -1,0 +1,138 @@
+{
+  "$defs": {
+    "Assertion": {
+      "properties": {
+        "assertion_id": {
+          "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+          "title": "Assertion Id",
+          "type": "string"
+        },
+        "subject": {
+          "$ref": "#/$defs/Subject"
+        },
+        "predicate": {
+          "enum": [
+            "role",
+            "phenotype_polarity",
+            "sample_linkage"
+          ],
+          "title": "Predicate",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "asserted_by": {
+          "title": "Asserted By",
+          "type": "string"
+        },
+        "asserted_at": {
+          "title": "Asserted At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "assertion_id",
+        "subject",
+        "predicate",
+        "value",
+        "evidence",
+        "asserted_by",
+        "asserted_at"
+      ],
+      "title": "Assertion",
+      "type": "object"
+    },
+    "Evidence": {
+      "properties": {
+        "type": {
+          "enum": [
+            "organizer_documentation",
+            "challenge_documentation",
+            "clinical_record",
+            "operator_verification",
+            "other"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "reference": {
+          "title": "Reference",
+          "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "type",
+        "reference"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Subject": {
+      "properties": {
+        "type": {
+          "enum": [
+            "sample",
+            "phenotype_set",
+            "hpo_term",
+            "raw_read_set"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "id": {
+          "description": "SAMPLE_nnn | ASSET_* | HP:nnnnnnn | 'ALL' (phenotype_set / raw_read_set)",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "Subject",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "assertions": {
+      "items": {
+        "$ref": "#/$defs/Assertion"
+      },
+      "title": "Assertions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_id",
+    "assertions"
+  ],
+  "title": "CaseAssertions",
+  "type": "object",
+  "$id": "https://rarepipe.local/schemas/case_assertions/1.0.0.json"
+}

@@ -1,0 +1,2000 @@
+{
+  "$defs": {
+    "AnalysisReference": {
+      "properties": {
+        "status": {
+          "enum": [
+            "not_yet_bound",
+            "unresolved"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "reason"
+      ],
+      "title": "AnalysisReference",
+      "type": "object"
+    },
+    "AppliedAssertion": {
+      "properties": {
+        "assertion_id": {
+          "title": "Assertion Id",
+          "type": "string"
+        },
+        "subject_type": {
+          "title": "Subject Type",
+          "type": "string"
+        },
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "predicate": {
+          "title": "Predicate",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "evidence_type": {
+          "title": "Evidence Type",
+          "type": "string"
+        },
+        "evidence_reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Evidence Reference"
+        },
+        "asserted_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Asserted By"
+        },
+        "asserted_at": {
+          "title": "Asserted At",
+          "type": "string"
+        },
+        "applied": {
+          "title": "Applied",
+          "type": "boolean"
+        },
+        "rejection_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rejection Reason"
+        }
+      },
+      "required": [
+        "assertion_id",
+        "subject_type",
+        "subject_id",
+        "predicate",
+        "value",
+        "evidence_type",
+        "asserted_at",
+        "applied"
+      ],
+      "title": "AppliedAssertion",
+      "type": "object"
+    },
+    "Capability": {
+      "properties": {
+        "capability": {
+          "title": "Capability",
+          "type": "string"
+        },
+        "ready": {
+          "enum": [
+            "yes",
+            "partial",
+            "no"
+          ],
+          "title": "Ready",
+          "type": "string"
+        },
+        "blocking_reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blocking Reasons",
+          "type": "array"
+        },
+        "conditions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conditions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "capability",
+        "ready"
+      ],
+      "title": "Capability",
+      "type": "object"
+    },
+    "CarriedIssue": {
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "origin_stage": {
+          "enum": [
+            "case_intake",
+            "case_normalization"
+          ],
+          "title": "Origin Stage",
+          "type": "string"
+        },
+        "resolution": {
+          "enum": [
+            "unresolved",
+            "addressed_by_assertion",
+            "informational"
+          ],
+          "title": "Resolution",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Asset Ids",
+          "type": "array"
+        },
+        "sample_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sample Ids",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "suggested_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Action"
+        },
+        "assertion_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Assertion Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "origin_stage",
+        "resolution",
+        "message"
+      ],
+      "title": "CarriedIssue",
+      "type": "object"
+    },
+    "ContigBinding": {
+      "properties": {
+        "source_name": {
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Source Length"
+        },
+        "contig_class": {
+          "$ref": "#/$defs/ContigClass"
+        },
+        "canonical_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Id"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "aliases": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "object"
+        },
+        "basis": {
+          "enum": [
+            "assembly_report_name_and_length",
+            "assembly_report_name_only",
+            "name_heuristic",
+            "unbound"
+          ],
+          "title": "Basis",
+          "type": "string"
+        },
+        "length_conflict": {
+          "default": false,
+          "title": "Length Conflict",
+          "type": "boolean"
+        },
+        "records": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Per-contig record count (e.g. chrY counts reveal biology) \u2014 private only.",
+          "restricted": true,
+          "title": "Records"
+        }
+      },
+      "required": [
+        "source_name",
+        "source_length",
+        "contig_class",
+        "basis"
+      ],
+      "title": "ContigBinding",
+      "type": "object"
+    },
+    "ContigClass": {
+      "enum": [
+        "primary_chromosome",
+        "mitochondrial",
+        "alternate_locus",
+        "unlocalized",
+        "unplaced",
+        "patch",
+        "decoy_or_other",
+        "unknown"
+      ],
+      "title": "ContigClass",
+      "type": "string"
+    },
+    "ContigSummary": {
+      "properties": {
+        "source_scheme": {
+          "title": "Source Scheme",
+          "type": "string"
+        },
+        "declared": {
+          "title": "Declared",
+          "type": "integer"
+        },
+        "with_records": {
+          "title": "With Records",
+          "type": "integer"
+        },
+        "by_class": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "By Class",
+          "type": "object"
+        },
+        "records_by_class": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Records By Class",
+          "type": "object"
+        },
+        "by_basis": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "By Basis",
+          "type": "object"
+        },
+        "length_conflicts": {
+          "title": "Length Conflicts",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "source_scheme",
+        "declared",
+        "with_records",
+        "by_class",
+        "records_by_class",
+        "by_basis",
+        "length_conflicts"
+      ],
+      "title": "ContigSummary",
+      "type": "object"
+    },
+    "Execution": {
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "FilterCharacterization": {
+      "properties": {
+        "definitions": {
+          "items": {
+            "$ref": "#/$defs/FilterDefinition"
+          },
+          "title": "Definitions",
+          "type": "array"
+        },
+        "pass_records": {
+          "title": "Pass Records",
+          "type": "integer"
+        },
+        "missing_filter_records": {
+          "description": "FILTER '.' \u2014 filters not applied/recorded",
+          "title": "Missing Filter Records",
+          "type": "integer"
+        },
+        "non_pass_records": {
+          "title": "Non Pass Records",
+          "type": "integer"
+        },
+        "records_by_filter": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Records By Filter",
+          "type": "object"
+        },
+        "records_with_multiple_filters": {
+          "title": "Records With Multiple Filters",
+          "type": "integer"
+        },
+        "undeclared_filters_used": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Undeclared Filters Used",
+          "type": "array"
+        },
+        "note": {
+          "default": "Non-PASS records are preserved and remain part of the case; FILTER is evidence, not an exclusion rule.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "definitions",
+        "pass_records",
+        "missing_filter_records",
+        "non_pass_records",
+        "records_by_filter",
+        "records_with_multiple_filters",
+        "undeclared_filters_used"
+      ],
+      "title": "FilterCharacterization",
+      "type": "object"
+    },
+    "FilterDefinition": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Description"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "title": "FilterDefinition",
+      "type": "object"
+    },
+    "FormatFieldStat": {
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "present_in_header": {
+          "title": "Present In Header",
+          "type": "boolean"
+        },
+        "header_number": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Header Number"
+        },
+        "header_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Header Type"
+        },
+        "records_declaring": {
+          "title": "Records Declaring",
+          "type": "integer"
+        },
+        "records_populated": {
+          "title": "Records Populated",
+          "type": "integer"
+        },
+        "populated_fraction": {
+          "title": "Populated Fraction",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "present_in_header",
+        "records_declaring",
+        "records_populated",
+        "populated_fraction"
+      ],
+      "title": "FormatFieldStat",
+      "type": "object"
+    },
+    "GenomeSection": {
+      "properties": {
+        "reference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReferenceBinding"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "variant_source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VcfCharacterization"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "samples": {
+          "items": {
+            "$ref": "#/$defs/SampleIdentity"
+          },
+          "title": "Samples",
+          "type": "array"
+        }
+      },
+      "required": [
+        "reference",
+        "variant_source",
+        "samples"
+      ],
+      "title": "GenomeSection",
+      "type": "object"
+    },
+    "GenotypeStates": {
+      "properties": {
+        "hom_ref": {
+          "default": 0,
+          "title": "Hom Ref",
+          "type": "integer"
+        },
+        "het": {
+          "default": 0,
+          "title": "Het",
+          "type": "integer"
+        },
+        "hom_alt": {
+          "default": 0,
+          "title": "Hom Alt",
+          "type": "integer"
+        },
+        "het_non_ref": {
+          "default": 0,
+          "title": "Het Non Ref",
+          "type": "integer"
+        },
+        "haploid_called": {
+          "default": 0,
+          "title": "Haploid Called",
+          "type": "integer"
+        },
+        "missing": {
+          "default": 0,
+          "title": "Missing",
+          "type": "integer"
+        },
+        "partially_missing": {
+          "default": 0,
+          "title": "Partially Missing",
+          "type": "integer"
+        },
+        "ploidy_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Ploidy Counts",
+          "type": "object"
+        }
+      },
+      "title": "GenotypeStates",
+      "type": "object"
+    },
+    "HpoTermNormalized": {
+      "properties": {
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Source Id"
+        },
+        "canonical_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Canonical Id"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Label"
+        },
+        "consider_ids": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Consider Ids",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "secondary_id",
+            "obsolete_replaced",
+            "obsolete_no_replacement",
+            "unknown",
+            "not_validated"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "replacement_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "ontology_replaced_by",
+                "ontology_alt_id"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Replacement Basis"
+        },
+        "branches": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "polarity": {
+          "enum": [
+            "unspecified",
+            "observed",
+            "excluded"
+          ],
+          "title": "Polarity",
+          "type": "string"
+        },
+        "polarity_basis": {
+          "title": "Polarity Basis",
+          "type": "string"
+        },
+        "source_asset_id": {
+          "title": "Source Asset Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "polarity",
+        "polarity_basis",
+        "source_asset_id"
+      ],
+      "title": "HpoTermNormalized",
+      "type": "object"
+    },
+    "LanePair": {
+      "properties": {
+        "lane": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lane"
+        },
+        "r1_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "R1 Asset Id"
+        },
+        "r2_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "R2 Asset Id"
+        }
+      },
+      "required": [
+        "lane",
+        "r1_asset_id",
+        "r2_asset_id"
+      ],
+      "title": "LanePair",
+      "type": "object"
+    },
+    "Operation": {
+      "properties": {
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Parameters",
+          "type": "object"
+        },
+        "resources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "output": {
+          "title": "Output",
+          "type": "string"
+        },
+        "transforms_source_data": {
+          "default": false,
+          "title": "Transforms Source Data",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "operation",
+        "inputs",
+        "output"
+      ],
+      "title": "Operation",
+      "type": "object"
+    },
+    "PedigreeSection": {
+      "properties": {
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "relationships": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Relationships",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "note"
+      ],
+      "title": "PedigreeSection",
+      "type": "object"
+    },
+    "PhaseInformation": {
+      "properties": {
+        "status": {
+          "enum": [
+            "none",
+            "present"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "kinds": {
+          "description": "gt_phased_separator | phase_set_PS | read_backed_PGT_PID",
+          "items": {
+            "type": "string"
+          },
+          "title": "Kinds",
+          "type": "array"
+        },
+        "het_records": {
+          "title": "Het Records",
+          "type": "integer"
+        },
+        "het_records_gt_phased": {
+          "title": "Het Records Gt Phased",
+          "type": "integer"
+        },
+        "ps_populated_records": {
+          "title": "Ps Populated Records",
+          "type": "integer"
+        },
+        "pgt_populated_records": {
+          "title": "Pgt Populated Records",
+          "type": "integer"
+        },
+        "pid_populated_records": {
+          "title": "Pid Populated Records",
+          "type": "integer"
+        },
+        "note": {
+          "default": "Structural availability only; no phasing was inferred.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "het_records",
+        "het_records_gt_phased",
+        "ps_populated_records",
+        "pgt_populated_records",
+        "pid_populated_records"
+      ],
+      "title": "PhaseInformation",
+      "type": "object"
+    },
+    "PhenotypeSection": {
+      "properties": {
+        "status": {
+          "enum": [
+            "normalized",
+            "not_validated_resource_unavailable",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "ontology": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ontology_release": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ontology Release"
+        },
+        "source_term_count": {
+          "title": "Source Term Count",
+          "type": "integer"
+        },
+        "canonical_term_count": {
+          "title": "Canonical Term Count",
+          "type": "integer"
+        },
+        "status_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Status Counts",
+          "type": "object"
+        },
+        "polarity_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Polarity Counts",
+          "type": "object"
+        },
+        "branch_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Branch Counts",
+          "type": "object"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/HpoTermNormalized"
+          },
+          "title": "Terms",
+          "type": "array"
+        },
+        "note": {
+          "default": "Supplied terms only; no ancestors, descendants, similarity or associations were added.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "ontology",
+        "ontology_release",
+        "source_term_count",
+        "canonical_term_count",
+        "status_counts",
+        "polarity_counts",
+        "branch_counts",
+        "terms"
+      ],
+      "title": "PhenotypeSection",
+      "type": "object"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "source_manifest": {
+          "$ref": "#/$defs/SourceManifest"
+        },
+        "verified_assets": {
+          "items": {
+            "$ref": "#/$defs/VerifiedAsset"
+          },
+          "title": "Verified Assets",
+          "type": "array"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/ResourceRef"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "assertions_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Assertions Sha256"
+        },
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/Operation"
+          },
+          "title": "Operations",
+          "type": "array"
+        },
+        "environment_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Environment Controls",
+          "type": "array"
+        },
+        "case_root_override": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Case Root Override"
+        }
+      },
+      "required": [
+        "software",
+        "source_manifest",
+        "verified_assets",
+        "resources",
+        "assertions_sha256",
+        "operations",
+        "environment_controls"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "RawReadsSection": {
+      "properties": {
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "asset_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Asset Ids",
+          "type": "array"
+        },
+        "lane_pairs": {
+          "items": {
+            "$ref": "#/$defs/LanePair"
+          },
+          "title": "Lane Pairs",
+          "type": "array"
+        },
+        "total_size_bytes": {
+          "title": "Total Size Bytes",
+          "type": "integer"
+        },
+        "sample_linkage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SampleLinkage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "opened_by_this_stage": {
+          "default": false,
+          "title": "Opened By This Stage",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "available",
+        "asset_ids",
+        "lane_pairs",
+        "total_size_bytes",
+        "sample_linkage"
+      ],
+      "title": "RawReadsSection",
+      "type": "object"
+    },
+    "ReferenceBinding": {
+      "properties": {
+        "assembly": {
+          "title": "Assembly",
+          "type": "string"
+        },
+        "assembly_confidence": {
+          "title": "Assembly Confidence",
+          "type": "string"
+        },
+        "assembly_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Assembly Evidence",
+          "type": "array"
+        },
+        "source_contig_scheme": {
+          "title": "Source Contig Scheme",
+          "type": "string"
+        },
+        "assembly_resource": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contig_summary": {
+          "$ref": "#/$defs/ContigSummary"
+        },
+        "contigs": {
+          "items": {
+            "$ref": "#/$defs/ContigBinding"
+          },
+          "title": "Contigs",
+          "type": "array"
+        },
+        "analysis_reference": {
+          "$ref": "#/$defs/AnalysisReference"
+        }
+      },
+      "required": [
+        "assembly",
+        "assembly_confidence",
+        "assembly_evidence",
+        "source_contig_scheme",
+        "assembly_resource",
+        "contig_summary",
+        "contigs",
+        "analysis_reference"
+      ],
+      "title": "ReferenceBinding",
+      "type": "object"
+    },
+    "ResourceRef": {
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "retrieved_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieved At"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "missing",
+            "checksum_mismatch"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Path"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "version",
+        "sha256",
+        "size_bytes",
+        "status"
+      ],
+      "title": "ResourceRef",
+      "type": "object"
+    },
+    "Retention": {
+      "properties": {
+        "classification": {
+          "const": "inherits_case_policy",
+          "default": "inherits_case_policy",
+          "title": "Classification",
+          "type": "string"
+        },
+        "inherited_from_assets": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Inherited From Assets",
+          "type": "array"
+        },
+        "source_retention_classes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Retention Classes",
+          "type": "array"
+        },
+        "review_required": {
+          "default": true,
+          "title": "Review Required",
+          "type": "boolean"
+        },
+        "note": {
+          "default": "Derived from controlled case material. Delete with the case under its data-use terms unless a later review explicitly reclassifies a specific output.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "inherited_from_assets",
+        "source_retention_classes"
+      ],
+      "title": "Retention",
+      "type": "object"
+    },
+    "SampleIdentity": {
+      "properties": {
+        "sample_id": {
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "source_labels": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Source Labels",
+          "type": "array"
+        },
+        "role": {
+          "default": "unknown",
+          "title": "Role",
+          "type": "string"
+        },
+        "role_source": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "externally_asserted"
+          ],
+          "title": "Role Source",
+          "type": "string"
+        },
+        "role_assertion_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role Assertion Id"
+        }
+      },
+      "required": [
+        "sample_id"
+      ],
+      "title": "SampleIdentity",
+      "type": "object"
+    },
+    "SampleLinkage": {
+      "properties": {
+        "status": {
+          "enum": [
+            "unverified",
+            "externally_asserted"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "sample_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Id"
+        },
+        "assertion_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assertion Id"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "reason"
+      ],
+      "title": "SampleLinkage",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "BLOCKER",
+        "ACTION_REQUIRED",
+        "WARNING",
+        "INFO"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "SourceManifest": {
+      "properties": {
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "stage_version": {
+          "title": "Stage Version",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "intake_status": {
+          "title": "Intake Status",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "title": "Manifest Sha256",
+          "type": "string"
+        },
+        "semantic_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Semantic Digest"
+        },
+        "input_fingerprint": {
+          "title": "Input Fingerprint",
+          "type": "string"
+        },
+        "seal_verified": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Seal Verified"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Path"
+        }
+      },
+      "required": [
+        "schema_version",
+        "stage_version",
+        "run_id",
+        "intake_status",
+        "manifest_sha256",
+        "semantic_digest",
+        "input_fingerprint",
+        "seal_verified"
+      ],
+      "title": "SourceManifest",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "NORMALIZATION_COMPLETE",
+        "NORMALIZATION_COMPLETE_WITH_WARNINGS",
+        "NORMALIZATION_BLOCKED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "UpstreamStep": {
+      "properties": {
+        "tool": {
+          "title": "Tool",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        },
+        "date": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date"
+        },
+        "parameters": {
+          "enum": [
+            "available",
+            "unavailable"
+          ],
+          "title": "Parameters",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "command_line": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Command Line"
+        }
+      },
+      "required": [
+        "tool",
+        "parameters",
+        "source"
+      ],
+      "title": "UpstreamStep",
+      "type": "object"
+    },
+    "VcfCharacterization": {
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "sample_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sample Id"
+        },
+        "streamed_completely": {
+          "title": "Streamed Completely",
+          "type": "boolean"
+        },
+        "data_lines": {
+          "title": "Data Lines",
+          "type": "integer"
+        },
+        "records_parsed": {
+          "title": "Records Parsed",
+          "type": "integer"
+        },
+        "records_malformed": {
+          "title": "Records Malformed",
+          "type": "integer"
+        },
+        "malformed_line_numbers": {
+          "description": "First 20 only. Line numbers, never content.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Malformed Line Numbers",
+          "type": "array"
+        },
+        "htslib_records": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Htslib Records"
+        },
+        "htslib_error": {
+          "title": "Htslib Error",
+          "type": "boolean"
+        },
+        "parsers_agree": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Parsers Agree"
+        },
+        "sorted": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sorted"
+        },
+        "out_of_order_records": {
+          "title": "Out Of Order Records",
+          "type": "integer"
+        },
+        "noncontiguous_contig_blocks": {
+          "title": "Noncontiguous Contig Blocks",
+          "type": "integer"
+        },
+        "contig_order_follows_header": {
+          "title": "Contig Order Follows Header",
+          "type": "boolean"
+        },
+        "records_on_undeclared_contigs": {
+          "title": "Records On Undeclared Contigs",
+          "type": "integer"
+        },
+        "exact_duplicate_records": {
+          "title": "Exact Duplicate Records",
+          "type": "integer"
+        },
+        "records_sharing_position": {
+          "title": "Records Sharing Position",
+          "type": "integer"
+        },
+        "invalid_ref_alleles": {
+          "title": "Invalid Ref Alleles",
+          "type": "integer"
+        },
+        "invalid_alt_alleles": {
+          "title": "Invalid Alt Alleles",
+          "type": "integer"
+        },
+        "filters": {
+          "$ref": "#/$defs/FilterCharacterization"
+        },
+        "record_classes": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Record Classes",
+          "type": "object"
+        },
+        "allele_classes": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Allele Classes",
+          "type": "object"
+        },
+        "multiallelic_records": {
+          "title": "Multiallelic Records",
+          "type": "integer"
+        },
+        "max_alt_alleles": {
+          "title": "Max Alt Alleles",
+          "type": "integer"
+        },
+        "records_with_spanning_deletion_allele": {
+          "title": "Records With Spanning Deletion Allele",
+          "type": "integer"
+        },
+        "qual_missing_records": {
+          "title": "Qual Missing Records",
+          "type": "integer"
+        },
+        "info_fields_declared": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Info Fields Declared",
+          "type": "array"
+        },
+        "format_fields": {
+          "items": {
+            "$ref": "#/$defs/FormatFieldStat"
+          },
+          "title": "Format Fields",
+          "type": "array"
+        },
+        "genotype_states": {
+          "$ref": "#/$defs/GenotypeStates"
+        },
+        "genotype_malformed": {
+          "title": "Genotype Malformed",
+          "type": "integer"
+        },
+        "phase": {
+          "$ref": "#/$defs/PhaseInformation"
+        },
+        "upstream_processing": {
+          "items": {
+            "$ref": "#/$defs/UpstreamStep"
+          },
+          "title": "Upstream Processing",
+          "type": "array"
+        },
+        "elapsed_seconds": {
+          "title": "Elapsed Seconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "asset_id",
+        "sample_id",
+        "streamed_completely",
+        "data_lines",
+        "records_parsed",
+        "records_malformed",
+        "htslib_records",
+        "htslib_error",
+        "parsers_agree",
+        "sorted",
+        "out_of_order_records",
+        "noncontiguous_contig_blocks",
+        "contig_order_follows_header",
+        "records_on_undeclared_contigs",
+        "exact_duplicate_records",
+        "records_sharing_position",
+        "invalid_ref_alleles",
+        "invalid_alt_alleles",
+        "filters",
+        "record_classes",
+        "allele_classes",
+        "multiallelic_records",
+        "max_alt_alleles",
+        "records_with_spanning_deletion_allele",
+        "qual_missing_records",
+        "info_fields_declared",
+        "format_fields",
+        "genotype_states",
+        "genotype_malformed",
+        "phase",
+        "upstream_processing",
+        "elapsed_seconds"
+      ],
+      "title": "VcfCharacterization",
+      "type": "object"
+    },
+    "VerifiedAsset": {
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "expected_sha256": {
+          "title": "Expected Sha256",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "missing",
+            "changed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id",
+        "role",
+        "expected_sha256",
+        "status"
+      ],
+      "title": "VerifiedAsset",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "title": "Pipeline",
+      "type": "object"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "readiness": {
+      "items": {
+        "$ref": "#/$defs/Capability"
+      },
+      "title": "Readiness",
+      "type": "array"
+    },
+    "genome": {
+      "$ref": "#/$defs/GenomeSection"
+    },
+    "phenotype": {
+      "$ref": "#/$defs/PhenotypeSection"
+    },
+    "pedigree": {
+      "$ref": "#/$defs/PedigreeSection"
+    },
+    "raw_reads": {
+      "$ref": "#/$defs/RawReadsSection"
+    },
+    "assertions": {
+      "items": {
+        "$ref": "#/$defs/AppliedAssertion"
+      },
+      "title": "Assertions",
+      "type": "array"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/CarriedIssue"
+      },
+      "title": "Issues",
+      "type": "array"
+    },
+    "issue_counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Issue Counts",
+      "type": "object"
+    },
+    "retention": {
+      "$ref": "#/$defs/Retention"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "visibility",
+    "case_id",
+    "status",
+    "readiness",
+    "genome",
+    "phenotype",
+    "pedigree",
+    "raw_reads",
+    "assertions",
+    "issues",
+    "issue_counts",
+    "retention",
+    "provenance",
+    "execution"
+  ],
+  "title": "NormalizedCase",
+  "type": "object",
+  "$id": "https://rarepipe.local/schemas/normalized_case/1.0.0.json",
+  "description": "NormalizedCase v1.0.0 \u2014 output of the case_normalization stage. Properties carrying `restricted: true` are populated only in the private artifact."
+}
