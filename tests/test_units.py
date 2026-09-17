@@ -142,3 +142,18 @@ def test_manifest_round_trips_through_schema(build_case, intake):
     result = intake(build_case("J_trio_with_pedigree"))
     raw = (result.run_dir / "case_manifest.private.json").read_text()
     assert CaseManifest.model_validate_json(raw).semantic_digest == result.manifest.semantic_digest
+
+
+# ── block-gzip tail integrity (Illumina FASTQ without BGZF EOF marker) ──────
+
+
+def test_block_gzip_tail_check(tmp_path):
+    from rarepipe.testing.fixtures import write_fastq_gz
+
+    ok = write_fastq_gz(tmp_path / "ok.fastq.gz", lane=1, read=1, n=3000, block_gzip=True)
+    assert formats.sniff(ok, Format.FASTQ).compression.value == "bgzf"
+    assert not formats.has_bgzf_eof(ok) and formats.block_gzip_tail_intact(ok)
+    cut = tmp_path / "cut.fastq.gz"
+    data = ok.read_bytes()
+    cut.write_bytes(data[: len(data) - 100])
+    assert not formats.block_gzip_tail_intact(cut)

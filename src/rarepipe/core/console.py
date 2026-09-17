@@ -19,6 +19,7 @@ class Console:
         self.quiet = quiet
         self.log_lines: list[str] = []
         self._last_progress = 0.0
+        self._finished: set[str] = set()
 
     def _emit(self, text: str) -> None:
         self.log_lines.append(f"{datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')} {text.strip()}")
@@ -45,8 +46,10 @@ class Console:
 
     def progress(self, label: str, done: int, total: int) -> None:
         """Terminal-only (not logged), throttled."""
-        if self.quiet or total <= 0:
+        if self.quiet or total <= 0 or label in self._finished:
             return
+        if done >= total:
+            self._finished.add(label)
         now = time.monotonic()
         if done < total and now - self._last_progress < 0.5:
             return

@@ -32,6 +32,7 @@ from rarepipe.stages.intake.manifest import (
     SequenceDictionaryMetadata,
     VcfMetadata,
 )
+from rarepipe.stages.intake.formats import block_gzip_tail_intact
 from rarepipe.stages.intake.reference import determine_build
 
 pysam.set_verbosity(0)  # htslib diagnostics go to stderr unfiltered; we record structured issues instead
@@ -285,13 +286,16 @@ def inspect_fastq(path: Path, asset_id: str, compression: Compression, eof_prese
     read_hdr = int(m.group("read")) if m and m.group("read") else None
     lane_hdr = int(m.group("lane")) if m else None
     read_fn, lane_fn = name_hint or (None, None)
+    eof_verified = None
+    if compression == Compression.BGZF:
+        eof_verified = True if eof_present else block_gzip_tail_intact(path)
     encoding = "unknown" if not n else "phred33" if min_q < 59 else "ambiguous"  # chars below ';' only exist in Phred+33
     out.metadata = FastqMetadata(
         compression=compression, records_sampled=n, structure_valid=valid and n > 0,
         header_style="illumina_casava_1.8" if m else "unrecognized",
         read_number_from_header=read_hdr, read_number_from_filename=read_fn, lane_from_header=lane_hdr, lane_from_filename=lane_fn,
         read_length_min=min(lengths) if lengths else None, read_length_max=max(lengths) if lengths else None,
-        quality_encoding=encoding, end_of_file_verified=eof_present if compression == Compression.BGZF else None, mate_asset_id=mate_asset_id,
+        quality_encoding=encoding, end_of_file_verified=eof_verified, mate_asset_id=mate_asset_id,
         instrument=m.group("instrument") if m else None, flowcell=m.group("flowcell") if m else None,
     )
     if not valid and not out.issues:
@@ -304,8 +308,9 @@ def inspect_fastq(path: Path, asset_id: str, compression: Compression, eof_prese
     if lane_hdr and lane_fn and lane_hdr != lane_fn:
         out.issues.append(_issue(IssueCode.FASTQ_READ_NUMBER_MISMATCH, Severity.WARNING,
                                  f"Filename lane ({lane_fn}) differs from record-header lane ({lane_hdr}).", asset_id))
-    if compression == Compression.BGZF and eof_present is False:
-        out.issues.append(_issue(IssueCode.BGZF_EOF_MISSING, Severity.BLOCKER, "BGZF end-of-file marker is absent; the file is likely truncated.", asset_id,
+    if eof_verified is False:
+        out.issues.append(_issue(IssueCode.GZIP_TAIL_TRUNCATED, Severity.BLOCKER,
+                                 "The file does not end on a complete compressed block; it is truncated.", asset_id,
                                  "Re-transfer the file and verify its checksum against the source."))
     return out
 

@@ -175,6 +175,8 @@ def test_fastq_complete_with_docx_hpo(build_case, intake):
     m = intake(build_case("P_fastq_complete_docx_hpo")).manifest
     assert m.status == Status.INTAKE_COMPLETE_WITH_WARNINGS and not codes(m, "BLOCKER")
     assert m.phenotype.available and m.phenotype.hpo_valid_identifier_count == 2 and m.phenotype.hpo_malformed_identifier_count == 1
+    fq = [a for a in m.assets if a.logical_role == LogicalRole.RAW_READS]
+    assert all(a.metadata.end_of_file_verified is True for a in fq)  # no EOF marker, but final block intact
     docx = next(a for a in m.assets if a.detected_format.value == "DOCX")
     assert docx.logical_role == LogicalRole.PHENOTYPE_TERMS and docx.metadata.parser == "docx_text_scan"
 

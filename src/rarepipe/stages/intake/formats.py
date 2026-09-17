@@ -92,6 +92,33 @@ def has_bgzf_eof(path: Path) -> bool:
         return fh.read() == BGZF_EOF
 
 
+BGZF_MAX_BLOCK = 65536
+
+
+def block_gzip_tail_intact(path: Path) -> bool:
+    """For block-gzip files (BGZF-style 'BC' extra field) that lack the BGZF EOF marker — typical of
+    Illumina FASTQ writers — prove the file ends on a complete block: find the last block header whose
+    BSIZE ends exactly at end-of-file and decompress it (zlib verifies CRC32 and ISIZE)."""
+    size = path.stat().st_size
+    span = min(size, BGZF_MAX_BLOCK + 28)
+    with path.open("rb") as fh:
+        fh.seek(size - span)
+        tail = fh.read(span)
+    pos = tail.rfind(b"\x1f\x8b\x08\x04")
+    while pos != -1:
+        if tail[pos + 12 : pos + 14] == b"BC" and pos + 18 <= len(tail):
+            bsize = int.from_bytes(tail[pos + 16 : pos + 18], "little")
+            if pos + bsize + 1 == len(tail):
+                d = zlib.decompressobj(31)
+                try:
+                    d.decompress(tail[pos:])
+                    return d.eof and not d.unused_data
+                except zlib.error:
+                    return False
+        pos = tail.rfind(b"\x1f\x8b\x08\x04", 0, pos)
+    return False
+
+
 def _gunzip_prefix(raw: bytes, limit: int = HEAD_BYTES) -> bytes:
     """Decompress the leading gzip members (BGZF blocks) contained in `raw`."""
     out = bytearray()

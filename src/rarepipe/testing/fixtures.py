@@ -256,14 +256,23 @@ def md5_sidecar(root: Path) -> None:
     write_hpo(root / "hpo.txt", VALID_HPO)
 
 
-def write_fastq_gz(path: Path, *, lane: int, read: int, n: int = 50, seed: str = "fq", truncate: bool = False) -> Path:
+def write_fastq_gz(path: Path, *, lane: int, read: int, n: int = 50, seed: str = "fq", truncate: bool = False,
+                   block_gzip: bool = False) -> Path:
+    """block_gzip=True writes BGZF blocks without the EOF marker, as Illumina FASTQ writers do."""
     import gzip
 
     rng = _rng(f"{seed}-{lane}-{read}")
     lines = []
     for i in range(n):
         lines.append(f"@SYNTHSEQ01:7:SYNTHFLOWCELL:{lane}:1101:{1000 + i}:{2000 + i} {read}:N:0:ACGTACGT\n{_random_seq(rng, 100)}\n+\n{'F' * 100}\n")
-    data = gzip.compress("".join(lines).encode())
+    if block_gzip:
+        tmp = path.with_name(path.name + ".tmp.bgz")
+        with pysam.libcbgzf.BGZFile(str(tmp), "wb") as fh:
+            fh.write("".join(lines).encode())
+        data = tmp.read_bytes()[:-28]  # drop the BGZF EOF marker
+        tmp.unlink()
+    else:
+        data = gzip.compress("".join(lines).encode())
     path.write_bytes(data[: len(data) // 2] if truncate else data)
     return path
 
@@ -299,8 +308,8 @@ def fastq_exfat_partial(root: Path) -> None:
 
 def fastq_complete_docx_hpo(root: Path) -> None:
     write_vcf(root / "case.vcf.gz", samples=[PROBAND], contigs=_contigs(GenomeBuild.GRCH38, prefix=""))
-    write_fastq_gz(root / "SYNTHLIB_S1_L001_R1_001.fastq.gz", lane=1, read=1)
-    write_fastq_gz(root / "SYNTHLIB_S1_L001_R2_001.fastq.gz", lane=1, read=2)
+    write_fastq_gz(root / "SYNTHLIB_S1_L001_R1_001.fastq.gz", lane=1, read=1, block_gzip=True, n=3000)
+    write_fastq_gz(root / "SYNTHLIB_S1_L001_R2_001.fastq.gz", lane=1, read=2, block_gzip=True, n=3000)
     write_docx(root / "phenotype.docx", ["Phenotype", "Seizures (HP:0001250)", "Global developmental delay HP:0001263", "Typo HP:12345"])
 
 

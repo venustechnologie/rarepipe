@@ -304,6 +304,13 @@ def _run(req: IntakeRequest, console: Console, run_id: str, started, t0: float, 
             continue
         progress = (lambda d, t, _id=a.asset_id: console.progress(_id, d, t)) if a.size >= PROGRESS_MIN_BYTES else None
         digests[a.asset_id] = stream_digest(a.path, want_md5=want_md5, progress=progress)
+        after = a.path.stat()
+        if (after.st_size, after.st_mtime_ns) != (a.stat.st_size, a.stat.st_mtime_ns):
+            issues.append(Issue(code=IssueCode.FILE_CHANGED_DURING_INTAKE, severity=Severity.BLOCKER, asset_ids=[a.asset_id],
+                                message="File size or modification time changed while intake was running (e.g. a download still writing to it); its digest and inspection are not trustworthy.",
+                                suggested_action="Wait until all transfers finish, then re-run intake."))
+            console.fail(f"{a.asset_id}: changed during intake")
+            continue  # never cache a digest of a moving target
         cache.put(a.rel, a.stat, digests[a.asset_id])
     console.ok(f"{len(digests)} digest(s) ({cache.hits} resumed from cache)")
     for target_id, sidecar_id in sorted(links.sidecar_of.items()):
@@ -391,7 +398,7 @@ def _run(req: IntakeRequest, console: Console, run_id: str, started, t0: float, 
     actions = sorted({i.code.value for i in issues if i.severity == Severity.ACTION_REQUIRED})
     if blockers:
         status = Status.INTAKE_BLOCKED
-        rationale = f"{len(blockers)} blocking condition(s): the case cannot safely proceed until resolved."
+        rationale = f"{counts['BLOCKER']} blocking issue(s) of {len(blockers)} kind(s): the case cannot safely proceed until resolved."
     elif actions or counts["WARNING"]:
         status = Status.INTAKE_COMPLETE_WITH_WARNINGS
         rationale = ("No blockers. Normalization may proceed, but "

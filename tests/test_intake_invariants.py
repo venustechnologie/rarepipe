@@ -157,3 +157,25 @@ def test_runs_inside_os_network_sandbox(build_case, tmp_path):
     assert proc.returncode == 0, proc.stderr[-2000:]
     run_dir = Path(proc.stdout.strip().splitlines()[-1])
     assert (run_dir / "case_manifest.private.json").exists()
+
+
+def test_file_changing_during_intake_blocks_and_is_not_cached(build_case, intake, tmp_path, monkeypatch):
+    from rarepipe.stages.intake import stage
+
+    case = build_case("A_healthy")
+    growing = case / "phenotype" / "hpo_terms.txt"
+    real = stage.stream_digest
+
+    def digest_while_writing(path, **kw):
+        if path == growing:
+            with growing.open("a") as fh:  # simulates a download still appending
+                fh.write("HP:0000002\n")
+        return real(path, **kw)
+
+    monkeypatch.setattr(stage, "stream_digest", digest_while_writing)
+    m = intake(case, output=tmp_path / "moving").manifest
+    assert m.status.value == "INTAKE_BLOCKED"
+    assert [i.code.value for i in m.issues if i.severity.value == "BLOCKER"] == ["FILE_CHANGED_DURING_INTAKE"]
+    monkeypatch.setattr(stage, "stream_digest", real)
+    again = intake(case, output=tmp_path / "moving").manifest
+    assert again.execution.checksum_cache_hits == len(again.assets) - 1  # the moving file was never cached
