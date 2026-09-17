@@ -4,8 +4,8 @@ A reproducible, stage-by-stage pipeline for working toward resolving difficult r
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.
 
 ```
-CASE → INTAKE → NORMALIZATION → (BASELINE ANALYSIS → …)
-        ▲ stage 01 (frozen v0.1.0)   ▲ stage 02
+CASE → INTAKE → NORMALIZATION → BASELINE ANALYSIS → (…)
+        ▲ stage 01 (frozen)  ▲ stage 02      ▲ stage 03
 ```
 
 Every stage consumes versioned artifacts and produces immutable, versioned artifacts with provenance.
@@ -36,6 +36,20 @@ identities, a complete-stream VCF characterization (FILTER distribution, variant
 fields, phase availability), HPO identity normalization against a pinned ontology release, and
 readiness per capability. No transformation, no interpretation, no network.
 See **[docs/normalize.md](docs/normalize.md)**.
+
+## Stage 03 — Baseline Causal-Hypothesis Generation
+
+```bash
+uv run rarepipe baseline --normalized-case <norm run>/normalized_case.private.json \
+  --exomiser-home /resources/exomiser/exomiser-cli-15.1.0 --exomiser-data /resources/exomiser/data \
+  --output /secure/work/MVA_001/baseline
+```
+
+Asks Exomiser for candidate causal hypotheses under four declared profiles (HPO set ×
+VCF FILTER treatment) and produces `RawCandidateSet` plus a stability comparison across
+those profiles. Compound-heterozygous candidates are variant pairs with unresolved phase.
+rarepipe reranks nothing and supplies no disease name or gene panel to the solver.
+See **[docs/baseline.md](docs/baseline.md)**.
 
 ## Development
 
