@@ -1,0 +1,1363 @@
+{
+  "$defs": {
+    "AnalysisAssumption": {
+      "description": "An interpretation this analysis makes that the case record does NOT establish.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "basis": {
+          "title": "Basis",
+          "type": "string"
+        },
+        "scope": {
+          "const": "this_analysis",
+          "default": "this_analysis",
+          "title": "Scope",
+          "type": "string"
+        },
+        "contradicts_case_record": {
+          "default": false,
+          "description": "True if the case record states otherwise (never silently overridden).",
+          "title": "Contradicts Case Record",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "statement",
+        "basis"
+      ],
+      "title": "AnalysisAssumption",
+      "type": "object"
+    },
+    "AnalysisProfile": {
+      "properties": {
+        "profile_id": {
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "phenotype": {
+          "$ref": "#/$defs/PhenotypeSelection"
+        },
+        "filter_policy": {
+          "$ref": "#/$defs/FilterPolicy"
+        },
+        "inheritance_modes": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Inheritance Modes",
+          "type": "object"
+        },
+        "frequency_max_percent": {
+          "title": "Frequency Max Percent",
+          "type": "number"
+        },
+        "assumptions": {
+          "items": {
+            "$ref": "#/$defs/AnalysisAssumption"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "analysis_yaml_sha256": {
+          "title": "Analysis Yaml Sha256",
+          "type": "string"
+        },
+        "sample_yaml_sha256": {
+          "title": "Sample Yaml Sha256",
+          "type": "string"
+        },
+        "properties_sha256": {
+          "title": "Properties Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile_id",
+        "label",
+        "phenotype",
+        "filter_policy",
+        "inheritance_modes",
+        "frequency_max_percent",
+        "assumptions",
+        "analysis_yaml_sha256",
+        "sample_yaml_sha256",
+        "properties_sha256"
+      ],
+      "title": "AnalysisProfile",
+      "type": "object"
+    },
+    "Candidate": {
+      "properties": {
+        "rank": {
+          "title": "Rank",
+          "type": "integer"
+        },
+        "gene_symbol": {
+          "title": "Gene Symbol",
+          "type": "string"
+        },
+        "gene_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gene Id"
+        },
+        "inheritance_model": {
+          "title": "Inheritance Model",
+          "type": "string"
+        },
+        "p_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Value"
+        },
+        "score_combined": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score Combined"
+        },
+        "score_phenotype": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score Phenotype"
+        },
+        "score_variant": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score Variant"
+        },
+        "contributing_variants": {
+          "items": {
+            "$ref": "#/$defs/ContributingVariant"
+          },
+          "title": "Contributing Variants",
+          "type": "array"
+        },
+        "contributing_variant_count": {
+          "title": "Contributing Variant Count",
+          "type": "integer"
+        },
+        "is_variant_pair": {
+          "description": "Exactly two contributing variants under a compound-heterozygous model.",
+          "title": "Is Variant Pair",
+          "type": "boolean"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CandidatePhase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "any_contributing_variant_non_pass": {
+          "title": "Any Contributing Variant Non Pass",
+          "type": "boolean"
+        },
+        "solver_evidence": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Solver-reported evidence strings (phenotype matches, scores) verbatim.",
+          "title": "Solver Evidence",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rank",
+        "gene_symbol",
+        "inheritance_model",
+        "contributing_variants",
+        "contributing_variant_count",
+        "is_variant_pair",
+        "any_contributing_variant_non_pass"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "CandidatePhase": {
+      "properties": {
+        "status": {
+          "default": "unresolved",
+          "enum": [
+            "unresolved",
+            "not_applicable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "note": {
+          "default": "Two heterozygous variants in one gene are a candidate compound-heterozygous configuration. Without parental data or phasing evidence this is NOT proof they are in trans.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "title": "CandidatePhase",
+      "type": "object"
+    },
+    "ContributingVariant": {
+      "properties": {
+        "variant_ref": {
+          "description": "Stable within this run: sha256(contig:pos:ref:alt)[:12]. Coordinates themselves are private.",
+          "title": "Variant Ref",
+          "type": "string"
+        },
+        "source_filter_status": {
+          "description": "FILTER column as it stands in the source VCF \u2014 never rewritten.",
+          "title": "Source Filter Status",
+          "type": "string"
+        },
+        "solver_variant_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Solver Variant Score"
+        },
+        "functional_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Functional Class"
+        },
+        "clinvar_interpretation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clinvar Interpretation"
+        },
+        "clinvar_star_rating": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clinvar Star Rating"
+        },
+        "max_frequency_percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Frequency Percent"
+        },
+        "max_pathogenicity_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Pathogenicity Score"
+        },
+        "acmg_classification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Acmg Classification"
+        },
+        "contig": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Contig"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Position"
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Ref"
+        },
+        "alt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Alt"
+        },
+        "hgvs": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Hgvs"
+        },
+        "genotype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Genotype"
+        },
+        "rs_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Rs Id"
+        }
+      },
+      "required": [
+        "variant_ref",
+        "source_filter_status"
+      ],
+      "title": "ContributingVariant",
+      "type": "object"
+    },
+    "Execution": {
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "profile_runtimes": {
+          "items": {
+            "$ref": "#/$defs/ProfileRuntime"
+          },
+          "title": "Profile Runtimes",
+          "type": "array"
+        },
+        "native_output_root": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Native Output Root"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "FilterPolicy": {
+      "description": "PASS_ONLY (an Exomiser analysis *mode*) and failedVariantFilter (a *step* that drops\nnon-PASS VCF records) are different things; conflating them is a classic silent bug.",
+      "properties": {
+        "analysis_mode": {
+          "enum": [
+            "PASS_ONLY",
+            "FULL"
+          ],
+          "title": "Analysis Mode",
+          "type": "string"
+        },
+        "failed_variant_filter": {
+          "title": "Failed Variant Filter",
+          "type": "boolean"
+        },
+        "non_pass_records_permitted": {
+          "title": "Non Pass Records Permitted",
+          "type": "boolean"
+        },
+        "source_filter_labels_modified": {
+          "const": false,
+          "default": false,
+          "title": "Source Filter Labels Modified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "analysis_mode",
+        "failed_variant_filter",
+        "non_pass_records_permitted"
+      ],
+      "title": "FilterPolicy",
+      "type": "object"
+    },
+    "GeneRankRow": {
+      "properties": {
+        "gene_symbol": {
+          "title": "Gene Symbol",
+          "type": "string"
+        },
+        "ranks": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Ranks",
+          "type": "object"
+        },
+        "best_rank": {
+          "title": "Best Rank",
+          "type": "integer"
+        },
+        "appears_in_profiles": {
+          "title": "Appears In Profiles",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "gene_symbol",
+        "ranks",
+        "best_rank",
+        "appears_in_profiles"
+      ],
+      "title": "GeneRankRow",
+      "type": "object"
+    },
+    "Issue": {
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "profile_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Profile Ids",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "suggested_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggested Action"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "Issue",
+      "type": "object"
+    },
+    "PairOverlap": {
+      "properties": {
+        "profile_a": {
+          "title": "Profile A",
+          "type": "string"
+        },
+        "profile_b": {
+          "title": "Profile B",
+          "type": "string"
+        },
+        "top1_same_gene": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top1 Same Gene"
+        },
+        "top5_gene_overlap": {
+          "title": "Top5 Gene Overlap",
+          "type": "integer"
+        },
+        "top10_gene_overlap": {
+          "title": "Top10 Gene Overlap",
+          "type": "integer"
+        },
+        "top20_gene_overlap": {
+          "title": "Top20 Gene Overlap",
+          "type": "integer"
+        },
+        "compound_het_gene_overlap": {
+          "title": "Compound Het Gene Overlap",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "profile_a",
+        "profile_b",
+        "top5_gene_overlap",
+        "top10_gene_overlap",
+        "top20_gene_overlap",
+        "compound_het_gene_overlap"
+      ],
+      "title": "PairOverlap",
+      "type": "object"
+    },
+    "PhenotypeSelection": {
+      "properties": {
+        "rule": {
+          "enum": [
+            "phenotypic_abnormality_only",
+            "all_supplied_terms"
+          ],
+          "title": "Rule",
+          "type": "string"
+        },
+        "term_count": {
+          "title": "Term Count",
+          "type": "integer"
+        },
+        "branches_included": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Branches Included",
+          "type": "array"
+        },
+        "term_ids": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Term Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rule",
+        "term_count",
+        "branches_included"
+      ],
+      "title": "PhenotypeSelection",
+      "type": "object"
+    },
+    "ProfileResult": {
+      "properties": {
+        "profile_id": {
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "not_run"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "failure_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failure Reason"
+        },
+        "exit_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exit Code"
+        },
+        "candidate_count": {
+          "title": "Candidate Count",
+          "type": "integer"
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "variants_in_source": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variants In Source"
+        },
+        "variants_reported_by_solver": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variants Reported By Solver"
+        },
+        "contigs_absent_from_solver_output": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Contigs Absent From Solver Output",
+          "type": "array"
+        },
+        "native_output_files": {
+          "description": "Paths relative to the run's native output root.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Native Output Files",
+          "type": "array"
+        },
+        "native_output_sha256": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Native Output Sha256",
+          "type": "object"
+        }
+      },
+      "required": [
+        "profile_id",
+        "status",
+        "candidate_count",
+        "candidates"
+      ],
+      "title": "ProfileResult",
+      "type": "object"
+    },
+    "ProfileRuntime": {
+      "description": "Execution measurements \u2014 excluded from the semantic digest.",
+      "properties": {
+        "profile_id": {
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "wall_clock_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wall Clock Seconds"
+        },
+        "peak_rss_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Peak Rss Bytes"
+        }
+      },
+      "required": [
+        "profile_id"
+      ],
+      "title": "ProfileRuntime",
+      "type": "object"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverIdentity"
+        },
+        "source_case": {
+          "$ref": "#/$defs/SourceCase"
+        },
+        "environment_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Environment Controls",
+          "type": "array"
+        },
+        "execution_host": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Execution Host",
+          "type": "object"
+        }
+      },
+      "required": [
+        "software",
+        "solver",
+        "source_case",
+        "environment_controls"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Retention": {
+      "properties": {
+        "native_solver_outputs": {
+          "const": "delete_required",
+          "default": "delete_required",
+          "title": "Native Solver Outputs",
+          "type": "string"
+        },
+        "raw_candidate_set": {
+          "const": "delete_required_review",
+          "default": "delete_required_review",
+          "title": "Raw Candidate Set",
+          "type": "string"
+        },
+        "top_n_findings": {
+          "const": "retainable_after_review",
+          "default": "retainable_after_review",
+          "title": "Top N Findings",
+          "type": "string"
+        },
+        "note": {
+          "default": "Genome-scale solver intermediates (annotated VCF, full variant tables) must be deleted with the case. Only a small ranked candidate list may survive, and only after explicit review.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "title": "Retention",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "BLOCKER",
+        "ACTION_REQUIRED",
+        "WARNING",
+        "INFO"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SolverIdentity": {
+      "properties": {
+        "name": {
+          "const": "Exomiser",
+          "default": "Exomiser",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "distribution_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Distribution Sha256"
+        },
+        "jar_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Jar Sha256"
+        },
+        "hg38_data_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hg38 Data Version"
+        },
+        "phenotype_data_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phenotype Data Version"
+        },
+        "data_sha256": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Data Sha256",
+          "type": "object"
+        },
+        "java_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Java Version"
+        },
+        "java_max_heap": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Java Max Heap"
+        },
+        "container_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Container Digest"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "SolverIdentity",
+      "type": "object"
+    },
+    "SourceCase": {
+      "properties": {
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "normalized_case_run_id": {
+          "title": "Normalized Case Run Id",
+          "type": "string"
+        },
+        "normalized_case_semantic_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Normalized Case Semantic Digest"
+        },
+        "normalized_case_sha256": {
+          "title": "Normalized Case Sha256",
+          "type": "string"
+        },
+        "source_vcf_asset_id": {
+          "title": "Source Vcf Asset Id",
+          "type": "string"
+        },
+        "source_vcf_sha256": {
+          "title": "Source Vcf Sha256",
+          "type": "string"
+        },
+        "assembly": {
+          "title": "Assembly",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Path"
+        }
+      },
+      "required": [
+        "case_id",
+        "normalized_case_run_id",
+        "normalized_case_semantic_digest",
+        "normalized_case_sha256",
+        "source_vcf_asset_id",
+        "source_vcf_sha256",
+        "assembly"
+      ],
+      "title": "SourceCase",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "Stability": {
+      "properties": {
+        "profiles_compared": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Profiles Compared",
+          "type": "array"
+        },
+        "pairwise": {
+          "items": {
+            "$ref": "#/$defs/PairOverlap"
+          },
+          "title": "Pairwise",
+          "type": "array"
+        },
+        "top_gene_table": {
+          "items": {
+            "$ref": "#/$defs/GeneRankRow"
+          },
+          "title": "Top Gene Table",
+          "type": "array"
+        },
+        "genes_only_when_non_pass_permitted": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Genes Only When Non Pass Permitted",
+          "type": "array"
+        },
+        "genes_only_with_eighth_term": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Genes Only With Eighth Term",
+          "type": "array"
+        },
+        "genes_in_all_profiles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Genes In All Profiles",
+          "type": "array"
+        },
+        "max_rank_movement": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Max Rank Movement",
+          "type": "object"
+        },
+        "verdict": {
+          "enum": [
+            "stable",
+            "partially_stable",
+            "unstable",
+            "insufficient"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        },
+        "verdict_basis": {
+          "title": "Verdict Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profiles_compared",
+        "pairwise",
+        "top_gene_table",
+        "genes_only_when_non_pass_permitted",
+        "genes_only_with_eighth_term",
+        "genes_in_all_profiles",
+        "verdict",
+        "verdict_basis"
+      ],
+      "title": "Stability",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "BASELINE_ANALYSIS_COMPLETE",
+        "BASELINE_ANALYSIS_COMPLETE_WITH_WARNINGS",
+        "BASELINE_ANALYSIS_BLOCKED"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "title": "Pipeline",
+      "type": "object"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "interpretation_note": {
+      "default": "This artifact records what an external solver reported under declared assumptions. It is not a diagnosis, not a ranking by rarepipe, and no candidate was manually promoted.",
+      "title": "Interpretation Note",
+      "type": "string"
+    },
+    "profiles": {
+      "items": {
+        "$ref": "#/$defs/AnalysisProfile"
+      },
+      "title": "Profiles",
+      "type": "array"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/ProfileResult"
+      },
+      "title": "Results",
+      "type": "array"
+    },
+    "stability": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Stability"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/Issue"
+      },
+      "title": "Issues",
+      "type": "array"
+    },
+    "issue_counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Issue Counts",
+      "type": "object"
+    },
+    "retention": {
+      "$ref": "#/$defs/Retention"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "visibility",
+    "case_id",
+    "status",
+    "profiles",
+    "results",
+    "stability",
+    "issues",
+    "issue_counts",
+    "provenance",
+    "execution"
+  ],
+  "title": "RawCandidateSet",
+  "type": "object",
+  "$id": "https://rarepipe.local/schemas/raw_candidate_set/1.0.0.json",
+  "description": "RawCandidateSet v1.0.0 \u2014 output of the baseline_analysis stage. Records what an external solver reported under declared profiles; not a diagnosis. Properties carrying `restricted: true` are populated only in the private artifact."
+}

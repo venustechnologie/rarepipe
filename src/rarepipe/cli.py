@@ -69,11 +69,13 @@ def intake(
 @app.command()
 def schema(
     output: Annotated[Path | None, typer.Option(help="Write to file instead of stdout.")] = None,
-    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions")] = "case_manifest",
+    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set")] = "case_manifest",
 ) -> None:
     """Emit an artifact's JSON Schema."""
     if artifact == "case_manifest":
         from rarepipe.stages.intake.schema import schema_json
+    elif artifact == "raw_candidate_set":
+        from rarepipe.stages.baseline.schema import schema_json
     elif artifact in ("normalized_case", "case_assertions"):
         from rarepipe.stages.normalize.schema import schema_json as _normalize_schema
 
@@ -110,6 +112,35 @@ def normalize(
         raise typer.Exit(EXIT_USAGE)
     typer.echo(str(result.run_dir))
     raise typer.Exit(EXIT_BLOCKED if result.case.status == Status.NORMALIZATION_BLOCKED else EXIT_OK)
+
+
+@app.command()
+def baseline(
+    normalized_case: Annotated[Path, typer.Option(help="Stage 02 normalized_case.private.json.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    exomiser_home: Annotated[Path | None, typer.Option(help="Exomiser CLI installation directory (contains exomiser-cli-*.jar).")] = None,
+    exomiser_data: Annotated[Path | None, typer.Option(help="Exomiser data directory (defaults to <home>/data).")] = None,
+    profile: Annotated[list[str], typer.Option("--profile", help="Run only these profiles (repeatable), e.g. PROFILE_A.")] = [],
+    max_heap: Annotated[str, typer.Option(help="Java max heap for the solver, e.g. 7g.")] = "7g",
+    timeout_hours: Annotated[float, typer.Option(help="Per-profile timeout.")] = 6.0,
+    case_root: Annotated[Path | None, typer.Option(help="Override the case root recorded upstream (the VCF is still SHA-256 verified).")] = None,
+    dry_run: Annotated[bool, typer.Option(help="Write the job configuration for each profile without running the solver.")] = False,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Ask a mature solver (Exomiser) for candidate causal hypotheses under four declared profiles."""
+    from rarepipe.stages.baseline.model import Status
+    from rarepipe.stages.baseline.stage import BaselineRequest, BaselineUsageError, run_baseline
+
+    req = BaselineRequest(normalized_case=normalized_case, output=output, exomiser_home=exomiser_home, exomiser_data=exomiser_data,
+                          profile_ids=list(profile), max_heap=max_heap, timeout_seconds=int(timeout_hours * 3600),
+                          case_root=case_root, dry_run=dry_run, argv=sys.argv[:])
+    try:
+        result = run_baseline(req, Console(quiet=quiet))
+    except BaselineUsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(result.run_dir))
+    raise typer.Exit(EXIT_BLOCKED if result.candidate_set.status == Status.BASELINE_ANALYSIS_BLOCKED else EXIT_OK)
 
 
 resources_app = typer.Typer(no_args_is_help=True, help="Provision and pin external resources (the only networked commands).")
