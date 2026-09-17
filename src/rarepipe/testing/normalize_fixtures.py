@@ -103,6 +103,10 @@ UCSC = {"chr1": 248956422, "chr2": 242193529, "chrX": 156040895, "chrY": 5722741
         "chr1_KI270706v1_random": 175055, "chrUn_KI270302v1": 2274, "chr1_KI270762v1_alt": 354444,
         "chrUn_JTFH01000001v1_decoy": 25139, "HLA-A*01:01:01:01": 3503, "mystery_contig": 5000}
 
+STRIPPED = {"1": 248956422, "2": 242193529, "X": 156040895, "Y": 57227415, "M": 16569,
+            "1_KI270706v1_random": 175055, "Un_KI270302v1": 2274, "1_KI270762v1_alt": 354444,
+            "Un_JTFH01000001v1_decoy": 25139, "EBV": 171823, "mystery_contig": 5000}
+
 HEADER_META = [
     "##fileformat=VCFv4.2",
     '##FILTER=<ID=LowQual,Description="Low quality">',
@@ -141,7 +145,7 @@ RECORDS = [
 
 
 def vcf_text(scheme: str = "numeric", *, malformed_late: bool = False, unsorted: bool = False) -> str:
-    contigs = NUMERIC if scheme == "numeric" else UCSC
+    contigs = {"numeric": NUMERIC, "chr": UCSC, "stripped": STRIPPED}[scheme]
     names = list(contigs)
     lines = list(HEADER_META)
     lines += [f"##contig=<ID={n},length={l}>" for n, l in contigs.items()]

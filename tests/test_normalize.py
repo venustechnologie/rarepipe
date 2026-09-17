@@ -376,3 +376,22 @@ def test_retention_is_inherited(case, resources, normalize):
     c = normalize(manifest, resources()).case
     assert c.retention.classification == "inherits_case_policy" and c.retention.review_required
     assert "controlled_genomic_delete_required" in c.retention.source_retention_classes
+
+
+def test_chr_stripped_analysis_set_names_bind_to_the_assembly_report(case, resources, normalize):
+    """Real-world naming: the UCSC analysis set published with the 'chr' prefix removed."""
+    res = resources()
+    _, m_ucsc = case("ucsc2", scheme="chr")
+    _, m_strip = case("stripped", scheme="stripped")
+    ucsc = normalize(m_ucsc, res, out="s1").case.genome.reference
+    strip = normalize(m_strip, res, out="s2").case.genome.reference
+    by_name = {b.source_name: b for b in strip.contigs}
+    assert by_name["M"].canonical_id == "GRCh38:NC_012920.1" and by_name["M"].matched_alias == "chrM"
+    assert by_name["1_KI270706v1_random"].contig_class.value == "unlocalized"
+    assert by_name["1_KI270706v1_random"].basis == "assembly_report_alias_normalized"
+    assert by_name["1_KI270762v1_alt"].contig_class.value == "alternate_locus"
+    assert by_name["Un_KI270302v1"].contig_class.value == "unplaced"
+    assert by_name["EBV"].contig_class.value == "decoy_or_other" and by_name["EBV"].basis == "name_heuristic"
+    # every contig the report describes now binds to the same canonical identity under either spelling
+    assert {b.canonical_id for b in strip.contigs if b.canonical_id} == {b.canonical_id for b in ucsc.contigs if b.canonical_id}
+    assert strip.contig_summary.by_class == ucsc.contig_summary.by_class

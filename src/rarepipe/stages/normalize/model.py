@@ -164,7 +164,8 @@ class ContigBinding(BaseModel):
     canonical_id: str | None = None
     label: str | None = None
     aliases: dict[str, str] = Field(default_factory=dict)
-    basis: Literal["assembly_report_name_and_length", "assembly_report_name_only", "name_heuristic", "unbound"]
+    basis: Literal["assembly_report_name_and_length", "assembly_report_alias_normalized", "assembly_report_name_only", "name_heuristic", "unbound"]
+    matched_alias: str | None = Field(None, description="The assembly-report alias this source name bound to (differs when chr-prefix normalization was needed).")
     length_conflict: bool = False
     records: int | None = restricted(None, description="Per-contig record count (e.g. chrY counts reveal biology) — private only.")
 
@@ -241,6 +242,7 @@ class PhaseInformation(BaseModel):
     pgt_populated_records: int
     pid_populated_records: int
     note: str = "Structural availability only; no phasing was inferred."
+    interpretation_note: str | None = Field(None, description="Mechanical explanation of the observed combination of phase fields.")
 
 
 class UpstreamStep(BaseModel):

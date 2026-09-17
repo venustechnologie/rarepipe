@@ -111,6 +111,8 @@ def render(c: NormalizedCase) -> str:
         w(f"**Phase information: {p.status}**" + (f" ({', '.join(p.kinds)})" if p.kinds else "")
           + f" — heterozygous records {_n(p.het_records)}, GT-phased {_n(p.het_records_gt_phased)}; PS populated {_n(p.ps_populated_records)}; "
           f"PGT {_n(p.pgt_populated_records)}; PID {_n(p.pid_populated_records)}. {p.note}\n")
+        if p.interpretation_note:
+            w(f"> {p.interpretation_note}\n")
 
         w("### Upstream processing declared in the VCF header\n")
         if not v.upstream_processing:

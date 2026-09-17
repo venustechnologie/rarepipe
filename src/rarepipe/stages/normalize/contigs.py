@@ -50,6 +50,27 @@ def _heuristic(name: str) -> ContigClass | None:
     return None
 
 
+def alias_candidates(name: str) -> list[str]:
+    """Source name plus chr-prefix variants. Some distributions publish the UCSC analysis set with
+    the 'chr' prefix stripped ('1', 'M', '1_KI270706v1_random'); the assembly report lists the
+    prefixed spellings, so both are tried and the alias that matched is recorded."""
+    out = [name]
+    if name.startswith("chr"):
+        out.append(name[3:])
+    else:
+        out.append("chr" + name)
+    if name in ("M", "chrM"):
+        out.append("MT")
+    elif name in ("MT", "chrMT"):
+        out += ["chrM", "M"]
+    seen, unique = set(), []
+    for n in out:
+        if n not in seen:
+            seen.add(n)
+            unique.append(n)
+    return unique
+
+
 def source_scheme(names: list[str]) -> str:
     prefixed = sum(1 for n in names if canonical_key(n)[0] and canonical_key(n)[1])
     numeric = sum(1 for n in names if canonical_key(n)[0] and not canonical_key(n)[1])
@@ -63,7 +84,11 @@ def bind_contigs(contigs: list[tuple[str, int | None]], report: AssemblyReport |
     idx = report.alias_index() if report else {}
     out: list[ContigBinding] = []
     for name, length in contigs:
-        row = idx.get(name)
+        row = matched = None
+        for candidate in alias_candidates(name):
+            if candidate in idx:
+                row, matched = idx[candidate], candidate
+                break
         records = (records_per_contig or {}).get(name) if records_per_contig is not None else None
         if row:
             conflict = length is not None and row.length is not None and length != row.length
@@ -75,8 +100,9 @@ def bind_contigs(contigs: list[tuple[str, int | None]], report: AssemblyReport |
             out.append(ContigBinding(
                 source_name=name, source_length=length, contig_class=cls,
                 canonical_id=None if conflict else f"{assembly}:{accession}", label=label, aliases=aliases,
-                basis="assembly_report_name_only" if (length is None or conflict) else "assembly_report_name_and_length",
-                length_conflict=conflict, records=records,
+                basis=("assembly_report_name_only" if (length is None or conflict)
+                       else "assembly_report_name_and_length" if matched == name else "assembly_report_alias_normalized"),
+                matched_alias=matched, length_conflict=conflict, records=records,
             ))
             continue
         cls = _heuristic(name)

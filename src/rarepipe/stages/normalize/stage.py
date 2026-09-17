@@ -485,6 +485,16 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
     return case
 
 
+def _phase_note(het_phased: int, pop: dict[str, int]) -> str | None:
+    pgt = pop.get("PGT", 0) or pop.get("PID", 0)
+    if pgt and not het_phased:
+        return ("Phased genotypes are carried in PGT/PID while GT stays unphased — the convention GATK HaplotypeCaller uses for "
+                "read-backed phasing. Phase is local to each PID group; no phasing was inferred here.")
+    if het_phased and not pop.get("PS", 0):
+        return "Heterozygous GT values use the phased '|' separator without a PS phase set, so phase-block extent is undeclared."
+    return None
+
+
 def _characterize(vcf_id, vmeta: VcfMetadata, scan: vcf_scan.ScanResult, steps, filter_defs, info_ids, formats, issues) -> VcfCharacterization:
     n = scan.records_parsed
     denom = max(1, n * max(1, scan.sample_count))
@@ -519,7 +529,8 @@ def _characterize(vcf_id, vmeta: VcfMetadata, scan: vcf_scan.ScanResult, steps, 
                                        ploidy_counts=dict(sorted(scan.ploidy.items()))),
         genotype_malformed=scan.genotype_malformed,
         phase=PhaseInformation(status="present" if kinds else "none", kinds=kinds, het_records=het, het_records_gt_phased=scan.het_phased,
-                               ps_populated_records=pop.get("PS", 0), pgt_populated_records=pop.get("PGT", 0), pid_populated_records=pop.get("PID", 0)),
+                               ps_populated_records=pop.get("PS", 0), pgt_populated_records=pop.get("PGT", 0), pid_populated_records=pop.get("PID", 0),
+                               interpretation_note=_phase_note(scan.het_phased, pop)),
         upstream_processing=steps, elapsed_seconds=scan.elapsed,
     )
     ids = [vcf_id]

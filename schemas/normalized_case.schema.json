@@ -280,12 +280,26 @@
         "basis": {
           "enum": [
             "assembly_report_name_and_length",
+            "assembly_report_alias_normalized",
             "assembly_report_name_only",
             "name_heuristic",
             "unbound"
           ],
           "title": "Basis",
           "type": "string"
+        },
+        "matched_alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The assembly-report alias this source name bound to (differs when chr-prefix normalization was needed).",
+          "title": "Matched Alias"
         },
         "length_conflict": {
           "default": false,
@@ -916,6 +930,19 @@
           "default": "Structural availability only; no phasing was inferred.",
           "title": "Note",
           "type": "string"
+        },
+        "interpretation_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Mechanical explanation of the observed combination of phase fields.",
+          "title": "Interpretation Note"
         }
       },
       "required": [
