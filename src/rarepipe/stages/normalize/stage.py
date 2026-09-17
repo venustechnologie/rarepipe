@@ -275,6 +275,7 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
     console.step(5, TOTAL_STEPS, "Streaming the complete VCF (aggregates only)...")
     vchar = None
     per_contig = None
+    stream_seconds = None
     ref_claims: list[str] = []
     vmeta = assets[vcf_id].metadata if vcf_id else None
     if vcf_id and vcf_id in ok_ids and isinstance(vmeta, VcfMetadata):
@@ -284,13 +285,14 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
                              progress=lambda d, t: console.progress(vcf_id, d, t))
         per_contig = {k.decode(): v for k, v in scan.per_contig.items()}
         vchar = _characterize(vcf_id, vmeta, scan, steps, filter_defs, info_ids, formats, issues)
+        stream_seconds = scan.elapsed
         ops.append(Operation(operation="stream_vcf_characterization", inputs=[vcf_id],
                              parameters={"parser": "rarepipe strict VCF text parser", "cross_check": "htslib full read", "records_dropped": "0"},
                              output="genome.variant_source"))
         (console.ok if not vchar.records_malformed and vchar.parsers_agree else console.fail)(
             f"{vchar.data_lines:,} data lines; {vchar.records_malformed} malformed; htslib read {vchar.htslib_records:,} ({'agrees' if vchar.parsers_agree else 'DISAGREES'})")
         console.info(f"  PASS {vchar.filters.pass_records:,} · non-PASS {vchar.filters.non_pass_records:,} · FILTER '.' {vchar.filters.missing_filter_records:,}; "
-                     f"multiallelic {vchar.multiallelic_records:,}; sorted {vchar.sorted}; phase info: {vchar.phase.status}; {vchar.elapsed_seconds}s")
+                     f"multiallelic {vchar.multiallelic_records:,}; sorted {vchar.sorted}; phase info: {vchar.phase.status}; {stream_seconds}s")
     else:
         console.warn("no verified primary VCF to stream")
 
@@ -483,7 +485,7 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
                                                                    "no derived genomic files written", "FASTQ assets not opened"],
                               case_root_override=str(req.case_root.resolve()) if req.case_root else None),
         execution=Execution(run_id=run_id, started_at=started.isoformat(), finished_at=utc_now().isoformat(),
-                            duration_seconds=round(time.monotonic() - t0, 3), argv=req.argv),
+                            duration_seconds=round(time.monotonic() - t0, 3), vcf_stream_seconds=stream_seconds, argv=req.argv),
     )
     case.semantic_digest = _semantic_digest(case)
     return case
@@ -535,7 +537,7 @@ def _characterize(vcf_id, vmeta: VcfMetadata, scan: vcf_scan.ScanResult, steps, 
         phase=PhaseInformation(status="present" if kinds else "none", kinds=kinds, het_records=het, het_records_gt_phased=scan.het_phased,
                                ps_populated_records=pop.get("PS", 0), pgt_populated_records=pop.get("PGT", 0), pid_populated_records=pop.get("PID", 0),
                                interpretation_note=_phase_note(scan.het_phased, pop)),
-        upstream_processing=steps, elapsed_seconds=scan.elapsed,
+        upstream_processing=steps,
     )
     ids = [vcf_id]
     if scan.malformed:

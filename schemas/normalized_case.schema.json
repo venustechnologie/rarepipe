@@ -441,6 +441,19 @@
           "title": "Duration Seconds",
           "type": "number"
         },
+        "vcf_stream_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Wall-clock of the VCF pass. Execution metadata: excluded from the semantic digest.",
+          "title": "Vcf Stream Seconds"
+        },
         "argv": {
           "items": {
             "type": "string"
@@ -1873,10 +1886,6 @@
           },
           "title": "Upstream Processing",
           "type": "array"
-        },
-        "elapsed_seconds": {
-          "title": "Elapsed Seconds",
-          "type": "number"
         }
       },
       "required": [
@@ -1910,8 +1919,7 @@
         "genotype_states",
         "genotype_malformed",
         "phase",
-        "upstream_processing",
-        "elapsed_seconds"
+        "upstream_processing"
       ],
       "title": "VcfCharacterization",
       "type": "object"

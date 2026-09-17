@@ -179,3 +179,13 @@ def test_stage01_schema_is_frozen():
     out = subprocess.run(["git", "diff", "--name-only", "stage01-case_intake-v0.1.0", "--", "schemas/case_manifest.schema.json",
                           "src/rarepipe/stages/intake/"], cwd=ROOT, capture_output=True, text=True)
     assert out.stdout.strip() == "", f"frozen Stage 01 files changed: {out.stdout}"
+
+
+def test_semantic_digest_payload_contains_no_timing(prepared, tmp_path):
+    """Timing must live in `execution` only — otherwise two identical runs differ."""
+    root, manifest, res = prepared
+    case = _run(manifest, res, tmp_path / "out").case
+    payload = case.model_dump(mode="json", by_alias=True, exclude={"execution", "semantic_digest"})
+    flat = json.dumps(payload)
+    assert "elapsed" not in flat and "_seconds" not in flat
+    assert case.execution.vcf_stream_seconds is not None

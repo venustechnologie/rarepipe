@@ -67,7 +67,8 @@ def render(c: NormalizedCase) -> str:
     if v is None:
         w("- ✗ no verified primary VCF was streamed\n")
     else:
-        w(f"- {'✓' if v.streamed_completely else '✗'} streamed completely: {_n(v.data_lines)} data lines in {v.elapsed_seconds}s")
+        w(f"- {'✓' if v.streamed_completely else '✗'} streamed completely: {_n(v.data_lines)} data lines"
+          + (f" in {c.execution.vcf_stream_seconds}s" if c.execution.vcf_stream_seconds else ""))
         w(f"- {'✓' if not v.records_malformed else '✗'} malformed records: {_n(v.records_malformed)}")
         w(f"- {'✓' if v.parsers_agree else '✗'} htslib independently read {_n(v.htslib_records)} records ({'agrees' if v.parsers_agree else 'DISAGREES'})")
         w(f"- {'✓' if v.sorted else '✗'} coordinate-sorted; contig order follows header: {v.contig_order_follows_header}")

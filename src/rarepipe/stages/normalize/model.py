@@ -296,7 +296,6 @@ class VcfCharacterization(BaseModel):
     genotype_malformed: int
     phase: PhaseInformation
     upstream_processing: list[UpstreamStep]
-    elapsed_seconds: float
 
 
 class SampleIdentity(BaseModel):
@@ -419,6 +418,7 @@ class Execution(BaseModel):
     started_at: str
     finished_at: str
     duration_seconds: float
+    vcf_stream_seconds: float | None = Field(None, description="Wall-clock of the VCF pass. Execution metadata: excluded from the semantic digest.")
     argv: list[str] = restricted(list)
 
 
