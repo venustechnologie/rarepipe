@@ -281,3 +281,18 @@ def test_committed_schema_matches_code():
 
     committed = (Path(__file__).resolve().parents[1] / "schemas" / "raw_candidate_set.schema.json").read_text()
     assert committed == schema_json(), "run: uv run rarepipe schema --artifact raw_candidate_set --output schemas/raw_candidate_set.schema.json"
+
+
+def test_solver_resources_are_pinned_from_the_lock(normalized, baseline, tmp_path):
+    from rarepipe.resources.lock import ResourceKind, register
+
+    res = tmp_path / "res"
+    (res / "exomiser").mkdir(parents=True)
+    dist = res / "exomiser" / "exomiser-cli-15.1.0-distribution.zip"
+    dist.write_bytes(b"synthetic distribution")
+    data = res / "exomiser" / "2602_hg38.zip"
+    data.write_bytes(b"synthetic data bundle")
+    register(res, ResourceKind.EXOMISER_DISTRIBUTION, dist, name="Exomiser CLI 15.1.0", version="15.1.0")
+    register(res, ResourceKind.EXOMISER_DATA, data, name="Exomiser hg38 data", version="2602_hg38")
+    c = baseline(normalized, resources=res).candidate_set
+    assert c.provenance.solver.distribution_sha256 and c.provenance.solver.data_sha256["exomiser_data:2602_hg38"]

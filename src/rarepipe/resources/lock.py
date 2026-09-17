@@ -20,6 +20,8 @@ LOCK_NAME = "resources.lock.json"
 class ResourceKind(StrEnum):
     HPO_ONTOLOGY = "hpo_ontology"
     ASSEMBLY_REPORT = "assembly_report"
+    EXOMISER_DISTRIBUTION = "exomiser_distribution"
+    EXOMISER_DATA = "exomiser_data"
 
 
 class ResourceEntry(BaseModel):

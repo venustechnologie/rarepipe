@@ -120,6 +120,7 @@ def baseline(
     output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
     exomiser_home: Annotated[Path | None, typer.Option(help="Exomiser CLI installation directory (contains exomiser-cli-*.jar).")] = None,
     exomiser_data: Annotated[Path | None, typer.Option(help="Exomiser data directory (defaults to <home>/data).")] = None,
+    resources: Annotated[Path | None, typer.Option(help="Pinned resources directory whose lock records the Exomiser distribution/data digests.")] = None,
     profile: Annotated[list[str], typer.Option("--profile", help="Run only these profiles (repeatable), e.g. PROFILE_A.")] = [],
     max_heap: Annotated[str, typer.Option(help="Java max heap for the solver, e.g. 7g.")] = "7g",
     timeout_hours: Annotated[float, typer.Option(help="Per-profile timeout.")] = 6.0,
@@ -131,7 +132,7 @@ def baseline(
     from rarepipe.stages.baseline.model import Status
     from rarepipe.stages.baseline.stage import BaselineRequest, BaselineUsageError, run_baseline
 
-    req = BaselineRequest(normalized_case=normalized_case, output=output, exomiser_home=exomiser_home, exomiser_data=exomiser_data,
+    req = BaselineRequest(normalized_case=normalized_case, output=output, exomiser_home=exomiser_home, exomiser_data=exomiser_data, resources=resources,
                           profile_ids=list(profile), max_heap=max_heap, timeout_seconds=int(timeout_hours * 3600),
                           case_root=case_root, dry_run=dry_run, argv=sys.argv[:])
     try:

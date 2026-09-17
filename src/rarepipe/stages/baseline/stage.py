@@ -61,6 +61,7 @@ class BaselineRequest:
     output: Path
     exomiser_home: Path | None = None
     exomiser_data: Path | None = None
+    resources: Path | None = None
     profile_ids: list[str] = field(default_factory=list)
     max_heap: str = "7g"
     timeout_seconds: int = 6 * 3600
@@ -193,11 +194,15 @@ def _run(req: BaselineRequest, console: Console, norm: dict, run_id: str, starte
     else:
         console.ok(f"Exomiser {install.version}; data hg38={install.hg38_version}, phenotype={install.phenotype_version}; {install.java_version}")
 
+    pinned = _pinned_solver_resources(req.resources)
     solver = SolverIdentity(
         version=install.version if install else "unavailable", jar_sha256=install.jar_sha256 if install else None,
         hg38_data_version=install.hg38_version if install else None, phenotype_data_version=install.phenotype_version if install else None,
         java_version=install.java_version if install else None, java_max_heap=req.max_heap,
+        distribution_sha256=pinned.get("exomiser_distribution"), data_sha256={k: v for k, v in pinned.items() if k.startswith("exomiser_data")},
     )
+    if req.resources and not pinned:
+        console.warn("no pinned Exomiser resources in the lock; solver identity rests on the jar digest and data versions alone")
 
     # ── 3. profiles ─────────────────────────────────────────────────────────
     console.step(3, 6, "Building analysis profiles...")
@@ -293,6 +298,22 @@ def _run(req: BaselineRequest, console: Console, norm: dict, run_id: str, starte
     )
     case.semantic_digest = _digest(case)
     return case
+
+
+def _pinned_solver_resources(resources: Path | None) -> dict[str, str]:
+    """SHA-256 of the distribution and data bundles, from resources.lock.json (PRD 003 §11)."""
+    if not resources:
+        return {}
+    from rarepipe.resources.lock import ResourceKind, load_lock
+
+    lock = load_lock(resources)
+    out: dict[str, str] = {}
+    for entry in (lock.resources if lock else []):
+        if entry.kind == ResourceKind.EXOMISER_DISTRIBUTION:
+            out["exomiser_distribution"] = entry.sha256
+        elif entry.kind == ResourceKind.EXOMISER_DATA:
+            out[f"exomiser_data:{entry.version}"] = entry.sha256
+    return out
 
 
 def _proband_label(norm: dict) -> str:
