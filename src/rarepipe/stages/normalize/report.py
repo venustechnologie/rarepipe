@@ -56,6 +56,8 @@ def render(c: NormalizedCase) -> str:
         w("- records by contig class: " + (", ".join(f"{k} {_n(v)}" for k, v in s.records_by_class.items()) or "n/a"))
         w("- binding basis: " + ", ".join(f"{k} {_n(v)}" for k, v in s.by_basis.items())
           + (f" (resource: {r.assembly_resource.name} {r.assembly_resource.version})" if r.assembly_resource else " (no assembly resource)"))
+        if r.declared_references:
+            w("- reference declared in the VCF header: " + ", ".join(f"`{d.basename}`" for d in r.declared_references))
         w(f"- analysis reference FASTA: **{r.analysis_reference.status}** — {r.analysis_reference.reason}")
     w(f"- samples: " + ", ".join(f"{s.sample_id} (role: {s.role}{', ' + s.role_source if s.role_source != 'unknown' else ''})" for s in g.samples))
     w("")

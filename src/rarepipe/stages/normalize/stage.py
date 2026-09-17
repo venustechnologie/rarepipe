@@ -38,6 +38,7 @@ from rarepipe.stages.normalize.assertions import CaseAssertions
 from rarepipe.stages.normalize.model import (
     SUPPORTED_MANIFEST_MAJOR,
     AnalysisReference,
+    DeclaredReference,
     AppliedAssertion,
     CarriedIssue,
     Execution,
@@ -274,10 +275,11 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
     console.step(5, TOTAL_STEPS, "Streaming the complete VCF (aggregates only)...")
     vchar = None
     per_contig = None
+    ref_claims: list[str] = []
     vmeta = assets[vcf_id].metadata if vcf_id else None
     if vcf_id and vcf_id in ok_ids and isinstance(vmeta, VcfMetadata):
         path = case_root / assets[vcf_id].relative_path
-        steps, filter_defs, info_ids, formats = upstream.header_description(path)
+        steps, filter_defs, info_ids, formats, ref_claims = upstream.header_description(path)
         scan = vcf_scan.scan(path, [c.name for c in vmeta.contigs], {f.id for f in filter_defs},
                              progress=lambda d, t: console.progress(vcf_id, d, t))
         per_contig = {k.decode(): v for k, v in scan.per_contig.items()}
@@ -295,6 +297,7 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
     # ── 6. semantic normalization ───────────────────────────────────────────
     console.step(6, TOTAL_STEPS, "Normalizing reference, contigs, samples, phenotype, reads, pedigree...")
     reference = None
+    ref_claims = ref_claims if vchar else []
     assembly = manifest.reference.genome_build.value.value
     if vmeta is not None and isinstance(vmeta, VcfMetadata):
         asm_report = None
@@ -324,6 +327,7 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
             assembly=assembly, assembly_confidence=manifest.reference.genome_build.confidence.value,
             assembly_evidence=[f"CaseManifest {source.run_id}: {e}" for e in manifest.reference.genome_build.evidence],
             source_contig_scheme=summary.source_scheme, assembly_resource=asm_ref if asm_report else None,
+            declared_references=[DeclaredReference(basename=Path(c.split(":")[-1]).name, raw=c) for c in dict.fromkeys(ref_claims)],
             contig_summary=summary, contigs=bindings,
             analysis_reference=AnalysisReference(status="not_yet_bound", reason="no exact, checksum-pinned reference FASTA compatible with the VCF contig dictionary has been provisioned"),
         )
@@ -488,8 +492,8 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
 def _phase_note(het_phased: int, pop: dict[str, int]) -> str | None:
     pgt = pop.get("PGT", 0) or pop.get("PID", 0)
     if pgt and not het_phased:
-        return ("Phased genotypes are carried in PGT/PID while GT stays unphased — the convention GATK HaplotypeCaller uses for "
-                "read-backed phasing. Phase is local to each PID group; no phasing was inferred here.")
+        return ("Phased genotypes are carried in PGT/PID while GT stays unphased — the read-backed phasing convention of "
+                "HaplotypeCaller-style callers (GATK, Sentieon). Phase is local to each PID group; no phasing was inferred here.")
     if het_phased and not pop.get("PS", 0):
         return "Heterozygous GT values use the phased '|' separator without a PS phase set, so phase-block extent is undeclared."
     return None

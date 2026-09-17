@@ -33,23 +33,28 @@ _BCFTOOLS_CMD = re.compile(r"^(?P<tool>[A-Za-z0-9]+)_(?P<sub>[A-Za-z0-9]+)Comman
 _BCFTOOLS_VER = re.compile(r"^(?P<tool>[A-Za-z0-9]+)_(?P<sub>[A-Za-z0-9]+)Version$")
 
 
-def header_description(path: Path) -> tuple[list[UpstreamStep], list[FilterDefinition], list[str], dict[str, tuple[str | None, str | None]]]:
-    """(upstream steps, FILTER definitions, INFO ids, FORMAT id → (Number, Type)). Header only."""
+def header_description(path: Path) -> tuple[list[UpstreamStep], list[FilterDefinition], list[str], dict[str, tuple[str | None, str | None]], list[str]]:
+    """(upstream steps, FILTER definitions, INFO ids, FORMAT id → (Number, Type), ##reference claims). Header only."""
     steps: list[UpstreamStep] = []
+    references: list[str] = []
     versions: dict[str, str] = {}
     with pysam.VariantFile(str(path)) as vf:
         h = vf.header
         for rec in h.records:
             key = rec.key or ""
-            if rec.type == "STRUCTURED" and key.endswith("CommandLine"):
+            # Vendors vary: GATKCommandLine, DRAGENCommandLine, SentieonCommandLine.Haplotyper …
+            if rec.type == "STRUCTURED" and "commandline" in key.lower():
                 items = {k: _unquote(v) for k, v in rec.items()}
                 cmd = items.get("CommandLine") or items.get("CommandLineOptions")
-                steps.append(UpstreamStep(tool=f"{key[: -len('CommandLine')] or 'unknown'} {items.get('ID') or ''}".strip(),
+                vendor = re.split(r"CommandLine", key, flags=re.I)[0] or "unknown"
+                steps.append(UpstreamStep(tool=f"{vendor} {items.get('ID') or key.split('.')[-1]}".strip(),
                                           version=items.get("Version"), date=items.get("Date"),
                                           parameters="available" if cmd else "unavailable",
                                           source=f"vcf_header:{key}", command_line=cmd))
             elif rec.type == "GENERIC":
                 value = rec.value or ""
+                if key == "reference":
+                    references.append(value)
                 if m := _BCFTOOLS_VER.match(key):
                     versions[f"{m['tool']} {m['sub']}"] = value.split()[0] if value else ""
                 elif m := _BCFTOOLS_CMD.match(key):
@@ -68,4 +73,4 @@ def header_description(path: Path) -> tuple[list[UpstreamStep], list[FilterDefin
         filters = [FilterDefinition(id=fid, description=_unquote(f.description)) for fid, f in h.filters.items()]
         info_ids = sorted(h.info.keys())
         formats = {fid: (str(f.number) if f.number is not None else None, f.type) for fid, f in h.formats.items()}
-    return steps, filters, info_ids, formats
+    return steps, filters, info_ids, formats, references

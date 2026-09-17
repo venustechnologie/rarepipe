@@ -396,6 +396,33 @@
       "title": "ContigSummary",
       "type": "object"
     },
+    "DeclaredReference": {
+      "description": "A ##reference declaration. The basename usually names the exact distribution\n(analysis set, decoys, masking, contig naming); the full value may be a local path.",
+      "properties": {
+        "basename": {
+          "title": "Basename",
+          "type": "string"
+        },
+        "raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Raw"
+        }
+      },
+      "required": [
+        "basename"
+      ],
+      "title": "DeclaredReference",
+      "type": "object"
+    },
     "Execution": {
       "properties": {
         "run_id": {
@@ -1187,6 +1214,13 @@
         "source_contig_scheme": {
           "title": "Source Contig Scheme",
           "type": "string"
+        },
+        "declared_references": {
+          "items": {
+            "$ref": "#/$defs/DeclaredReference"
+          },
+          "title": "Declared References",
+          "type": "array"
         },
         "assembly_resource": {
           "anyOf": [

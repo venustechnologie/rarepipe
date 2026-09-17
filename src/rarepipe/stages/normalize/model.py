@@ -185,11 +185,20 @@ class AnalysisReference(BaseModel):
     reason: str
 
 
+class DeclaredReference(BaseModel):
+    """A ##reference declaration. The basename usually names the exact distribution
+    (analysis set, decoys, masking, contig naming); the full value may be a local path."""
+
+    basename: str
+    raw: str | None = restricted(None)
+
+
 class ReferenceBinding(BaseModel):
     assembly: str
     assembly_confidence: str
     assembly_evidence: list[str]
     source_contig_scheme: str
+    declared_references: list[DeclaredReference] = Field(default_factory=list)
     assembly_resource: ResourceRef | None
     contig_summary: ContigSummary
     contigs: list[ContigBinding]

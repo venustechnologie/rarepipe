@@ -395,3 +395,16 @@ def test_chr_stripped_analysis_set_names_bind_to_the_assembly_report(case, resou
     # every contig the report describes now binds to the same canonical identity under either spelling
     assert {b.canonical_id for b in strip.contigs if b.canonical_id} == {b.canonical_id for b in ucsc.contigs if b.canonical_id}
     assert strip.contig_summary.by_class == ucsc.contig_summary.by_class
+
+
+def test_vendor_caller_lines_and_declared_references_are_captured(case, resources, normalize):
+    """Callers vary (GATK, DRAGEN, Sentieon) and a VCF may declare several ##reference values."""
+    _, manifest = case()
+    c = normalize(manifest, resources()).case
+    tools = {s.tool for s in c.genome.variant_source.upstream_processing}
+    assert "Sentieon Haplotyper" in tools and "GATK VariantFiltration" in tools
+    sentieon = next(s for s in c.genome.variant_source.upstream_processing if s.tool == "Sentieon Haplotyper")
+    assert sentieon.version == "sentieon-genomics-202308.02" and sentieon.parameters == "available"
+    basenames = [d.basename for d in c.genome.reference.declared_references]
+    assert basenames == ["GCA_000001405.15_GRCh38_no_alt_analysis_set_plus_hs38d1_no_chr.fasta", "genome.fasta"]
+    assert all(d.raw and d.raw.startswith("file:") for d in c.genome.reference.declared_references)
