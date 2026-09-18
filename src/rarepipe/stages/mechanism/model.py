@@ -298,6 +298,7 @@ class AssayRecord(BaseModel):
     biological_question: str
     models_used: list[str] = Field(default_factory=list)
     readout: str = ""
+    source_count: int = Field(0, description="How many distinct sources use this assay; `sources` lists a sample.")
     sources: list[str] = Field(default_factory=list)
     case_applicability: Applicability = Applicability.INDIRECT
 

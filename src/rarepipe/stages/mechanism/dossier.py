@@ -106,7 +106,7 @@ def render(d: MechanismDossier) -> str:
     w("| assay | question | models | sources |")
     w("|---|---|---|---|")
     for a_ in d.assays[:12]:
-        w(f"| {a_.assay} | {a_.biological_question} | {', '.join(a_.models_used[:3])} | {len(a_.sources)} |")
+        w(f"| {a_.assay} | {a_.biological_question} | {', '.join(a_.models_used[:3])} | {a_.source_count} |")
     w("")
 
     w("## Contradictions\n")

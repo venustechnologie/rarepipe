@@ -129,7 +129,7 @@ def assay_inventory(evidence: list[EvidenceRecord], questions: dict[str, str]) -
         records.append(AssayRecord(
             assay=assay, biological_question=questions.get(assay, ""), models_used=models,
             readout=items[0].quote[:160],
-            sources=sorted({e.source_id for e in items})[:12],
+            source_count=len({e.source_id for e in items}), sources=sorted({e.source_id for e in items})[:12],
             case_applicability=min((e.applicability_to_case for e in items), key=lambda a: ["direct", "indirect", "background"].index(a.value))))
     return records
 

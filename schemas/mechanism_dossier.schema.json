@@ -166,6 +166,12 @@
           "title": "Readout",
           "type": "string"
         },
+        "source_count": {
+          "default": 0,
+          "description": "How many distinct sources use this assay; `sources` lists a sample.",
+          "title": "Source Count",
+          "type": "integer"
+        },
         "sources": {
           "items": {
             "type": "string"
