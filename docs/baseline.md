@@ -119,6 +119,24 @@ versions, Java version and max heap, the analysis/properties config digests (com
 a canonicalised job so they describe the *analysis*, not the run's paths), the
 NormalizedCase digest, and the source VCF SHA-256.
 
+## What the real solver actually does (measured, Exomiser 15.1.0 / data 2602)
+
+Verified by `tests/test_baseline_solver.py` against a provisioned installation, not assumed:
+
+| question | observed behaviour | consequence |
+|---|---|---|
+| multiallelic records | split into separate allele rows | no decomposition stage needed |
+| numeric contig names (`15`) | accepted; output contigs normalised to numeric | this case's `chr`-stripped naming needs no adaptation |
+| decoy contigs | variants silently dropped from output | MVA_001's ~43k decoy records never reach analysis |
+| `analysisMode: PASS_ONLY` | does **not** exclude non-PASS VCF records | the B/D profiles genuinely test filter sensitivity |
+| solver's TSV `FILTER` column | reports Exomiser's own status (`PASS` for survivors) | source labels must be read back from the VCF — otherwise an `MQ40` variant is recorded as PASS |
+| mode of inheritance in TSV | abbreviated `AD`/`AR`/`XD`/`XR` | a recessive candidate with two heterozygous contributing variants *is* the compound-het configuration; searching for `COMP_HET` finds nothing |
+| CLI shape | `--sample` + `--analysis` (flat script) + `--vcf/--assembly`; Spring config via `-Dspring.config.location` | the v13/14 combined job file is rejected; `--assembly` wants `GRCh38`, not `hg38` |
+
+Measured cost on a 9 GB laptop, 5,012,204-record WGS VCF: **~7–16 minutes per profile, peak ~1.9 GB RSS**.
+The phenotype-first step order prunes genes before variant work, so genome-scale analysis is far
+cheaper here than Exomiser's 8 GB genome guidance suggests.
+
 ## Retention
 
 | artifact | class |
