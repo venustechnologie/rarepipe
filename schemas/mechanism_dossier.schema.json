@@ -625,8 +625,16 @@
           "title": "Retrieval Plan",
           "type": "array"
         },
+        "progress": {
+          "$ref": "#/$defs/TaskProgress"
+        },
+        "state": {
+          "$ref": "#/$defs/TaskState",
+          "default": "PLANNED"
+        },
         "status": {
           "default": "planned",
+          "description": "Legacy coarse status. `state` and `progress` are what to read.",
           "enum": [
             "planned",
             "completed",
@@ -694,6 +702,14 @@
           "default": null,
           "description": "Which stopping rule ended the search (PRD 006 \u00a736).",
           "title": "Stop Reason"
+        },
+        "reviewed_by": {
+          "description": "Research sessions that actually read this bundle.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Reviewed By",
+          "type": "array"
         }
       },
       "required": [
@@ -1367,6 +1383,48 @@
       "title": "QueryRecord",
       "type": "object"
     },
+    "Readiness": {
+      "description": "Two questions, not one. The disease mechanism can be actionable while the allele is unknown.",
+      "properties": {
+        "disease_mechanism_ready_for_intervention_search": {
+          "title": "Disease Mechanism Ready For Intervention Search",
+          "type": "boolean"
+        },
+        "disease_mechanism_basis": {
+          "title": "Disease Mechanism Basis",
+          "type": "string"
+        },
+        "exact_allele_mechanism_complete": {
+          "title": "Exact Allele Mechanism Complete",
+          "type": "boolean"
+        },
+        "exact_allele_blocker": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exact Allele Blocker"
+        },
+        "semantic_review_coverage": {
+          "default": "",
+          "description": "How many public tasks a reasoning process actually read.",
+          "title": "Semantic Review Coverage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "disease_mechanism_ready_for_intervention_search",
+        "disease_mechanism_basis",
+        "exact_allele_mechanism_complete"
+      ],
+      "title": "Readiness",
+      "type": "object"
+    },
     "RetrievedDocument": {
       "properties": {
         "source_id": {
@@ -1609,6 +1667,71 @@
       ],
       "title": "Status",
       "type": "string"
+    },
+    "TaskProgress": {
+      "description": "Each stage of work on a question, separately. Fetching documents is not reading them.",
+      "properties": {
+        "retrieval": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "complete",
+            "blocked",
+            "not_applicable"
+          ],
+          "title": "Retrieval",
+          "type": "string"
+        },
+        "deterministic_extraction": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "complete",
+            "blocked",
+            "not_applicable"
+          ],
+          "title": "Deterministic Extraction",
+          "type": "string"
+        },
+        "semantic_review": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "complete",
+            "blocked",
+            "not_applicable"
+          ],
+          "title": "Semantic Review",
+          "type": "string"
+        },
+        "adjudication": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "complete",
+            "blocked",
+            "not_applicable"
+          ],
+          "title": "Adjudication",
+          "type": "string"
+        }
+      },
+      "title": "TaskProgress",
+      "type": "object"
+    },
+    "TaskState": {
+      "description": "\"We searched this\" must not mean the same thing as \"a reasoning process examined it\".",
+      "enum": [
+        "PLANNED",
+        "RETRIEVED",
+        "DETERMINISTICALLY_EXTRACTED",
+        "SEMANTICALLY_REVIEWED",
+        "ADJUDICATED",
+        "CLOSED",
+        "BLOCKED"
+      ],
+      "title": "TaskState",
+      "type": "string"
     }
   },
   "properties": {
@@ -1644,6 +1767,9 @@
     "status_basis": {
       "title": "Status Basis",
       "type": "string"
+    },
+    "readiness": {
+      "$ref": "#/$defs/Readiness"
     },
     "interpretation_note": {
       "default": "A mechanism dossier, not a mechanism story. Claims are separated by scope: what is known about the gene and the disease is not evidence about this child's alleles. No diagnosis, no treatment reasoning, no intervention search.",
@@ -1780,6 +1906,7 @@
     "gene_symbol",
     "status",
     "status_basis",
+    "readiness",
     "state",
     "claims",
     "graph",

@@ -382,3 +382,69 @@ def test_a_brief_carries_the_rules_and_the_documents_but_no_case_identity(tmp_pa
     for needle in needles:
         assert needle not in brief
     assert "chr15" not in brief and "40210911" not in brief
+
+
+def test_a_task_that_was_only_retrieved_does_not_read_as_reviewed(corpus, adjudication, tmp_path):
+    """'We searched this' must not look like 'a reasoning process examined this'."""
+    r = resolve(corpus, adjudication, tmp_path)
+    public = [t for t in r.dossier.knowledge_tasks if t.disclosure_level.value != "local_only"]
+    assert public, "no public task in the fixture"
+    for task in public:
+        assert task.progress.semantic_review == "not_started"
+        assert task.state.value in ("RETRIEVED", "DETERMINISTICALLY_EXTRACTED", "BLOCKED", "PLANNED")
+        assert not task.reviewed_by
+    assert "0 of" in r.dossier.readiness.semantic_review_coverage
+
+
+def test_readiness_separates_the_disease_mechanism_from_the_allele(corpus, adjudication, tmp_path):
+    r = resolve(corpus, adjudication, tmp_path)
+    readiness = r.dossier.readiness
+    assert readiness.exact_allele_mechanism_complete is False
+    assert readiness.exact_allele_blocker == "missense_function_unresolved"
+    assert readiness.disease_mechanism_ready_for_intervention_search is (r.dossier.status is Status.READY_FOR_INTERVENTION_SEARCH)
+    text = (r.run_dir / "mechanism_dossier.md").read_text()
+    assert "Readiness, in two dimensions" in text and "missense_function_unresolved" in text
+
+
+def test_a_reviewed_task_is_marked_reviewed_and_counted(corpus, adjudication, tmp_path):
+    root = _workspace(tmp_path, corpus)
+    good = _analysis(root, [{"statement": "Patient cells with biallelic mutations have an impaired mitotic checkpoint.",
+                             "claim_type": "checkpoint_effect", "scope": "disease_level", "direction": "supports",
+                             "confidence": "high", "reasoning": "stated in the source",
+                             "evidence": [{"source_id": "PMID:111",
+                                           "quote": "cell lines derived from MVA patients with biallelic BUB1B mutations have an impaired mitotic checkpoint",
+                                           "experimental_level": "patient_derived_cells"}]}])
+    research.save_analysis(root, research.import_analysis(root, good))
+    r = resolve(corpus, adjudication, tmp_path, research_dir=root)
+    reviewed = next(t for t in r.dossier.knowledge_tasks if t.id == "KT_0001")
+    assert reviewed.progress.semantic_review == "complete"
+    assert reviewed.state.value == "ADJUDICATED" and reviewed.reviewed_by
+
+
+def test_a_synthesis_may_only_reconcile_evidence_already_accepted(tmp_path, corpus):
+    root = _workspace(tmp_path, corpus)
+    first = _analysis(root, [{"statement": "Patient cells have an impaired mitotic checkpoint.",
+                              "claim_type": "checkpoint_effect", "scope": "disease_level", "direction": "supports",
+                              "confidence": "high", "reasoning": "stated",
+                              "evidence": [{"source_id": "PMID:111",
+                                            "quote": "cell lines derived from MVA patients with biallelic BUB1B mutations have an impaired mitotic checkpoint",
+                                            "experimental_level": "patient_derived_cells"}]}], "first.yaml")
+    research.save_analysis(root, research.import_analysis(root, first))
+
+    reconcile = _analysis(root, [{"statement": "The checkpoint defect is the established cellular phenotype.",
+                                  "claim_type": "checkpoint_effect", "scope": "disease_level", "direction": "supports",
+                                  "confidence": "moderate", "reasoning": "reconciles an accepted finding",
+                                  "evidence": [{"source_id": "PMID:111",
+                                                "quote": "cell lines derived from MVA patients with biallelic BUB1B mutations have an impaired mitotic checkpoint"}]}],
+                                "reconcile.yaml")
+    assert research.import_analysis(root, reconcile, synthesis_only=True).accepted_claims
+
+    novel = _analysis(root, [{"statement": "A fact no earlier session accepted.", "claim_type": "protein_effect",
+                              "scope": "gene_level", "direction": "supports", "confidence": "high",
+                              "reasoning": "synthesis",
+                              "evidence": [{"source_id": "PMID:111",
+                                            "quote": "Karyotyping confirmed mosaic variegated aneuploidy with trisomy and monosomy in these patients"}]}],
+                             "novel.yaml")
+    result = research.import_analysis(root, novel, synthesis_only=True)
+    assert not result.accepted_claims and result.rejected[0].reason == "scope_overreach"
+    assert "already accepted" in result.rejected[0].detail

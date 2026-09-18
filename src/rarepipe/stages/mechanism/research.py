@@ -159,9 +159,27 @@ def _bundle_documents(root: Path, bundle_id: str) -> tuple[dict[str, dict], Path
     return {d["source_id"]: d for d in index["documents"]}, index_path.parent
 
 
+def _all_bundle_documents(root: Path) -> tuple[dict[str, dict], dict[str, Path]]:
+    """Synthesis spans bundles by nature. It is still bounded — every citation must already have
+    been accepted by an earlier session, which is a stronger constraint than bundle membership."""
+    documents: dict[str, dict] = {}
+    roots: dict[str, Path] = {}
+    for index_path in sorted((root / BUNDLES).glob("*/bundle.json")):
+        for doc in json.loads(index_path.read_text())["documents"]:
+            documents.setdefault(doc["source_id"], doc)
+            roots.setdefault(doc["source_id"], index_path.parent)
+    if not documents:
+        raise ResearchError("no evidence bundles in this workspace")
+    return documents, roots
+
+
 def import_analysis(root: Path, analysis_path: Path, *, residue_needles: list[str] | None = None,
-                    session_index: int = 1) -> ImportResult:
-    """Validate a proposed analysis against the evidence store. Claude proposes; this proves."""
+                    session_index: int = 1, synthesis_only: bool = False) -> ImportResult:
+    """Validate a proposed analysis against the evidence store. Claude proposes; this proves.
+
+    With `synthesis_only`, a proposal may only reconcile evidence that earlier sessions already had
+    accepted: a synthesiser connects claims, it does not introduce new biomedical facts.
+    """
     payload = yaml.safe_load(analysis_path.read_text())
     if not isinstance(payload, dict) or "proposed_claims" not in payload:
         raise ResearchError("analysis file must contain `session:` and `proposed_claims:`")
@@ -171,7 +189,12 @@ def import_analysis(root: Path, analysis_path: Path, *, residue_needles: list[st
         raise ResearchError("session.knowledge_task is required: a proposal must answer a recorded question")
     task = load_task(root, task_id)
     bundle_id = meta.get("evidence_bundle") or task.id
-    documents, docs_root = _bundle_documents(root, bundle_id)
+    if synthesis_only:
+        documents, doc_roots = _all_bundle_documents(root)
+        docs_root = None
+    else:
+        documents, docs_root = _bundle_documents(root, bundle_id)
+        doc_roots = {source_id: docs_root for source_id in documents}
 
     session = LLMResearchSession(
         session_id=f"LLMRS_{session_index:04d}", provider=meta.get("provider", "unrecorded"),
@@ -186,6 +209,10 @@ def import_analysis(root: Path, analysis_path: Path, *, residue_needles: list[st
     rejected: list[InvalidInference] = []
     produced = 0
     cache: dict[str, str] = {}
+    already_accepted: set[tuple[str, str]] = set()
+    if synthesis_only:
+        _, _, prior_evidence, _ = load_analyses(root)
+        already_accepted = {(e.source_id, _normalise(e.quote)) for e in prior_evidence}
 
     for i, proposal in enumerate(payload["proposed_claims"], start=1):
         produced += 1
@@ -217,11 +244,17 @@ def import_analysis(root: Path, analysis_path: Path, *, residue_needles: list[st
                                            detail=f"{source_id} was never retrieved for this bundle")
                 break
             if source_id not in cache:
-                text_path = docs_root / "docs" / f"{source_id.replace(':', '_')}.txt"
+                text_path = doc_roots[source_id] / "docs" / f"{source_id.replace(':', '_')}.txt"
                 cache[source_id] = text_path.read_text() if text_path.exists() else ""
             if not quote or _normalise(quote) not in _normalise(cache[source_id]):
                 failure = InvalidInference(produced_by=who, statement=statement, reason="quote_not_found_in_source",
                                            detail=f"the quoted passage is not in {source_id}")
+                break
+            if synthesis_only and (source_id, _normalise(quote)) not in already_accepted:
+                failure = InvalidInference(
+                    produced_by=who, statement=statement, reason="scope_overreach",
+                    detail=f"a synthesis may only reconcile evidence already accepted; {source_id} was cited with a "
+                           "passage no earlier session had accepted")
                 break
             level = _level_for(citation, documents[source_id])
             records.append(EvidenceRecord(

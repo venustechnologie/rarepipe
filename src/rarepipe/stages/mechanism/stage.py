@@ -46,6 +46,7 @@ from rarepipe.stages.mechanism.model import (
     MechanismState,
     MindChanger,
     NextAction,
+    Readiness,
     Provenance,
     QueryRecord,
     RetrievedDocument,
@@ -195,6 +196,23 @@ def case_evidence(adjudication: dict, start: int) -> list[EvidenceRecord]:
     return records
 
 
+def _with_progress(task: KnowledgeTask) -> KnowledgeTask:
+    """Backfill task progress from what the corpus actually holds.
+
+    A corpus run written before the lifecycle fields existed records only a coarse status, and a
+    task holding thirteen documents must not read as `retrieval: not_started`.
+    """
+    if task.progress.retrieval == "not_started":
+        if task.documents_found:
+            task.progress.retrieval = "complete"
+        elif task.status == "blocked":
+            task.progress.retrieval = "blocked"
+        elif not task.queries:
+            task.progress.retrieval = "not_applicable"
+    task.state = task.progress.state()
+    return task
+
+
 def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveResult:
     console = console or Console()
     started, t0 = utc_now(), time.monotonic()
@@ -210,7 +228,7 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
         console.warn(f"external validation says {validation['result']['match']}: the causal pair is not confirmed, "
                      "so mechanism claims about 'the causal alleles' rest on an unconfirmed premise")
     documents = {d["source_id"]: RetrievedDocument(**d) for d in corpus_index["documents"]}
-    tasks = [KnowledgeTask(**t) for t in corpus_index["knowledge_tasks"]]
+    tasks = [_with_progress(KnowledgeTask(**t)) for t in corpus_index["knowledge_tasks"]]
     query_log = [QueryRecord(**q) for q in corpus_index["query_log"]]
     gene = adjudication.get("gene_symbol", "")
     console.info(f"{len(documents)} document(s), {sum(1 for d in documents.values() if d.full_text)} with full text")
@@ -261,11 +279,18 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
                  "no protein-level identity available for local search")
     for task in tasks:
         if task.disclosure_level.value == "local_only":
-            task.status = "completed"
             task.documents_found = sorted({s for s, _, _ in exact_hits})
             task.information_gain = "high" if exact_hits else "none"
+            task.progress.retrieval = "not_applicable"
+            task.progress.deterministic_extraction = "complete"
+            task.progress.semantic_review = "not_applicable"
+            task.progress.adjudication = "complete"
+            task.status = "completed"
             task.stop_reason = (questions.STOP_RULES["A"] if exact_hits else
                                 "corpus exhausted: no accessible source mentions this residue")
+        elif task.progress.retrieval == "complete":
+            task.progress.deterministic_extraction = "complete"
+        task.state = task.progress.state()
 
     console.step(4, 6, "Adjudicating claims by workstream...")
     verified += case_evidence(adjudication, index)
@@ -280,6 +305,18 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
         mech_claims += imported_claims
         verified += imported_evidence
         invalid += imported_rejected
+    reviewed = {session.knowledge_task for session in sessions}
+    for task in tasks:
+        if task.id in reviewed:
+            task.progress.semantic_review = "complete"
+            task.reviewed_by = [x.session_id for x in sessions if x.knowledge_task == task.id]
+            if any(x.accepted for x in sessions if x.knowledge_task == task.id):
+                task.progress.adjudication = "complete"
+        task.state = task.progress.state()
+    public_tasks = [t for t in tasks if t.disclosure_level.value != "local_only"]
+    reviewed_public = [t for t in public_tasks if t.progress.semantic_review == "complete"]
+    console.info(f"semantic review: {len(reviewed_public)} of {len(public_tasks)} public task(s) have been read by a "
+                 f"reasoning process; the rest are retrieved and deterministically extracted only")
     bundles = ([research.EvidenceBundle(**json.loads(path.read_text())["bundle"])
                 for path in sorted((req.research_dir / "bundles").glob("*/bundle.json"))]
                if req.research_dir and (req.research_dir / "bundles").exists() else [])
@@ -290,8 +327,17 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
         pipeline_depends_on_an_llm=False)
     contradictions = sorted({f"{e.source_id}: {e.quote[:160]}" for e in verified if e.direction is Direction.CONTRADICTS})[:20]
     status, basis = _gate(state, mech_claims)
+    readiness = Readiness(
+        disease_mechanism_ready_for_intervention_search=status is Status.READY_FOR_INTERVENTION_SEARCH,
+        disease_mechanism_basis=basis,
+        exact_allele_mechanism_complete=state.allele_b.protein_effect_status is not ClaimStatus.UNRESOLVED,
+        exact_allele_blocker=("missense_function_unresolved"
+                              if state.allele_b.protein_effect_status is ClaimStatus.UNRESOLVED else None),
+        semantic_review_coverage=f"{len(reviewed_public)} of {len(public_tasks)} public knowledge task(s) "
+                                 f"read by a reasoning process")
     dossier = MechanismDossier(
         visibility="private", case_id=adjudication["case_id"], gene_symbol=gene, status=status, status_basis=basis,
+        readiness=readiness,
         state=state, claims=mech_claims, graph=graph, evidence=verified, documents=list(documents.values()),
         knowledge_tasks=tasks, query_log=query_log,
         assays=C.assay_inventory([e for e in verified if e.source_id.startswith("PMID")], ASSAY_QUESTIONS),

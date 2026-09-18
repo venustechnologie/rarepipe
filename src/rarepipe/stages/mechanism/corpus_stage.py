@@ -63,7 +63,8 @@ def run_fetch(req: FetchRequest, console: Console | None = None) -> FetchResult:
     console.step(1, 3, "Executing knowledge tasks against public literature...")
     for task in tasks:
         if not task.queries:
-            task.status = "planned"
+            task.progress.retrieval = "not_applicable"
+            task.state = task.progress.state()
             task.stop_reason = "answered locally in the resolution run; nothing is transmitted for it"
             continue
         console.line(f"  {task.id}: {task.question}")
@@ -77,7 +78,9 @@ def run_fetch(req: FetchRequest, console: Console | None = None) -> FetchResult:
                 continue
             found += [d.source_id for d in docs]
         task.documents_found = sorted(set(found))
-        task.status = "completed" if found else "blocked"
+        task.progress.retrieval = "complete" if found else "blocked"
+        task.state = task.progress.state()
+        task.status = "completed" if found else "blocked"  # legacy field
         task.stop_reason = (questions.STOP_RULES["C"] if found else
                             "no records passed the relevance threshold for any query")
 

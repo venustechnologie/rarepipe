@@ -231,6 +231,37 @@ def research_create_task(
     typer.echo(str(save_task(root, task)))
 
 
+@research_app.command("adopt-task")
+def research_adopt_task(
+    task: Annotated[str, typer.Option(help="KnowledgeTask id as recorded in the corpus run, e.g. KT_0002.")],
+    corpus_run: Annotated[Path, typer.Option(help="The corpus run that already answered it.")],
+    research: Annotated[Path, typer.Option(help="Research workspace directory.")],
+) -> None:
+    """Bring a task the corpus run already retrieved into the workspace, with its evidence bundle."""
+    import json as _j
+
+    from rarepipe.stages.mechanism.model import KnowledgeTask
+    from rarepipe.stages.mechanism.research import ResearchError, bundle_from_corpus, save_task, workspace
+
+    index = _j.loads((corpus_run / "corpus_index.json").read_text())
+    match = next((t for t in index["knowledge_tasks"] if t["id"] == task), None)
+    if match is None:
+        typer.echo(f"error: {corpus_run.name} has no task {task}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    kt = KnowledgeTask(**match)
+    root = workspace(research)
+    try:
+        bundle = bundle_from_corpus(corpus_run, kt, root)
+    except ResearchError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    kt.progress.retrieval = "complete" if bundle.documents else "blocked"
+    kt.progress.deterministic_extraction = "complete"
+    kt.state = kt.progress.state()
+    save_task(root, kt)
+    typer.echo(f"{root / 'bundles' / kt.id} ({len(bundle.documents)} document(s), state {kt.state.value})")
+
+
 @research_app.command("retrieve")
 def research_retrieve(
     task: Annotated[str, typer.Option(help="KnowledgeTask id, e.g. KT_0003.")],
@@ -310,6 +341,7 @@ def research_import_analysis(
     analysis: Annotated[Path, typer.Option(help="The YAML an assistant produced, after your review.")],
     research: Annotated[Path, typer.Option(help="Research workspace directory.")],
     adjudication_run: Annotated[Path | None, typer.Option(help="Stage 04 private artifact, for checking exact-variant scope claims locally.")] = None,
+    synthesis_only: Annotated[bool, typer.Option(help="A synthesis pass: may only reconcile evidence earlier sessions already accepted.")] = False,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
 ) -> None:
     """Validate a proposed analysis against the evidence store. Proposals prove themselves or are rejected."""
@@ -324,7 +356,8 @@ def research_import_analysis(
         needles, _ = residue_needles(_j.loads(adjudication_run.read_text()))
     existing = len(list((research / "analyses").glob("LLMRS_*.json"))) if (research / "analyses").exists() else 0
     try:
-        result = import_analysis(research, analysis, residue_needles=needles, session_index=existing + 1)
+        result = import_analysis(research, analysis, residue_needles=needles, session_index=existing + 1,
+                                 synthesis_only=synthesis_only)
     except ResearchError as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_USAGE)

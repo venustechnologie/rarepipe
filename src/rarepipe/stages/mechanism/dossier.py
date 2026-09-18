@@ -25,6 +25,16 @@ def render(d: MechanismDossier) -> str:
     w(f"**Causal genotype:** {'externally validated (Track 1 full match)' if d.state.causal_genotype_externally_validated else 'not externally validated'}\n")
     w(f"> {d.interpretation_note}\n")
     w(f"{d.status_basis}\n")
+    r = d.readiness
+    w("## Readiness, in two dimensions\n")
+    w("| dimension | state | basis |")
+    w("|---|---|---|")
+    w(f"| disease mechanism | {'**ready for intervention search**' if r.disease_mechanism_ready_for_intervention_search else 'not ready'} "
+      f"| {r.disease_mechanism_basis[:150]} |")
+    w(f"| exact-allele mechanism | {'complete' if r.exact_allele_mechanism_complete else '**incomplete**'} "
+      f"| blocker: `{r.exact_allele_blocker or 'none'}` |")
+    w("")
+    w(f"_Semantic review coverage: {r.semantic_review_coverage}._\n")
 
     w("## The chain, arrow by arrow\n")
     w("| link | status | scope | evidence | note |")
@@ -152,9 +162,16 @@ def render(d: MechanismDossier) -> str:
     w(f"- {len(d.evidence)} evidence record(s), every quote re-found in its stored source before acceptance")
     w(f"- {len(d.invalid_inferences)} claim(s) rejected for failing provenance validation")
     w(f"- automation: {d.automation_status.current_mode}; the pipeline does not call a model and runs without one")
+    w("")
+    w("| task | state | retrieval | extraction | semantic review | documents | reviewed by |")
+    w("|---|---|---|---|---|---|---|")
     for task in d.knowledge_tasks:
-        w(f"  - `{task.id}` {task.status}: {task.question} — {len(task.documents_found)} document(s); "
-          f"stop rule: {task.stop_reason}")
+        p_ = task.progress
+        w(f"| `{task.id}` | {task.state.value} | {p_.retrieval} | {p_.deterministic_extraction} | "
+          f"{p_.semantic_review} | {len(task.documents_found)} | {', '.join(task.reviewed_by) or '—'} |")
+    w("")
+    for task in d.knowledge_tasks:
+        w(f"- `{task.id}` {task.question} — stop rule: {task.stop_reason}")
     w("")
     pv = d.provenance
     w("## Provenance\n")

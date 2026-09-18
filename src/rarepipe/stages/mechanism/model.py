@@ -172,6 +172,43 @@ class QueryRecord(BaseModel):
     rejection_reason: str | None = None
 
 
+class TaskState(StrEnum):
+    """"We searched this" must not mean the same thing as "a reasoning process examined it"."""
+
+    PLANNED = "PLANNED"
+    RETRIEVED = "RETRIEVED"
+    DETERMINISTICALLY_EXTRACTED = "DETERMINISTICALLY_EXTRACTED"
+    SEMANTICALLY_REVIEWED = "SEMANTICALLY_REVIEWED"
+    ADJUDICATED = "ADJUDICATED"
+    CLOSED = "CLOSED"
+    BLOCKED = "BLOCKED"
+
+
+Step = Literal["not_started", "complete", "blocked", "not_applicable"]
+
+
+class TaskProgress(BaseModel):
+    """Each stage of work on a question, separately. Fetching documents is not reading them."""
+
+    retrieval: Step = "not_started"
+    deterministic_extraction: Step = "not_started"
+    semantic_review: Step = "not_started"
+    adjudication: Step = "not_started"
+
+    def state(self) -> TaskState:
+        if self.retrieval == "blocked":
+            return TaskState.BLOCKED
+        if self.adjudication == "complete":
+            return TaskState.ADJUDICATED
+        if self.semantic_review == "complete":
+            return TaskState.SEMANTICALLY_REVIEWED
+        if self.deterministic_extraction == "complete":
+            return TaskState.DETERMINISTICALLY_EXTRACTED
+        if self.retrieval == "complete":
+            return TaskState.RETRIEVED
+        return TaskState.PLANNED
+
+
 class KnowledgeTask(BaseModel):
     """A question the pipeline asked itself, kept alongside the answer it produced."""
 
@@ -180,13 +217,17 @@ class KnowledgeTask(BaseModel):
     reason: str
     disclosure_level: DisclosureLevel
     retrieval_plan: list[str]
-    status: Literal["planned", "completed", "blocked", "abandoned"] = "planned"
+    progress: TaskProgress = Field(default_factory=TaskProgress)
+    state: TaskState = TaskState.PLANNED
+    status: Literal["planned", "completed", "blocked", "abandoned"] = Field(
+        "planned", description="Legacy coarse status. `state` and `progress` are what to read.")
     queries: list[str] = Field(default_factory=list)
     documents_found: list[str] = Field(default_factory=list)
     evidence_found: list[str] = Field(default_factory=list)
     resolved_claims: list[str] = Field(default_factory=list)
     information_gain: Literal["high", "moderate", "low", "none"] | None = None
     stop_reason: str | None = Field(None, description="Which stopping rule ended the search (PRD 006 §36).")
+    reviewed_by: list[str] = Field(default_factory=list, description="Research sessions that actually read this bundle.")
 
 
 # ── evidence ────────────────────────────────────────────────────────────────
@@ -375,6 +416,16 @@ class LLMResearchSession(BaseModel):
     note: str = ""
 
 
+class Readiness(BaseModel):
+    """Two questions, not one. The disease mechanism can be actionable while the allele is unknown."""
+
+    disease_mechanism_ready_for_intervention_search: bool
+    disease_mechanism_basis: str
+    exact_allele_mechanism_complete: bool
+    exact_allele_blocker: str | None = None
+    semantic_review_coverage: str = Field("", description="How many public tasks a reasoning process actually read.")
+
+
 class AutomationStatus(BaseModel):
     """Stated in the artifact, so nobody mistakes this for an autonomous research agent."""
 
@@ -417,6 +468,7 @@ class MechanismDossier(BaseModel):
     gene_symbol: str
     status: Status
     status_basis: str
+    readiness: Readiness
     interpretation_note: str = ("A mechanism dossier, not a mechanism story. Claims are separated by scope: what is "
                                 "known about the gene and the disease is not evidence about this child's alleles. "
                                 "No diagnosis, no treatment reasoning, no intervention search.")
