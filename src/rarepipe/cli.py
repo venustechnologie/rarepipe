@@ -69,13 +69,15 @@ def intake(
 @app.command()
 def schema(
     output: Annotated[Path | None, typer.Option(help="Write to file instead of stdout.")] = None,
-    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set")] = "case_manifest",
+    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis")] = "case_manifest",
 ) -> None:
     """Emit an artifact's JSON Schema."""
     if artifact == "case_manifest":
         from rarepipe.stages.intake.schema import schema_json
     elif artifact == "raw_candidate_set":
         from rarepipe.stages.baseline.schema import schema_json
+    elif artifact == "adjudicated_hypothesis":
+        from rarepipe.stages.adjudicate.schema import schema_json
     elif artifact in ("normalized_case", "case_assertions"):
         from rarepipe.stages.normalize.schema import schema_json as _normalize_schema
 
@@ -142,6 +144,28 @@ def baseline(
         raise typer.Exit(EXIT_USAGE)
     typer.echo(str(result.run_dir))
     raise typer.Exit(EXIT_BLOCKED if result.candidate_set.status == Status.BASELINE_ANALYSIS_BLOCKED else EXIT_OK)
+
+
+@app.command()
+def adjudicate(
+    raw_candidate_set: Annotated[Path, typer.Option(help="Stage 03 raw_candidate_set.private.json.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    gene: Annotated[str | None, typer.Option(help="Adjudicate this gene's candidate pair (default: the leading pair).")] = None,
+    profile: Annotated[str, typer.Option(help="Which analysis profile's candidate to adjudicate.")] = "PROFILE_A",
+    native_dir: Annotated[Path | None, typer.Option(help="Native solver output directory, if it has moved.")] = None,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Build an evidence dossier for one causal hypothesis. No diagnosis, no classification, nothing transmitted."""
+    from rarepipe.stages.adjudicate.stage import AdjudicateRequest, AdjudicateUsageError, run_adjudication
+
+    req = AdjudicateRequest(raw_candidate_set=raw_candidate_set, output=output, gene=gene, profile_id=profile,
+                            native_dir=native_dir, argv=sys.argv[:])
+    try:
+        result = run_adjudication(req, Console(quiet=quiet))
+    except AdjudicateUsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(result.run_dir))
 
 
 resources_app = typer.Typer(no_args_is_help=True, help="Provision and pin external resources (the only networked commands).")
