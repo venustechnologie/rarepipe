@@ -69,7 +69,7 @@ def intake(
 @app.command()
 def schema(
     output: Annotated[Path | None, typer.Option(help="Write to file instead of stdout.")] = None,
-    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis")] = "case_manifest",
+    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result")] = "case_manifest",
 ) -> None:
     """Emit an artifact's JSON Schema."""
     if artifact == "case_manifest":
@@ -78,6 +78,11 @@ def schema(
         from rarepipe.stages.baseline.schema import schema_json
     elif artifact == "adjudicated_hypothesis":
         from rarepipe.stages.adjudicate.schema import schema_json
+    elif artifact in ("track1_submission_package", "external_validation_result"):
+        from rarepipe.stages.track1.schema import schema_json as _track1_schema
+
+        def schema_json() -> str:
+            return _track1_schema(artifact)
     elif artifact in ("normalized_case", "case_assertions"):
         from rarepipe.stages.normalize.schema import schema_json as _normalize_schema
 
@@ -168,6 +173,69 @@ def adjudicate(
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_USAGE)
     typer.echo(str(result.run_dir))
+
+
+export_app = typer.Typer(no_args_is_help=True, help="Generate external submission packages. Nothing is uploaded — a person submits.")
+app.add_typer(export_app, name="export")
+
+
+@export_app.command("track1")
+def export_track1(
+    candidate_run: Annotated[Path, typer.Option(help="Stage 03 raw_candidate_set.private.json.")],
+    adjudication_run: Annotated[Path, typer.Option(help="Stage 04 adjudicated_hypothesis.private.json.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    proband_id: Annotated[str, typer.Option(help="Proband identifier the evaluator accepts.")] = "PROBAND01",
+    official_scorer: Annotated[Path | None, typer.Option(help="The challenge's public evaluation.py, run locally on our file (no answer key).")] = None,
+    submitter: Annotated[str | None, typer.Option(help="Username or team name, used only to suggest an upload filename.")] = None,
+    llm_disclosure: Annotated[str | None, typer.Option(help="Override the AI-assistance disclosure line in the methods report.")] = None,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Build a Track 1 submission package: predictions CSV, methods report, manifest, frozen snapshot."""
+    from rarepipe.stages.track1.stage import ExportRequest, Track1UsageError, run_export
+
+    req = ExportRequest(raw_candidate_set=candidate_run, adjudication=adjudication_run, output=output,
+                        proband_id=proband_id, official_scorer=official_scorer, submitter=submitter,
+                        llm_disclosure=llm_disclosure, argv=sys.argv[:])
+    try:
+        result = run_export(req, Console(quiet=quiet))
+    except Track1UsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(result.run_dir))
+    if not result.package.valid:
+        raise typer.Exit(EXIT_BLOCKED)
+
+
+@app.command("record-validation")
+def record_validation(
+    package_run: Annotated[Path, typer.Option(help="The sealed run directory produced by `export track1`.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    match: Annotated[str, typer.Option(help="FULL | PARTIAL | NONE, as the evaluator reported it.")],
+    response: Annotated[Path, typer.Option(help="File containing the evaluator's response, captured verbatim.")],
+    full_match_rank: Annotated[int | None, typer.Option(help="Rank of the full match, if reported.")] = None,
+    partial_match_rank: Annotated[int | None, typer.Option(help="Rank of the partial match, if reported.")] = None,
+    rank_points: Annotated[float | None, typer.Option(help="Rank points, as reported.")] = None,
+    f_max: Annotated[float | None, typer.Option(help="F-max, as reported.")] = None,
+    f_max_threshold: Annotated[float | None, typer.Option(help="EPCR threshold at F-max, if reported.")] = None,
+    submission_number: Annotated[int, typer.Option(help="Which of the allowed submissions this was.")] = 1,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Record the evaluator's answer as case state, and name the branch it puts the case into."""
+    from rarepipe.stages.track1.stage import RecordRequest, Track1UsageError, record_result
+
+    if not response.exists():
+        typer.echo(f"error: not found: {response}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    req = RecordRequest(package_run=package_run, output=output, match=match, raw_response=response.read_text(),
+                        full_match_rank=full_match_rank, partial_match_rank=partial_match_rank,
+                        rank_points=rank_points, f_max=f_max, f_max_threshold=f_max_threshold,
+                        submission_number=submission_number, argv=sys.argv[:])
+    try:
+        result, run_dir = record_result(req, Console(quiet=quiet))
+    except Track1UsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(run_dir))
 
 
 resources_app = typer.Typer(no_args_is_help=True, help="Provision and pin external resources (the only networked commands).")

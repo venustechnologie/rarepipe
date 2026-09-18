@@ -1,0 +1,192 @@
+{
+  "$defs": {
+    "ScoredResult": {
+      "properties": {
+        "match": {
+          "enum": [
+            "FULL",
+            "PARTIAL",
+            "NONE"
+          ],
+          "title": "Match",
+          "type": "string"
+        },
+        "full_match_rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Full Match Rank"
+        },
+        "partial_match_rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Partial Match Rank"
+        },
+        "rank_points": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rank Points"
+        },
+        "f_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "F Max"
+        },
+        "f_max_threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "F Max Threshold"
+        },
+        "n_predictions_at_f_max": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Predictions At F Max"
+        }
+      },
+      "required": [
+        "match"
+      ],
+      "title": "ScoredResult",
+      "type": "object"
+    }
+  },
+  "description": "The oracle's answer, made part of the case state rather than a screenshot.",
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "visibility": {
+      "default": "sanitized",
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "evaluator": {
+      "default": "MVA_Hackathon_Track1",
+      "title": "Evaluator",
+      "type": "string"
+    },
+    "submission_number": {
+      "title": "Submission Number",
+      "type": "integer"
+    },
+    "submission_package_run_id": {
+      "title": "Submission Package Run Id",
+      "type": "string"
+    },
+    "prediction_digest": {
+      "title": "Prediction Digest",
+      "type": "string"
+    },
+    "snapshot_digest": {
+      "title": "Snapshot Digest",
+      "type": "string"
+    },
+    "result": {
+      "$ref": "#/$defs/ScoredResult"
+    },
+    "raw_response": {
+      "description": "The evaluator's response as captured, verbatim.",
+      "title": "Raw Response",
+      "type": "string"
+    },
+    "received_at": {
+      "title": "Received At",
+      "type": "string"
+    },
+    "branch": {
+      "enum": [
+        "A_full_match",
+        "B_partial_match",
+        "C_no_match"
+      ],
+      "title": "Branch",
+      "type": "string"
+    },
+    "branch_action": {
+      "title": "Branch Action",
+      "type": "string"
+    },
+    "upstream_modification": {
+      "default": "None. Leaderboard feedback is evidence about the case, not a training signal for the pipeline; a further submission requires an independently justified pipeline change.",
+      "title": "Upstream Modification",
+      "type": "string"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    }
+  },
+  "required": [
+    "case_id",
+    "submission_number",
+    "submission_package_run_id",
+    "prediction_digest",
+    "snapshot_digest",
+    "result",
+    "raw_response",
+    "received_at",
+    "branch",
+    "branch_action"
+  ],
+  "title": "ExternalValidationResult",
+  "type": "object"
+}

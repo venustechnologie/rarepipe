@@ -1,0 +1,892 @@
+{
+  "$defs": {
+    "EpcrSchedule": {
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Values",
+          "type": "array"
+        },
+        "disclaimer": {
+          "default": "EPCR values are rank-preserving confidence surrogates, not empirically calibrated probabilities. No calibration model exists for this pipeline.",
+          "title": "Disclaimer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "values"
+      ],
+      "title": "EpcrSchedule",
+      "type": "object"
+    },
+    "Execution": {
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "raw_candidate_set_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Raw Candidate Set Path"
+        },
+        "adjudication_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Adjudication Path"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "OfficialScorerCheck": {
+      "description": "The official public parser, run locally against our file, without the answer key.",
+      "properties": {
+        "available": {
+          "default": false,
+          "title": "Available",
+          "type": "boolean"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "parsed_ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parsed Ok"
+        },
+        "rows_parsed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rows Parsed"
+        },
+        "ranks_as_submitted": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "True if the parser's EPCR ordering matches our row order.",
+          "title": "Ranks As Submitted"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "title": "OfficialScorerCheck",
+      "type": "object"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "validation_snapshot": {
+          "$ref": "#/$defs/ValidationSnapshot"
+        },
+        "snapshot_digest": {
+          "title": "Snapshot Digest",
+          "type": "string"
+        },
+        "prediction_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prediction Digest"
+        },
+        "upstream_unmodified": {
+          "default": "Stages 01\u201304 were frozen before this package was generated and are not modified by any benchmark feedback.",
+          "title": "Upstream Unmodified",
+          "type": "string"
+        },
+        "disclosure": {
+          "default": "The predictions file carries exact variant identity and goes only to the evaluator, which already holds authorized access to this case. The methods report and this manifest carry none.",
+          "title": "Disclosure",
+          "type": "string"
+        }
+      },
+      "required": [
+        "software",
+        "validation_snapshot",
+        "snapshot_digest"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "SelectionRule": {
+      "description": "Frozen before generation. Recorded so the ordering can be reproduced and criticised.",
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "profiles_considered": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Profiles Considered",
+          "type": "array"
+        },
+        "deduplication": {
+          "title": "Deduplication",
+          "type": "string"
+        },
+        "max_variants_per_row": {
+          "default": 2,
+          "title": "Max Variants Per Row",
+          "type": "integer"
+        },
+        "tie_breaks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tie Breaks",
+          "type": "array"
+        },
+        "rows_considered": {
+          "default": 0,
+          "title": "Rows Considered",
+          "type": "integer"
+        },
+        "rows_emitted": {
+          "default": 0,
+          "title": "Rows Emitted",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "description",
+        "steps",
+        "profiles_considered",
+        "deduplication",
+        "tie_breaks"
+      ],
+      "title": "SelectionRule",
+      "type": "object"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "SubmissionFile": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "bytes": {
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "contains_case_specific_identity": {
+          "default": false,
+          "title": "Contains Case Specific Identity",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "sha256",
+        "bytes"
+      ],
+      "title": "SubmissionFile",
+      "type": "object"
+    },
+    "SubmissionRow": {
+      "properties": {
+        "rank": {
+          "title": "Rank",
+          "type": "integer"
+        },
+        "epcr": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Epcr",
+          "type": "number"
+        },
+        "configuration": {
+          "enum": [
+            "single_variant",
+            "candidate_compound_heterozygous"
+          ],
+          "title": "Configuration",
+          "type": "string"
+        },
+        "gene_symbol": {
+          "title": "Gene Symbol",
+          "type": "string"
+        },
+        "inheritance_model": {
+          "title": "Inheritance Model",
+          "type": "string"
+        },
+        "finding_type": {
+          "default": "primary",
+          "enum": [
+            "primary",
+            "secondary"
+          ],
+          "title": "Finding Type",
+          "type": "string"
+        },
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        },
+        "variants": {
+          "items": {
+            "$ref": "#/$defs/SubmissionVariant"
+          },
+          "title": "Variants",
+          "type": "array"
+        },
+        "selected_by": {
+          "enum": [
+            "adjudicated_hypothesis",
+            "baseline_stability_rule"
+          ],
+          "title": "Selected By",
+          "type": "string"
+        },
+        "profiles_supporting": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Profiles Supporting",
+          "type": "array"
+        },
+        "best_profile_rank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Best Profile Rank"
+        },
+        "phase": {
+          "default": "unresolved",
+          "enum": [
+            "unresolved",
+            "trans",
+            "cis"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "variants_dropped": {
+          "default": 0,
+          "description": "Contributing variants beyond the two the CSV can carry.",
+          "title": "Variants Dropped",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "rank",
+        "epcr",
+        "configuration",
+        "gene_symbol",
+        "inheritance_model",
+        "variants",
+        "selected_by"
+      ],
+      "title": "SubmissionRow",
+      "type": "object"
+    },
+    "SubmissionState": {
+      "properties": {
+        "state": {
+          "default": "ready",
+          "enum": [
+            "ready",
+            "submitted"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "submission_number": {
+          "default": 1,
+          "title": "Submission Number",
+          "type": "integer"
+        },
+        "submission_budget": {
+          "default": 6,
+          "title": "Submission Budget",
+          "type": "integer"
+        },
+        "recommended_upload_filename": {
+          "title": "Recommended Upload Filename",
+          "type": "string"
+        },
+        "channel": {
+          "default": "Hugging Face Space \u2014 Track 1 submission tab (manual, human-controlled upload)",
+          "title": "Channel",
+          "type": "string"
+        },
+        "note": {
+          "default": "rarepipe does not upload. The submission is made by a person, deliberately.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "recommended_upload_filename"
+      ],
+      "title": "SubmissionState",
+      "type": "object"
+    },
+    "SubmissionVariant": {
+      "description": "Exact identity, restricted: it goes to the evaluator, never into a shared artifact.",
+      "properties": {
+        "chrom": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Chromosome as submitted (UCSC-style, chr-prefixed).",
+          "restricted": true,
+          "title": "Chrom"
+        },
+        "pos": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Pos"
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Ref"
+        },
+        "alt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Alt"
+        },
+        "source_contig": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Contig name as it appears in the case VCF.",
+          "restricted": true,
+          "title": "Source Contig"
+        },
+        "hgvs": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Hgvs"
+        },
+        "solver_variant_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Solver Variant Score"
+        },
+        "functional_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Functional Class"
+        }
+      },
+      "title": "SubmissionVariant",
+      "type": "object"
+    },
+    "ValidationCheck": {
+      "properties": {
+        "check": {
+          "title": "Check",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check",
+        "passed"
+      ],
+      "title": "ValidationCheck",
+      "type": "object"
+    },
+    "ValidationSnapshot": {
+      "description": "What the pipeline knew before the oracle was queried. Immutable once submitted.",
+      "properties": {
+        "intake_run": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intake Run"
+        },
+        "normalization_run": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalization Run"
+        },
+        "baseline_run": {
+          "title": "Baseline Run",
+          "type": "string"
+        },
+        "adjudication_run": {
+          "title": "Adjudication Run",
+          "type": "string"
+        },
+        "baseline_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baseline Digest"
+        },
+        "adjudication_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adjudication Digest"
+        },
+        "git_commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Git Commit"
+        },
+        "git_describe": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Git Describe"
+        },
+        "git_dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Git Dirty"
+        },
+        "created_before_ground_truth_query": {
+          "default": true,
+          "title": "Created Before Ground Truth Query",
+          "type": "boolean"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "baseline_run",
+        "adjudication_run",
+        "created_at"
+      ],
+      "title": "ValidationSnapshot",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "title": "Pipeline",
+      "type": "object"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "proband_id": {
+      "default": "PROBAND01",
+      "title": "Proband Id",
+      "type": "string"
+    },
+    "assembly": {
+      "title": "Assembly",
+      "type": "string"
+    },
+    "interpretation_note": {
+      "default": "A ranked list of causal hypotheses for one proband. Submitting a pair asserts a proposed causal configuration, not experimentally established trans phase.",
+      "title": "Interpretation Note",
+      "type": "string"
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/SubmissionRow"
+      },
+      "title": "Rows",
+      "type": "array"
+    },
+    "selection_rule": {
+      "$ref": "#/$defs/SelectionRule"
+    },
+    "epcr_schedule": {
+      "$ref": "#/$defs/EpcrSchedule"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/ValidationCheck"
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "official_scorer": {
+      "$ref": "#/$defs/OfficialScorerCheck"
+    },
+    "valid": {
+      "title": "Valid",
+      "type": "boolean"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/SubmissionFile"
+      },
+      "title": "Files",
+      "type": "array"
+    },
+    "submission": {
+      "$ref": "#/$defs/SubmissionState"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "visibility",
+    "case_id",
+    "assembly",
+    "rows",
+    "selection_rule",
+    "epcr_schedule",
+    "checks",
+    "official_scorer",
+    "valid",
+    "files",
+    "submission",
+    "provenance",
+    "execution"
+  ],
+  "title": "Track1SubmissionPackage",
+  "type": "object"
+}
