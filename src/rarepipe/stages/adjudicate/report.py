@@ -97,11 +97,21 @@ def render(h: AdjudicatedHypothesis) -> str:
         w(f"- **route:** {r.preferred_route}; blocks this stage: {r.blocks_this_stage}")
         w(f"\n> {r.draft_message}\n")
 
-    w("## Next actions, by expected information value\n")
-    w("| action | expected gain | cost | rationale |")
-    w("|---|---|---|---|")
+    w("## Actions this stage performed\n")
+    if not h.actions_taken:
+        w("_None._\n")
+    else:
+        w("| action | expected gain (before) | what it yielded |")
+        w("|---|---|---|")
+        for a in h.actions_taken:
+            w(f"| {a.action} | {a.expected_information_gain} | {a.information_gain_observed or a.result_artifact or '—'} |")
+        w("")
+
+    w("## Outstanding next actions, by expected information value\n")
+    w("| action | status | expected gain | cost | rationale |")
+    w("|---|---|---|---|---|")
     for a in h.next_actions:
-        w(f"| {a.action} | {a.expected_information_gain} | {a.cost} | {a.rationale} |")
+        w(f"| {a.action} | {a.status} | {a.expected_information_gain} | {a.cost} | {a.rationale} |")
     w("")
 
     if h.provisional_classifications:

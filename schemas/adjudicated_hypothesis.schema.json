@@ -1,5 +1,97 @@
 {
   "$defs": {
+    "Action": {
+      "description": "An action has a lifecycle. A stage must not end recommending work it just performed.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "status": {
+          "default": "proposed",
+          "enum": [
+            "proposed",
+            "completed",
+            "blocked",
+            "superseded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "expected_information_gain": {
+          "description": "Expected gain as judged BEFORE the action ran.",
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "uncertain"
+          ],
+          "title": "Expected Information Gain",
+          "type": "string"
+        },
+        "cost": {
+          "enum": [
+            "very_low",
+            "low",
+            "medium",
+            "high",
+            "very_high"
+          ],
+          "title": "Cost",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "blocked_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blocked By",
+          "type": "array"
+        },
+        "result_artifact": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the completed action produced (assertion ids, resource).",
+          "title": "Result Artifact"
+        },
+        "information_gain_observed": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What was actually learned, recorded after the fact.",
+          "title": "Information Gain Observed"
+        }
+      },
+      "required": [
+        "id",
+        "action",
+        "expected_information_gain",
+        "cost",
+        "rationale"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
     "Claim": {
       "properties": {
         "claim_id": {
@@ -422,54 +514,6 @@
         "why"
       ],
       "title": "MindChanger",
-      "type": "object"
-    },
-    "NextAction": {
-      "properties": {
-        "action": {
-          "title": "Action",
-          "type": "string"
-        },
-        "expected_information_gain": {
-          "enum": [
-            "high",
-            "medium",
-            "low",
-            "uncertain"
-          ],
-          "title": "Expected Information Gain",
-          "type": "string"
-        },
-        "cost": {
-          "enum": [
-            "very_low",
-            "low",
-            "medium",
-            "high",
-            "very_high"
-          ],
-          "title": "Cost",
-          "type": "string"
-        },
-        "rationale": {
-          "title": "Rationale",
-          "type": "string"
-        },
-        "blocked_by": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Blocked By",
-          "type": "array"
-        }
-      },
-      "required": [
-        "action",
-        "expected_information_gain",
-        "cost",
-        "rationale"
-      ],
-      "title": "NextAction",
       "type": "object"
     },
     "PhaseEvidence": {
@@ -1075,10 +1119,19 @@
       "type": "array"
     },
     "next_actions": {
+      "description": "Outstanding actions only \u2014 completed ones move to `actions_taken`.",
       "items": {
-        "$ref": "#/$defs/NextAction"
+        "$ref": "#/$defs/Action"
       },
       "title": "Next Actions",
+      "type": "array"
+    },
+    "actions_taken": {
+      "description": "Actions this stage performed, with what they yielded.",
+      "items": {
+        "$ref": "#/$defs/Action"
+      },
+      "title": "Actions Taken",
       "type": "array"
     },
     "evidence_gaps": {

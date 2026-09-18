@@ -189,3 +189,22 @@ def test_committed_schema_matches_code():
 
     committed = (Path(__file__).resolve().parents[1] / "schemas" / "adjudicated_hypothesis.schema.json").read_text()
     assert committed == schema_json()
+
+
+def test_actions_have_a_lifecycle_and_completed_work_is_not_re_proposed(adjudicated, tmp_path):
+    """A stage must not end recommending work it just performed."""
+    h = adjudicated().hypothesis
+    assert all(a.status != "completed" for a in h.next_actions), "an outstanding action is already done"
+    assert all(a.id and a.rationale for a in h.next_actions)
+    for a in h.actions_taken:
+        assert a.status == "completed"
+        assert a.information_gain_observed or a.result_artifact, f"{a.id} completed without recording what it yielded"
+    ids = [a.id for a in h.next_actions + h.actions_taken]
+    assert len(ids) == len(set(ids))
+
+
+def test_organizer_message_does_not_overclaim_about_short_reads(adjudicated):
+    h = adjudicated().hypothesis
+    req = h.evidence_requests[0]
+    assert "too far apart" not in req.why_it_matters + req.draft_message
+    assert "no read-backed phase" in req.why_it_matters.lower() or "no read-backed phase" in req.draft_message.lower()

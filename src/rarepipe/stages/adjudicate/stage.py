@@ -24,6 +24,7 @@ from rarepipe.stages.adjudicate import external
 from rarepipe.stages.adjudicate import local_evidence as local
 from rarepipe.stages.adjudicate import report
 from rarepipe.stages.adjudicate.model import (
+    Action,
     AdjudicatedHypothesis,
     Claim,
     Direction,
@@ -177,6 +178,7 @@ def run_adjudication(req: AdjudicateRequest, console: Console | None = None) -> 
     claims = _claims(assertions, records, gene)
     contradicting = [a.assertion_id for a in assertions if a.direction == Direction.CONTRADICTS]
     gaps = _gaps(assertions, sources_used)
+    actions = _actions(phase, sources_used, ext)
     hypothesis = AdjudicatedHypothesis(
         visibility="private", case_id=case["case_id"], hypothesis_id=f"HYP_{gene}_{candidate['inheritance_model']}",
         status=Status.ADJUDICATION_COMPLETE_WITH_GAPS, gene_symbol=gene, inheritance_model=candidate["inheritance_model"],
@@ -189,7 +191,8 @@ def run_adjudication(req: AdjudicateRequest, console: Console | None = None) -> 
         ],
         what_would_change_our_mind=_mind_changers(gene),
         evidence_requests=[_parental_request(gene, phase)],
-        next_actions=_next_actions(phase),
+        next_actions=[a for a in actions if a.status != "completed"],
+        actions_taken=[a for a in actions if a.status == "completed"],
         evidence_gaps=gaps,
         provenance=Provenance(
             software=software_provenance(),
@@ -364,48 +367,79 @@ def _parental_request(gene: str, phase: PhaseEvidence) -> EvidenceRequest:
         request_id="REQ_PARENTAL_TRANSMISSION",
         question=f"Is parental genotype or transmission information available for the two candidate {gene} loci?",
         why_it_matters=("The leading recessive hypothesis requires the two heterozygous alleles to be in trans. "
-                        f"The supplied singleton VCF carries no read-backed phase for this pair, and the two loci are "
-                        f"{distance:,} bp apart — beyond what 149 bp paired-end reads can bridge, so re-aligning the "
-                        "supplied FASTQs is unlikely to resolve it." if distance else ""),
+                        f"The supplied VCF contains no read-backed phase linking the two loci, which are {distance:,} bp "
+                        "apart and cannot be directly bridged by the supplied short reads." if distance else ""),
         evidence_needed="Parental genotypes at the two loci, or a statement of transmission (which allele came from which parent).",
         minimum_information="Transmission status only — no parental sequence data, no raw files.",
         raw_data_required=False,
         preferred_route="organizer-mediated clarification",
         draft_message=(
             f"Our leading recessive hypothesis for this case involves two heterozygous {gene} variants. The supplied "
-            "singleton VCF does not establish whether they are in trans: neither carries read-backed phase information, "
-            "and the loci are too far apart for short-read phasing to help. Is parental genotype or transmission "
-            "information for these two loci available to participants, or can you confirm whether phase was established "
-            "clinically? We are not requesting parental sequence data — transmission status alone would resolve it."),
+            "singleton VCF does not establish whether they are in trans: it contains no read-backed phase linking the "
+            "two loci, which cannot be directly bridged by the supplied short reads. Is parental genotype or "
+            "transmission information for these two loci available to participants, or can you confirm whether phase "
+            "was established clinically? We are not requesting parental sequence data — transmission status alone "
+            "would resolve it."),
         blocks_this_stage=False,
     )
 
 
-def _next_actions(phase: PhaseEvidence) -> list[NextAction]:
+def _actions(phase: PhaseEvidence, sources_used: set[str], external_assertions: list) -> list[Action]:
+    """Every action with its lifecycle state. Work this run performed is marked completed, with what it
+    yielded, so the outstanding list cannot recommend work that has already been done."""
     far_apart = (phase.genomic_distance_bp or 0) > 1000
-    return [
-        NextAction(action="Ask the organizers whether parental transmission information exists for the two loci.",
-                   expected_information_gain="high", cost="very_low",
-                   rationale="Directly resolves the configuration question if such data exists; costs one message."),
-        NextAction(action="Retrieve human and functional evidence for the missense allele from bulk/gene-level public sources.",
-                   expected_information_gain="high", cost="low",
-                   rationale="Addresses the dominant pathogenicity uncertainty without transmitting case data."),
-        NextAction(action="Retrieve gene-level disease-validity and protein-domain context for the gene.",
-                   expected_information_gain="medium", cost="low",
-                   rationale="Establishes whether the mechanism and the residue's context support the hypothesis."),
-        NextAction(action="Retrieve ClinVar submitter-level detail for the truncating allele's existing assertion.",
-                   expected_information_gain="medium", cost="low",
-                   rationale="Its pathogenic assertion is attached to a different disease context, which must be checked before relying on it."),
-        NextAction(action="Align the supplied FASTQs and attempt read-based phasing.",
-                   expected_information_gain="low" if far_apart else "uncertain", cost="very_high",
-                   rationale=(f"The loci are {phase.genomic_distance_bp:,} bp apart; 149 bp paired-end reads cannot bridge that distance, "
-                              "so the expected information gain is close to zero for a very large cost." if far_apart else
-                              "Distance unknown; assess before committing."),
-                   blocked_by=["no evidence that short-read phasing can span the pair"]),
-        NextAction(action="Commission a new functional assay for the missense allele.",
-                   expected_information_gain="high", cost="very_high",
-                   rationale="Only justified if existing human and functional evidence remains insufficient after retrieval."),
+
+    def yielded(source_substring: str) -> str | None:
+        ids = [a.assertion_id for a in external_assertions if source_substring in a.provenance.source.lower()]
+        return ", ".join(ids) or None
+
+    def state(source_key: str, source_substring: str, observed: str) -> dict:
+        if source_key not in sources_used:
+            return {"status": "proposed"}
+        return {"status": "completed", "result_artifact": yielded(source_substring), "information_gain_observed": observed}
+
+    actions = [
+        Action(id="ACT_PARENTAL", action="Ask the organizers whether parental transmission information exists for the two loci.",
+               expected_information_gain="high", cost="very_low",
+               rationale="Directly resolves the configuration question if such data exists; costs one message."),
+        Action(id="ACT_LITERATURE",
+               action="Retrieve human and functional evidence for the missense allele from bulk/gene-level public sources.",
+               expected_information_gain="high", cost="low",
+               rationale="Addresses the dominant pathogenicity uncertainty without transmitting case data.",
+               **state("literature", "europe pmc",
+                       "Gene-level literature was searched; no record mentions either residue, so functional evidence "
+                       "remains absent rather than negative.")),
+        Action(id="ACT_GENE_VALIDITY", action="Retrieve gene-level disease-validity and protein-domain context for the gene.",
+               expected_information_gain="medium", cost="low",
+               rationale="Establishes whether the mechanism and the residue's context support the hypothesis.",
+               **state("clingen", "clingen",
+                       "The curated gene–disease relationship and the missense residue's domain context were established.")),
+        Action(id="ACT_CLINVAR_CURRENT", action="Check the current ClinVar release for both alleles.",
+               expected_information_gain="medium", cost="low",
+               rationale="The solver's bundled ClinVar snapshot may be stale, and the stage must not rely on it unchecked.",
+               **state("clinvar", "clinvar",
+                       "The current release's classification and reported conditions were retrieved and differ from the "
+                       "solver's bundled snapshot.")),
+        Action(id="ACT_CLINVAR_SUBMITTERS", action="Retrieve ClinVar submitter-level detail for the truncating allele's assertion.",
+               expected_information_gain="medium", cost="low",
+               rationale=("The solver's snapshot and the current release disagree about the condition its pathogenic assertion "
+                          "was made for; submitter-level records would settle which applies.")),
+        Action(id="ACT_CONSERVATION", action="Assess residue conservation and structural context for the missense allele.",
+               expected_information_gain="medium", cost="low",
+               rationale="Mechanistic context the dossier currently lacks, obtainable without transmitting case data."),
+        Action(id="ACT_READ_PHASING", action="Align the supplied FASTQs and attempt read-based phasing.",
+               expected_information_gain="low" if far_apart else "uncertain", cost="very_high",
+               rationale=(f"No read pair can directly bridge the {phase.genomic_distance_bp:,} bp between the loci; transitive "
+                          "phasing through intermediate heterozygous sites is possible in principle but uncertain, at a very "
+                          "large cost." if far_apart else "Distance unknown; assess before committing."),
+               blocked_by=["no read-backed phase links the pair in the supplied VCF"]),
+        Action(id="ACT_FUNCTIONAL_ASSAY", action="Commission a new functional assay for the missense allele.",
+               expected_information_gain="high", cost="very_high",
+               rationale="Justified because retrieval found no existing human or functional evidence for this residue."),
     ]
+    seen = {a.id for a in actions}
+    assert len(seen) == len(actions), "action ids must be unique"
+    return actions
 
 
 EXTERNAL_KINDS = ("clinvar", "clingen", "uniprot", "literature")

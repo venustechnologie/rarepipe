@@ -168,12 +168,22 @@ class MindChanger(BaseModel):
     why: str
 
 
-class NextAction(BaseModel):
+class Action(BaseModel):
+    """An action has a lifecycle. A stage must not end recommending work it just performed."""
+
+    id: str
     action: str
-    expected_information_gain: Literal["high", "medium", "low", "uncertain"]
+    status: Literal["proposed", "completed", "blocked", "superseded"] = "proposed"
+    expected_information_gain: Literal["high", "medium", "low", "uncertain"] = Field(
+        description="Expected gain as judged BEFORE the action ran.")
     cost: Literal["very_low", "low", "medium", "high", "very_high"]
     rationale: str
     blocked_by: list[str] = Field(default_factory=list)
+    result_artifact: str | None = Field(None, description="What the completed action produced (assertion ids, resource).")
+    information_gain_observed: str | None = Field(None, description="What was actually learned, recorded after the fact.")
+
+
+NextAction = Action  # the outstanding subset uses the same shape
 
 
 class EvidenceSummary(BaseModel):
@@ -253,7 +263,8 @@ class AdjudicatedHypothesis(BaseModel):
     unresolved_questions: list[str]
     what_would_change_our_mind: list[MindChanger]
     evidence_requests: list[EvidenceRequest]
-    next_actions: list[NextAction]
+    next_actions: list[Action] = Field(description="Outstanding actions only — completed ones move to `actions_taken`.")
+    actions_taken: list[Action] = Field(default_factory=list, description="Actions this stage performed, with what they yielded.")
     evidence_gaps: list[str] = Field(default_factory=list, description="Evidence classes that were not retrieved, and why.")
     provenance: Provenance
     semantic_digest: str | None = None
