@@ -73,24 +73,21 @@ def test_phenotype_rule_selects_by_hpo_branch(normalized, baseline):
     assert set(narrow.phenotype.term_ids) < set(wide.phenotype.term_ids)
 
 
-def test_job_yaml_matches_exomiser_job_shape(tmp_path):
+def test_generated_documents_match_the_exomiser_15_cli_shape(tmp_path):
     spec = prof.PROFILE_SPECS[0]
-    text = prof.job_yaml(spec, proband_id="SYNTH", hpo_ids=["HP:0001250"], vcf_path=Path("/case/x.vcf.gz"),
-                         output_dir=tmp_path, output_prefix="out")
-    job = yaml.safe_load(text)
-    assert set(job) == {"phenopacket", "analysis", "outputOptions"}
-    assert job["phenopacket"]["htsFiles"][0]["genomeAssembly"] == "hg38"
-    assert job["analysis"]["analysisMode"] == "PASS_ONLY"
-    assert [list(s)[0] for s in job["analysis"]["steps"]][0] == "hiPhivePrioritiser"  # memory-sensible genome ordering
-    assert job["outputOptions"]["outputFormats"] == ["JSON", "TSV_GENE", "TSV_VARIANT"]
-    assert job["outputOptions"]["numGenes"] == 0
+    sample = yaml.safe_load(prof.sample_yaml("SYNTH", ["HP:0001250"]))
+    analysis = yaml.safe_load(prof.analysis_yaml(spec))
+    output = yaml.safe_load(prof.output_options_yaml())
+    assert set(sample) >= {"subject", "phenotypicFeatures"} and sample["subject"]["id"] == "SYNTH"
+    assert analysis["analysisMode"] == "PASS_ONLY"  # flat analysis script, as the shipped presets are
+    assert [list(s)[0] for s in analysis["steps"]][0] == "hiPhivePrioritiser"  # memory-sensible genome ordering
+    assert output["outputFormats"] == ["JSON", "TSV_GENE", "TSV_VARIANT"] and output["numGenes"] == 0
+    assert prof.GENOME_ASSEMBLY == "GRCh38"
 
 
 def test_failed_variant_filter_is_the_only_step_difference():
-    a = yaml.safe_load(prof.job_yaml(prof.PROFILE_SPECS[0], proband_id="S", hpo_ids=["HP:0001250"], vcf_path=Path("/x.vcf"),
-                                     output_dir=Path("/o"), output_prefix="p"))["analysis"]
-    b = yaml.safe_load(prof.job_yaml(prof.PROFILE_SPECS[1], proband_id="S", hpo_ids=["HP:0001250"], vcf_path=Path("/x.vcf"),
-                                     output_dir=Path("/o"), output_prefix="p"))["analysis"]
+    a = yaml.safe_load(prof.analysis_yaml(prof.PROFILE_SPECS[0]))
+    b = yaml.safe_load(prof.analysis_yaml(prof.PROFILE_SPECS[1]))
     steps_a = [list(s)[0] for s in a["steps"]]
     steps_b = [list(s)[0] for s in b["steps"]]
     assert set(steps_a) - set(steps_b) == {"failedVariantFilter"}
@@ -101,12 +98,12 @@ def test_failed_variant_filter_is_the_only_step_difference():
 
 def test_no_disease_or_gene_shortcut_reaches_the_solver(normalized, baseline, tmp_path):
     baseline(normalized)
-    for job in (tmp_path / "baseline" / "native").rglob("job.yml"):
-        text = job.read_text()
-        job_data = yaml.safe_load(text)
+    for doc in (tmp_path / "baseline" / "native").rglob("*.yml"):
+        text = doc.read_text()
         assert "genePanelFilter" not in text and "seedGeneIds" not in text
         assert not any(w in text.lower() for w in ("mva", "aneuploidy", "mosaic", "bub1b", "diagnosis"))
-        assert set(job_data["phenopacket"]) >= {"subject", "phenotypicFeatures", "htsFiles"}
+    samples = list((tmp_path / "baseline" / "native").rglob("sample.yml"))
+    assert samples and all(set(yaml.safe_load(p.read_text())) >= {"subject", "phenotypicFeatures"} for p in samples)
 
 
 # ── ingest ──────────────────────────────────────────────────────────────────
@@ -143,7 +140,8 @@ def test_source_filter_labels_are_carried_not_rewritten(normalized, baseline):
     c = baseline(normalized).candidate_set
     b = next(r for r in c.results if r.profile_id == "PROFILE_B")
     gene3 = next(x for x in b.candidates if x.gene_symbol == "SYNGENE3")
-    assert [v.source_filter_status for v in gene3.contributing_variants] == ["MQ40"]  # still MQ40, never PASS
+    # read back from the source VCF at that locus — the solver's own FILTER column says PASS
+    assert [v.source_filter_status for v in gene3.contributing_variants] == ["LowQual"]
     assert gene3.any_contributing_variant_non_pass
     a = next(r for r in c.results if r.profile_id == "PROFILE_A")
     assert not any(x.any_contributing_variant_non_pass for x in a.candidates)
@@ -217,8 +215,8 @@ def test_sanitized_normalized_case_is_refused(normalized, baseline):
 def test_dry_run_writes_configuration_without_running(normalized, baseline, tmp_path):
     c = baseline(normalized, dry_run=True).candidate_set
     assert all(r.status == "not_run" for r in c.results)
-    jobs = list((tmp_path / "baseline" / "native").rglob("job.yml"))
-    assert len(jobs) == 4 and all(yaml.safe_load(j.read_text())["analysis"]["analysisMode"] == "PASS_ONLY" for j in jobs)
+    analyses = list((tmp_path / "baseline" / "native").rglob("analysis.yml"))
+    assert len(analyses) == 4 and all(yaml.safe_load(a.read_text())["analysisMode"] == "PASS_ONLY" for a in analyses)
 
 
 # ── artifact, privacy, retention ────────────────────────────────────────────

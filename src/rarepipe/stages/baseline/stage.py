@@ -210,20 +210,21 @@ def _run(req: BaselineRequest, console: Console, norm: dict, run_id: str, starte
     proband = _proband_label(norm)
     specs = [s for s in prof.PROFILE_SPECS if not req.profile_ids or s.profile_id in req.profile_ids]
     properties_text = prof.application_properties(install.data_dir, install.hg38_version, install.phenotype_version) if install and install.data_dir else ""
-    built, job_files = [], {}
+    built, run_inputs = [], {}
     native_root.mkdir(parents=True, exist_ok=True)
     for spec in specs:
         ids, _ = prof.select_terms(terms, spec.phenotype_rule)
         profile_out = native_root / spec.profile_id.lower()
         profile_out.mkdir(parents=True, exist_ok=True)
-        job_text = prof.job_yaml(spec, proband_id=proband, hpo_ids=ids, vcf_path=vcf_path, output_dir=profile_out,
-                                 output_prefix=f"{norm['case_id']}-{spec.profile_id.lower()}")
-        job_path = profile_out / "job.yml"
-        job_path.write_text(job_text)
-        props_path = profile_out / "application.properties"
-        props_path.write_text(properties_text)
-        job_files[spec.profile_id] = (job_path, props_path, profile_out, f"{norm['case_id']}-{spec.profile_id.lower()}")
-        built.append(prof.build_profile(spec, terms, job_text, properties_text))
+        analysis_text, sample_text, output_text = prof.analysis_yaml(spec), prof.sample_yaml(proband, ids), prof.output_options_yaml()
+        paths = {}
+        for name, text in (("analysis.yml", analysis_text), ("sample.yml", sample_text),
+                           ("output-options.yml", output_text), ("application.properties", properties_text)):
+            (profile_out / name).write_text(text)
+            paths[name] = profile_out / name
+        prefix = f"{norm['case_id']}-{spec.profile_id.lower()}"
+        run_inputs[spec.profile_id] = (paths, profile_out, prefix)
+        built.append(prof.build_profile(spec, terms, analysis_text, sample_text, properties_text))
         console.info(f"{spec.profile_id}: {len(ids)} HPO term(s); failedVariantFilter={spec.failed_variant_filter}; analysisMode=PASS_ONLY")
     issues.append(_issue(BaselineIssueCode.PHENOTYPE_ASSUMPTION_APPLIED, Severity.INFO,
                          "Supplied HPO terms are used as features describing the child for this analysis; the case record still states polarity: unspecified.",
@@ -237,16 +238,19 @@ def _run(req: BaselineRequest, console: Console, norm: dict, run_id: str, starte
     runtimes: list[ProfileRuntime] = []
     blocked = any(i.severity == Severity.BLOCKER for i in issues)
     for spec in specs:
-        job_path, props_path, profile_out, prefix = job_files[spec.profile_id]
+        paths, profile_out, prefix = run_inputs[spec.profile_id]
         if blocked or req.dry_run or install is None:
             results.append(ProfileResult(profile_id=spec.profile_id, status="not_run",
                                          failure_reason="dry run" if req.dry_run else "prerequisites not met",
                                          candidate_count=0, candidates=[]))
             console.warn(f"{spec.profile_id}: not run")
             continue
-        outcome = exomiser.run_job(install, job_path, props_path, profile_out / "exomiser.log",
-                                   max_heap=req.max_heap, timeout_seconds=req.timeout_seconds)
-        results.append(_ingest_profile(spec.profile_id, outcome, profile_out, prefix, norm, issues, runtimes, console))
+        outcome = exomiser.run_job(
+            install, sample=paths["sample.yml"], analysis=paths["analysis.yml"], output_options=paths["output-options.yml"],
+            vcf=vcf_path, assembly=prof.GENOME_ASSEMBLY, output_dir=profile_out, output_prefix=prefix,
+            properties=paths["application.properties"], log_path=profile_out / "exomiser.log",
+            max_heap=req.max_heap, timeout_seconds=req.timeout_seconds)
+        results.append(_ingest_profile(spec.profile_id, outcome, profile_out, prefix, norm, issues, runtimes, console, source_vcf=vcf_path))
 
     # ── 5. compare ──────────────────────────────────────────────────────────
     console.step(5, 6, "Comparing profiles...")
@@ -323,7 +327,7 @@ def _proband_label(norm: dict) -> str:
 
 
 def _ingest_profile(profile_id: str, outcome, profile_out: Path, prefix: str, norm: dict, issues: list[Issue],
-                    runtimes: list[ProfileRuntime], console: Console) -> ProfileResult:
+                    runtimes: list[ProfileRuntime], console: Console, source_vcf: Path | None = None) -> ProfileResult:
     base = dict(profile_id=profile_id, exit_code=outcome.exit_code)
     runtimes.append(ProfileRuntime(profile_id=profile_id, wall_clock_seconds=outcome.wall_clock_seconds,
                                    peak_rss_bytes=outcome.peak_rss_bytes))
@@ -350,7 +354,7 @@ def _ingest_profile(profile_id: str, outcome, profile_out: Path, prefix: str, no
         console.fail(f"{profile_id}: outputs missing")
         return ProfileResult(**base, status="failed", failure_reason="expected outputs missing", candidate_count=0, candidates=[])
 
-    candidates = ingest.build_candidates(files["genes_tsv"], files["variants_tsv"])
+    candidates = ingest.build_candidates(files["genes_tsv"], files["variants_tsv"], source_vcf=source_vcf)
     contigs = ingest.contigs_in_output(files["variants_tsv"])
     source_contigs = {c["source_name"] for c in (norm["genome"].get("reference") or {}).get("contigs", []) if c.get("records")}
     result = ProfileResult(

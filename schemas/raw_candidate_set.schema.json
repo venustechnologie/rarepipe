@@ -252,7 +252,7 @@
           "type": "string"
         },
         "source_filter_status": {
-          "description": "FILTER column as it stands in the source VCF \u2014 never rewritten.",
+          "description": "FILTER as it stands in the source VCF, read back from that locus \u2014 never rewritten. NOT the solver's own FILTER column, which reports its internal status.",
           "title": "Source Filter Status",
           "type": "string"
         },

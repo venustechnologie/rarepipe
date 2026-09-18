@@ -85,10 +85,17 @@ class RunOutcome:
     tail: str
 
 
-def run_job(install: Installation, job_file: Path, properties: Path, log_path: Path, *, max_heap: str = "7g",
+def run_job(install: Installation, *, sample: Path, analysis: Path, output_options: Path, vcf: Path, assembly: str,
+            output_dir: Path, output_prefix: str, properties: Path, log_path: Path, max_heap: str = "7g",
             timeout_seconds: int = 6 * 3600) -> RunOutcome:
-    cmd = [str(install.java), f"-Xmx{max_heap}", "-jar", str(install.jar), "analyse", "--analysis", str(job_file),
-           f"--spring.config.location={properties}"]
+    """exomiser analyse --sample … --vcf … --assembly … --analysis … --output … (Exomiser 15 CLI)."""
+    # Exomiser 15 parses its own flags with picocli: Spring config must arrive as a JVM property,
+    # not as --spring.config.location (which the subcommand rejects as an unknown option).
+    cmd = [str(install.java), f"-Xmx{max_heap}", f"-Dspring.config.location=file:{properties}",
+           "-jar", str(install.jar), "analyse",
+           "--sample", str(sample), "--vcf", str(vcf), "--assembly", assembly,
+           "--analysis", str(analysis), "--output", str(output_options),
+           "--output-directory", str(output_dir), "--output-filename", output_prefix]
     before = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
     t0 = time.monotonic()
     timed_out = False
@@ -102,8 +109,8 @@ def run_job(install: Installation, job_file: Path, properties: Path, log_path: P
             code, timed_out = 124, True
     elapsed = time.monotonic() - t0
     after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-    # macOS reports ru_maxrss in bytes, Linux in kilobytes
-    peak = max(after, before)
+    # ru_maxrss is the high-water mark across all children; macOS reports bytes, Linux kilobytes
+    peak = max(after - before, 0) or after
     peak_bytes = peak if peak > 1 << 32 else peak * 1024
     text = log_path.read_text(errors="replace")
     tail = "\n".join(text.splitlines()[-40:])

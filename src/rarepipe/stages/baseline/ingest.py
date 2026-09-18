@@ -1,5 +1,11 @@
 """Exomiser native output → Candidate objects.
 
+One correction learned from the real solver: Exomiser's TSV `FILTER` column reports
+*its own* filter status (always PASS for a surviving variant), not the source VCF's
+FILTER field. Taking it at face value would relabel an MQ40 variant as PASS. The
+source label is therefore read back from the source VCF at that exact locus.
+
+
 Reads the structured TSV outputs (TSV_GENE ranks genes per mode of inheritance;
 TSV_VARIANT carries the variants, with CONTRIBUTING_VARIANT marking those that
 produced the gene's score). The JSON output is preserved as a native artifact but
@@ -14,6 +20,10 @@ import csv
 import hashlib
 from collections import defaultdict
 from pathlib import Path
+
+import pysam
+
+pysam.set_verbosity(0)
 
 from rarepipe.stages.baseline.model import Candidate, CandidatePhase, ContributingVariant
 
@@ -48,9 +58,50 @@ def read_tsv(path: Path) -> list[dict]:
         return [{(k or "").strip().lstrip("#"): v for k, v in row.items()} for row in csv.DictReader(fh, delimiter="\t")]
 
 
-def build_candidates(genes_tsv: Path, variants_tsv: Path) -> list[Candidate]:
+class SourceFilterLookup:
+    """FILTER as it stands in the source VCF, by exact locus+alleles. Targeted tabix fetches only."""
+
+    def __init__(self, vcf_path: Path | None):
+        self._vcf = None
+        self._cache: dict[tuple, str] = {}
+        if vcf_path and Path(vcf_path).is_file():
+            try:
+                self._vcf = pysam.VariantFile(str(vcf_path))
+            except (OSError, ValueError):
+                self._vcf = None
+
+    def _names(self, contig: str) -> list[str]:
+        return [contig, contig[3:] if contig.startswith("chr") else f"chr{contig}"]
+
+    def get(self, contig: str, pos: int, ref: str, alt: str) -> str:
+        key = (contig, pos, ref, alt)
+        if key in self._cache:
+            return self._cache[key]
+        label = "unknown"
+        if self._vcf and pos:
+            for name in self._names(contig):
+                try:
+                    for rec in self._vcf.fetch(name, max(pos - 1, 0), pos):
+                        if rec.pos == pos and rec.ref == ref and alt in (rec.alts or ()):
+                            label = ";".join(rec.filter.keys()) or "."
+                            break
+                    else:
+                        continue
+                    break
+                except (ValueError, OSError):
+                    continue
+        self._cache[key] = label
+        return label
+
+    def close(self) -> None:
+        if self._vcf:
+            self._vcf.close()
+
+
+def build_candidates(genes_tsv: Path, variants_tsv: Path, source_vcf: Path | None = None) -> list[Candidate]:
     gene_rows = read_tsv(genes_tsv)
     variant_rows = read_tsv(variants_tsv)
+    source_filters = SourceFilterLookup(source_vcf)
 
     by_gene_moi: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for row in variant_rows:
@@ -66,7 +117,7 @@ def build_candidates(genes_tsv: Path, variants_tsv: Path) -> list[Candidate]:
         contributing = [
             ContributingVariant(
                 variant_ref=variant_ref(v.get("CONTIG", ""), v.get("START", ""), v.get("REF", ""), v.get("ALT", "")),
-                source_filter_status=_s(v, "FILTER") or ".",
+                source_filter_status=source_filters.get(_s(v, "CONTIG") or "", _i(v, "START") or 0, _s(v, "REF") or "", _s(v, "ALT") or ""),
                 solver_variant_score=_f(v, "EXOMISER_VARIANT_SCORE"),
                 functional_class=_s(v, "FUNCTIONAL_CLASS"),
                 clinvar_interpretation=_s(v, "CLINVAR_PRIMARY_INTERPRETATION"),
@@ -95,6 +146,7 @@ def build_candidates(genes_tsv: Path, variants_tsv: Path) -> list[Candidate]:
             solver_evidence=evidence,
         ))
     candidates.sort(key=lambda c: (c.rank, c.gene_symbol, c.inheritance_model))
+    source_filters.close()
     return candidates
 
 

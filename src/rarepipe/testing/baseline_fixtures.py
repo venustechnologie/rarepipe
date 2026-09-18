@@ -46,14 +46,16 @@ class SynthGene:
     requires_wide_hpo: bool = False
 
 
+# Loci deliberately match records in the Stage 02 fixture VCF (normalize_fixtures.RECORDS), so the
+# source-FILTER lookup resolves real labels: 1:10010 is LowQual there, everything else is PASS.
 SYNTH_GENES = [
     SynthGene("SYNGENE1", "100001", "AUTOSOMAL_RECESSIVE_COMP_HET",
-              [("1", 1000100, "A", "G", "PASS"), ("1", 1000900, "C", "T", "PASS")], 0.9321, 0.8712, 0.9900),
-    SynthGene("SYNGENE2", "100002", "AUTOSOMAL_DOMINANT", [("2", 2000200, "G", "A", "PASS")], 0.7412, 0.6103, 0.9500),
-    SynthGene("SYNGENE3", "100003", "AUTOSOMAL_DOMINANT", [("3", 3000300, "T", "C", "MQ40")], 0.6620, 0.5330, 0.9100,
+              [("1", 10001, "A", "G", "PASS"), ("1", 10005, "C", "CT", "PASS")], 0.9321, 0.8712, 0.9900),
+    SynthGene("SYNGENE2", "100002", "AUTOSOMAL_DOMINANT", [("2", 20000, "G", "A", "PASS")], 0.7412, 0.6103, 0.9500),
+    SynthGene("SYNGENE3", "100003", "AUTOSOMAL_DOMINANT", [("1", 10010, "GTA", "G", "LowQual")], 0.6620, 0.5330, 0.9100,
               requires_non_pass=True),
     SynthGene("SYNGENE4", "100004", "AUTOSOMAL_RECESSIVE_COMP_HET",
-              [("4", 4000400, "G", "T", "PASS"), ("4", 4000800, "A", "AT", "PASS")], 0.5840, 0.7001, 0.8800,
+              [("1", 10020, "AC", "GT", "PASS"), ("1", 10040, "A", "G", "PASS")], 0.5840, 0.7001, 0.8800,
               requires_wide_hpo=True),
 ]
 
@@ -90,18 +92,17 @@ def write_outputs(output_dir: Path, prefix: str, *, non_pass_permitted: bool, wi
     (output_dir / f"{prefix}.json").write_text('{"note": "synthetic native output"}\n')
 
 
-def fake_run_job(install, job_file: Path, properties: Path, log_path: Path, *, max_heap="7g", timeout_seconds=0, **kw):
-    """Stand-in for exomiser.run_job: reads the generated job and writes matching outputs."""
+def fake_run_job(install, *, sample: Path, analysis: Path, output_options: Path, vcf: Path, assembly: str,
+                 output_dir: Path, output_prefix: str, properties: Path, log_path: Path, max_heap="7g", timeout_seconds=0):
+    """Stand-in for exomiser.run_job: reads the generated documents and writes matching outputs."""
     from rarepipe.stages.baseline.exomiser import RunOutcome
 
-    job = yaml.safe_load(job_file.read_text())
-    steps = job["analysis"]["steps"]
+    steps = yaml.safe_load(analysis.read_text())["steps"]
     non_pass_permitted = not any("failedVariantFilter" in s for s in steps)
-    ids = [f["type"]["id"] for f in job["phenopacket"]["phenotypicFeatures"]]
+    ids = [f["type"]["id"] for f in yaml.safe_load(sample.read_text())["phenotypicFeatures"]]
     wide_hpo = "HP:0000007" in ids  # the mode-of-inheritance term, present only in the wider profiles
-    out_dir = Path(job["outputOptions"]["outputDirectory"])
-    out_dir.mkdir(parents=True, exist_ok=True)
-    write_outputs(out_dir, job["outputOptions"]["outputFileName"], non_pass_permitted=non_pass_permitted, wide_hpo=wide_hpo)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    write_outputs(output_dir, output_prefix, non_pass_permitted=non_pass_permitted, wide_hpo=wide_hpo)
     log_path.write_text("synthetic solver run\nProcessed 12 variants\nAnalysis complete\n")
     return RunOutcome(exit_code=0, wall_clock_seconds=1.0, peak_rss_bytes=2_000_000_000, log_path=log_path,
                       out_of_memory=False, rejected_input=False, timed_out=False, tail="Analysis complete")
@@ -117,7 +118,7 @@ def failing_run_job(reason: str):
         "crash": "Something else went wrong\n",
     }
 
-    def _run(install, job_file: Path, properties: Path, log_path: Path, **kw):
+    def _run(install, *, log_path: Path, **kw):
         log_path.write_text(texts[reason])
         return RunOutcome(exit_code=1, wall_clock_seconds=5.0, peak_rss_bytes=7_000_000_000, log_path=log_path,
                           out_of_memory=reason == "oom", rejected_input=reason == "rejected", timed_out=False,

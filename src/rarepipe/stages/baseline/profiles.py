@@ -39,7 +39,7 @@ from rarepipe.stages.baseline.model import (
     PhenotypeSelection,
 )
 
-GENOME_ASSEMBLY = "hg38"
+GENOME_ASSEMBLY = "GRCh38"  # Exomiser 15 --assembly accepts GRCh37/GRCh38
 FREQUENCY_MAX_PERCENT = 2.0
 HIPHIVE_MIN_PRIORITY_SCORE = 0.501
 
@@ -135,32 +135,34 @@ def analysis_steps(failed_variant_filter: bool) -> list[dict]:
     return steps
 
 
-def job_yaml(spec: ProfileSpec, *, proband_id: str, hpo_ids: list[str], vcf_path: Path, output_dir: Path, output_prefix: str) -> str:
-    """One Exomiser job file: phenopacket + analysis + outputOptions (the shipped job-template shape)."""
-    job = {
-        "phenopacket": {
-            "id": f"rarepipe-{spec.profile_id.lower()}",
-            "subject": {"id": proband_id, "sex": "UNKNOWN_SEX"},
-            "phenotypicFeatures": [{"type": {"id": t}} for t in hpo_ids],
-            "htsFiles": [{"uri": str(vcf_path), "htsFormat": "VCF", "genomeAssembly": GENOME_ASSEMBLY}],
-            "metaData": {"createdBy": "rarepipe", "phenopacketSchemaVersion": "1.0"},
-        },
-        "analysis": {
-            "analysisMode": "PASS_ONLY",
-            "inheritanceModes": dict(INHERITANCE_MODES),
-            "frequencySources": list(FREQUENCY_SOURCES),
-            "pathogenicitySources": list(PATHOGENICITY_SOURCES),
-            "steps": analysis_steps(spec.failed_variant_filter),
-        },
-        "outputOptions": {
-            "outputContributingVariantsOnly": False,
-            "numGenes": 0,  # all ranked genes; truncation belongs in our report, not in the evidence
-            "outputDirectory": str(output_dir),
-            "outputFileName": output_prefix,
-            "outputFormats": list(OUTPUT_FORMATS),
-        },
-    }
-    return yaml.safe_dump(job, sort_keys=False, default_flow_style=False)
+def sample_yaml(proband_id: str, hpo_ids: list[str]) -> str:
+    """Phenopacket describing the proband. The VCF is passed separately via --vcf/--assembly."""
+    return yaml.safe_dump({
+        "id": "rarepipe-baseline",
+        "subject": {"id": proband_id, "sex": "UNKNOWN_SEX"},
+        "phenotypicFeatures": [{"type": {"id": t}} for t in hpo_ids],
+        "metaData": {"createdBy": "rarepipe", "phenopacketSchemaVersion": "1.0"},
+    }, sort_keys=False, default_flow_style=False)
+
+
+def analysis_yaml(spec: ProfileSpec) -> str:
+    """Exomiser 15 analysis script: a flat document, as in the shipped preset-*-analysis.yml."""
+    return yaml.safe_dump({
+        "analysisMode": "PASS_ONLY",
+        "inheritanceModes": dict(INHERITANCE_MODES),
+        "frequencySources": list(FREQUENCY_SOURCES),
+        "pathogenicitySources": list(PATHOGENICITY_SOURCES),
+        "steps": analysis_steps(spec.failed_variant_filter),
+    }, sort_keys=False, default_flow_style=False)
+
+
+def output_options_yaml() -> str:
+    """Flat output options; the directory and filename are passed as CLI flags per run."""
+    return yaml.safe_dump({
+        "outputContributingVariantsOnly": False,
+        "numGenes": 0,  # all ranked genes; truncation belongs in our report, not in the evidence
+        "outputFormats": list(OUTPUT_FORMATS),
+    }, sort_keys=False, default_flow_style=False)
 
 
 def application_properties(data_dir: Path, hg38_version: str, phenotype_version: str) -> str:
@@ -178,18 +180,7 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def canonical_for_hashing(text: str) -> str:
-    """Config digest must describe the *analysis*, not where this run happened to write files."""
-    job = yaml.safe_load(text)
-    job["outputOptions"]["outputDirectory"] = "<OUTPUT_DIR>"
-    job["outputOptions"]["outputFileName"] = "<OUTPUT_PREFIX>"
-    job["phenopacket"]["id"] = "<JOB_ID>"
-    for hts in job["phenopacket"].get("htsFiles", []):
-        hts["uri"] = "<VCF>"
-    return yaml.safe_dump(job, sort_keys=False, default_flow_style=False)
-
-
-def build_profile(spec: ProfileSpec, terms: list[dict], job_text: str, properties_text: str) -> AnalysisProfile:
+def build_profile(spec: ProfileSpec, terms: list[dict], analysis_text: str, sample_text: str, properties_text: str) -> AnalysisProfile:
     ids, branches = select_terms(terms, spec.phenotype_rule)
     return AnalysisProfile(
         profile_id=spec.profile_id,
@@ -200,7 +191,7 @@ def build_profile(spec: ProfileSpec, terms: list[dict], job_text: str, propertie
         inheritance_modes=dict(INHERITANCE_MODES),
         frequency_max_percent=FREQUENCY_MAX_PERCENT,
         assumptions=[PHENOTYPE_ASSUMPTION, ROLE_ASSUMPTION, REMM_ASSUMPTION],
-        analysis_yaml_sha256=sha256_text(canonical_for_hashing(job_text)),
-        sample_yaml_sha256=sha256_text(canonical_for_hashing(job_text)),  # single job file carries both sections
+        analysis_yaml_sha256=sha256_text(analysis_text),
+        sample_yaml_sha256=sha256_text(sample_text),
         properties_sha256=sha256_text(properties_text),
     )

@@ -125,7 +125,8 @@ class SolverIdentity(BaseModel):
 
 class ContributingVariant(BaseModel):
     variant_ref: str = Field(description="Stable within this run: sha256(contig:pos:ref:alt)[:12]. Coordinates themselves are private.")
-    source_filter_status: str = Field(description="FILTER column as it stands in the source VCF — never rewritten.")
+    source_filter_status: str = Field(description=("FILTER as it stands in the source VCF, read back from that locus — never rewritten. "
+                                                   "NOT the solver's own FILTER column, which reports its internal status."))
     solver_variant_score: float | None = None
     functional_class: str | None = None
     clinvar_interpretation: str | None = None
