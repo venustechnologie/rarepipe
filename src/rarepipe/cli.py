@@ -184,6 +184,7 @@ def export_track1(
     candidate_run: Annotated[Path, typer.Option(help="Stage 03 raw_candidate_set.private.json.")],
     adjudication_run: Annotated[Path, typer.Option(help="Stage 04 adjudicated_hypothesis.private.json.")],
     output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    normalized_case: Annotated[Path | None, typer.Option(help="Stage 02 normalized_case.sanitized.json — completes the intake→submission provenance chain.")] = None,
     proband_id: Annotated[str, typer.Option(help="Proband identifier the evaluator accepts.")] = "PROBAND01",
     official_scorer: Annotated[Path | None, typer.Option(help="The challenge's public evaluation.py, run locally on our file (no answer key).")] = None,
     submitter: Annotated[str | None, typer.Option(help="Username or team name, used only to suggest an upload filename.")] = None,
@@ -193,7 +194,8 @@ def export_track1(
     """Build a Track 1 submission package: predictions CSV, methods report, manifest, frozen snapshot."""
     from rarepipe.stages.track1.stage import ExportRequest, Track1UsageError, run_export
 
-    req = ExportRequest(raw_candidate_set=candidate_run, adjudication=adjudication_run, output=output,
+    req = ExportRequest(raw_candidate_set=candidate_run, adjudication=adjudication_run,
+                        normalized_case=normalized_case, output=output,
                         proband_id=proband_id, official_scorer=official_scorer, submitter=submitter,
                         llm_disclosure=llm_disclosure, argv=sys.argv[:])
     try:

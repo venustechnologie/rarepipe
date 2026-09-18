@@ -35,6 +35,7 @@ from rarepipe.stages.track1.model import (
     SubmissionState,
     SubmissionVariant,
     Track1SubmissionPackage,
+    ValidationCheck,
     ValidationSnapshot,
 )
 
@@ -56,6 +57,7 @@ class ExportRequest:
     raw_candidate_set: Path
     adjudication: Path
     output: Path
+    normalized_case: Path | None = None
     proband_id: str = PROBAND_ID
     official_scorer: Path | None = None
     llm_disclosure: str | None = None
@@ -98,6 +100,32 @@ def _describe() -> str | None:
         return None
 
 
+def _resolve_intake(candidates: dict, normalized: dict | None, expected_run: str | None) -> tuple[str | None, str]:
+    """Stage 03 records which NormalizedCase it consumed but not which CaseManifest that came from,
+    so the last link of the chain is resolved by reading the NormalizedCase itself — and only after
+    checking it is the very artifact the baseline used."""
+    direct = candidates.get("provenance", {}).get("source_case", {}).get("case_manifest_run_id")
+    if direct:
+        return direct, "carried through the RawCandidateSet's own provenance"
+    if normalized is None:
+        return None, ("not resolved: the RawCandidateSet does not carry the CaseManifest run id and no "
+                      "NormalizedCase was supplied (pass --normalized-case)")
+    run_id = normalized.get("execution", {}).get("run_id")
+    if expected_run and run_id != expected_run:
+        raise Track1UsageError(
+            f"the NormalizedCase supplied is run {run_id}, but the baseline consumed {expected_run}; "
+            "the snapshot would record a chain that never happened")
+    digest = normalized.get("semantic_digest")
+    recorded = candidates.get("provenance", {}).get("source_case", {}).get("normalized_case_semantic_digest")
+    if recorded and digest != recorded:
+        raise Track1UsageError("the NormalizedCase supplied does not match the digest the baseline recorded")
+    manifest = normalized.get("provenance", {}).get("source_manifest", {})
+    if not manifest.get("run_id"):
+        return None, "not resolved: the NormalizedCase supplied carries no CaseManifest run id"
+    return manifest["run_id"], ("read from the NormalizedCase the baseline consumed, verified against the run id "
+                                "and semantic digest the baseline recorded")
+
+
 def _leading_row(adjudication: dict, alias_map: dict[str, str] | None) -> SubmissionRow:
     """Row 1: the adjudicated hypothesis, as one compound-heterozygous row."""
     variants = adjudication.get("variants", [])
@@ -132,6 +160,7 @@ def run_export(req: ExportRequest, console: Console | None = None) -> ExportResu
     console.step(1, 5, "Freezing the validation snapshot...")
     candidates = _load(req.raw_candidate_set)
     adjudication = _load(req.adjudication)
+    normalized = _load(req.normalized_case) if req.normalized_case else None
     if adjudication.get("visibility") != "private":
         raise Track1UsageError("the adjudication artifact must be the private one; the sanitized one has no coordinates")
     case_id = adjudication.get("case_id")
@@ -140,9 +169,13 @@ def run_export(req: ExportRequest, console: Console | None = None) -> ExportResu
         raise Track1UsageError("no assembly recorded on the adjudicated variants")
     src = adjudication.get("provenance", {}).get("source_hypothesis", {})
     software = software_provenance()
+    intake_run, chain_note = _resolve_intake(candidates, normalized, src.get("normalized_case_run_id"))
     snapshot = ValidationSnapshot(
-        intake_run=candidates.get("provenance", {}).get("source_case", {}).get("case_manifest_run_id"),
+        intake_run=intake_run,
         normalization_run=src.get("normalized_case_run_id"),
+        case_manifest_digest=(normalized or {}).get("provenance", {}).get("source_manifest", {}).get("semantic_digest"),
+        normalization_digest=(normalized or {}).get("semantic_digest"),
+        provenance_chain_complete=bool(intake_run), chain_resolution=chain_note,
         baseline_run=src.get("raw_candidate_set_run_id") or candidates.get("execution", {}).get("run_id"),
         adjudication_run=adjudication.get("execution", {}).get("run_id"),
         baseline_digest=candidates.get("semantic_digest"), adjudication_digest=adjudication.get("semantic_digest"),
@@ -186,9 +219,18 @@ def run_export(req: ExportRequest, console: Console | None = None) -> ExportResu
 
     console.step(3, 5, "Rendering and validating the predictions file...")
     csv_text = export.render_csv(req.proband_id, rows)
+    csv_name = f"{req.submitter}_rarepipe-exomiser-adjudicated.csv" if req.submitter else CSV_NAME
+    methods_name = f"{req.submitter}_track1_report.md" if req.submitter else METHODS_NAME
     run = RunDirectory(req.output, run_id).open()
-    csv_path = run.write_text(CSV_NAME, csv_text)
+    csv_path = run.write_text(csv_name, csv_text)
     checks = export.checks(req.proband_id, rows, csv_text)
+    checks.append(ValidationCheck(
+        check="the provenance chain is complete from intake to submission",
+        passed=snapshot.provenance_chain_complete, detail=snapshot.chain_resolution or ""))
+    disclosure = req.llm_disclosure or methods.DEFAULT_LLM_DISCLOSURE
+    disclosure_ok, disclosure_detail = methods.disclosure_is_complete(disclosure)
+    checks.append(ValidationCheck(check="the AI-assistance disclosure is complete (provider, plan/tier, data setting)",
+                                  passed=disclosure_ok, detail=disclosure_detail))
     scorer = export.run_official_parser(req.official_scorer, csv_path, rows)
     valid = all(c.passed for c in checks) and (scorer.parsed_ok is not False)
     for c in checks:
@@ -202,7 +244,8 @@ def run_export(req: ExportRequest, console: Console | None = None) -> ExportResu
 
     console.step(4, 5, "Assembling the package...")
     prediction_digest = "sha256:" + hashlib.sha256(csv_text.encode()).hexdigest()
-    stem = f"{req.submitter}_rarepipe-exomiser-adjudicated.csv" if req.submitter else "rarepipe-exomiser-adjudicated.csv"
+    if not req.submitter:
+        console.warn("no --submitter given: the organizers ask for your username or team name in both filenames")
     package = Track1SubmissionPackage(
         visibility="private", case_id=case_id, proband_id=req.proband_id, assembly=assembly, rows=rows,
         selection_rule=SelectionRule(
@@ -214,7 +257,7 @@ def run_export(req: ExportRequest, console: Console | None = None) -> ExportResu
             tie_breaks=select.TIE_BREAKS, rows_considered=ranked[0]["considered"] if ranked else 0, rows_emitted=len(rows)),
         epcr_schedule=EpcrSchedule(description=epcr_mod.DESCRIPTION, values=values),
         checks=checks, official_scorer=scorer, valid=valid,
-        files=[], submission=SubmissionState(recommended_upload_filename=stem),
+        files=[], submission=SubmissionState(recommended_upload_filename=csv_name),
         provenance=Provenance(software=software, validation_snapshot=snapshot, snapshot_digest=snapshot_digest,
                               prediction_digest=prediction_digest),
         execution=Execution(run_id=run_id, started_at=started.isoformat(), finished_at=utc_now().isoformat(),
@@ -224,14 +267,13 @@ def run_export(req: ExportRequest, console: Console | None = None) -> ExportResu
 
     console.step(5, 5, "Writing the methods report and manifest...")
     sanitized_adj = json.loads(canonical_json(adjudication)) if isinstance(adjudication, dict) else adjudication
-    methods_text = methods.render(package, sanitized_adj, candidates,
-                                  req.llm_disclosure or methods.DEFAULT_LLM_DISCLOSURE)
-    run.write_text(METHODS_NAME, methods_text)
+    methods_text = methods.render(package, sanitized_adj, candidates, disclosure)
+    run.write_text(methods_name, methods_text)
     run.write_text(SNAPSHOT_NAME, json.dumps(snapshot.model_dump(mode="json"), indent=2) + "\n")
     package.files = [
-        SubmissionFile(name=CSV_NAME, sha256=prediction_digest, bytes=len(csv_text.encode()),
+        SubmissionFile(name=csv_name, sha256=prediction_digest, bytes=len(csv_text.encode()),
                        contains_case_specific_identity=True),
-        SubmissionFile(name=METHODS_NAME, sha256="sha256:" + hashlib.sha256(methods_text.encode()).hexdigest(),
+        SubmissionFile(name=methods_name, sha256="sha256:" + hashlib.sha256(methods_text.encode()).hexdigest(),
                        bytes=len(methods_text.encode())),
         SubmissionFile(name=SNAPSHOT_NAME, sha256=snapshot_digest, bytes=len(snapshot_json.encode())),
     ]

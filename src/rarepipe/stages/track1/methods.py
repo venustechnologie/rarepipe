@@ -11,13 +11,27 @@ from typing import Any
 
 from rarepipe.stages.track1.model import Track1SubmissionPackage
 
+PLACEHOLDER_MARKERS = ("[", "]", "to be confirmed", "submitter to confirm", "TODO")
+
 DEFAULT_LLM_DISCLOSURE = (
-    "An AI assistant (Anthropic Claude, via Claude Code) was used to write the pipeline's source code. "
-    "No case-specific genomic data was transmitted to it or to any other LLM API at any point: the "
-    "disclosure guard described below is enforced in code, and all analysis of controlled data ran "
-    "locally in a network-denied sandbox. Submitter to confirm their Anthropic plan/tier and "
-    "data-handling setting before submission."
+    "Anthropic Claude (Claude Code) [plan/tier and data-handling setting] and OpenAI ChatGPT "
+    "[plan/tier and data-handling setting] were used for software development, methodology, and review of "
+    "sanitized/derived findings. Raw VCF/FASTQ data, exact patient variant coordinates/alleles, and "
+    "genome-scale genotype tables were not provided to either service. Controlled genomic analysis ran locally."
 )
+
+
+def disclosure_is_complete(text: str) -> tuple[bool, str]:
+    """The organizers require provider, plan/tier and data-handling setting for every AI assistant used.
+    An unfilled placeholder is worse than no disclosure, so it blocks the package rather than shipping."""
+    unresolved = [m for m in PLACEHOLDER_MARKERS if m.lower() in text.lower()]
+    if unresolved:
+        return False, f"unresolved placeholder(s) in the AI disclosure: {', '.join(unresolved)}"
+    named = [p for p in ("anthropic", "openai") if p in text.lower()]
+    if not named:
+        return False, "the AI disclosure names no provider"
+    return True, f"providers named: {', '.join(named)}"
+
 
 
 def render(pkg: Track1SubmissionPackage, adjudication: dict[str, Any], candidate_set: dict[str, Any],

@@ -40,8 +40,12 @@ class ValidationSnapshot(BaseModel):
     normalization_run: str | None = None
     baseline_run: str
     adjudication_run: str
+    case_manifest_digest: str | None = None
+    normalization_digest: str | None = None
     baseline_digest: str | None = None
     adjudication_digest: str | None = None
+    provenance_chain_complete: bool = False
+    chain_resolution: str | None = Field(None, description="How the intake run was reached from the inputs given to this stage.")
     git_commit: str | None = None
     git_describe: str | None = None
     git_dirty: bool | None = None

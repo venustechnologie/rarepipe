@@ -700,6 +700,30 @@
           "title": "Adjudication Run",
           "type": "string"
         },
+        "case_manifest_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Case Manifest Digest"
+        },
+        "normalization_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalization Digest"
+        },
         "baseline_digest": {
           "anyOf": [
             {
@@ -723,6 +747,24 @@
           ],
           "default": null,
           "title": "Adjudication Digest"
+        },
+        "provenance_chain_complete": {
+          "default": false,
+          "title": "Provenance Chain Complete",
+          "type": "boolean"
+        },
+        "chain_resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How the intake run was reached from the inputs given to this stage.",
+          "title": "Chain Resolution"
         },
         "git_commit": {
           "anyOf": [

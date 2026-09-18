@@ -65,8 +65,14 @@ def case(tmp_path: Path):
     return cpath, apath, tmp_path / "out"
 
 
+COMPLETE_DISCLOSURE = ("Anthropic Claude (Claude Code), Max plan, no training on customer content; OpenAI ChatGPT, "
+                       "Plus plan, chat history and training off. Used for code, methodology and review of sanitized "
+                       "findings. No raw VCF/FASTQ, no exact coordinates, no genotype tables.")
+
+
 def export(case, **kw):
     cpath, apath, out = case
+    kw.setdefault("llm_disclosure", COMPLETE_DISCLOSURE)
     return run_export(ExportRequest(raw_candidate_set=cpath, adjudication=apath, output=out, argv=["test"], **kw))
 
 
@@ -134,7 +140,7 @@ def test_manifest_carries_no_variant_identity_but_the_csv_does(case):
 
 def test_methods_report_carries_no_coordinates(case):
     r = export(case)
-    text = (r.run_dir / "track1_methods.md").read_text()
+    text = (r.run_dir / r.package.files[1].name).read_text()
     assert "40200000" not in text and "40210911" not in text
     assert "not empirically calibrated" in text and "unresolved" in text.lower()
 
@@ -199,3 +205,59 @@ def test_a_single_allele_of_an_already_submitted_pair_does_not_waste_a_row(case,
     rows = rows_of(r)
     assert not any(not x["chrom_2"] and x["pos_1"] == "40200000" for x in rows), "submitted half of our own pair"
     assert [x.gene_symbol for x in r.package.rows].count("BUB1B") == 1
+
+
+def test_an_unfilled_ai_disclosure_blocks_the_package(case):
+    """An unresolved placeholder in a required disclosure is worse than no disclosure."""
+    r = run_export(ExportRequest(raw_candidate_set=case[0], adjudication=case[1], output=case[2], argv=["t"]))
+    failed = [c.check for c in r.package.checks if not c.passed]
+    assert not r.package.valid and any("AI-assistance disclosure" in c for c in failed)
+
+
+def test_a_broken_provenance_chain_blocks_the_package(case, tmp_path):
+    cpath, apath, out = case
+    candidates = json.loads(cpath.read_text())
+    del candidates["provenance"]["source_case"]["case_manifest_run_id"]
+    cpath.write_text(json.dumps(candidates))
+    r = export(case)
+    assert not r.package.valid
+    assert not r.package.provenance.validation_snapshot.provenance_chain_complete
+    assert any("provenance chain" in c.check and not c.passed for c in r.package.checks)
+
+
+def test_the_intake_run_is_recovered_from_the_normalized_case(case, tmp_path):
+    cpath, apath, out = case
+    candidates = json.loads(cpath.read_text())
+    del candidates["provenance"]["source_case"]["case_manifest_run_id"]
+    candidates["provenance"]["source_case"]["normalized_case_semantic_digest"] = "sha256:norm"
+    cpath.write_text(json.dumps(candidates))
+    norm = tmp_path / "normalized_case.sanitized.json"
+    norm.write_text(json.dumps({"execution": {"run_id": "RUN_NORM"}, "semantic_digest": "sha256:norm",
+                                "provenance": {"source_manifest": {"run_id": "RUN_INTAKE_2",
+                                                                   "semantic_digest": "sha256:manifest"}}}))
+    r = export(case, normalized_case=norm)
+    snap = r.package.provenance.validation_snapshot
+    assert snap.intake_run == "RUN_INTAKE_2" and snap.provenance_chain_complete
+    assert snap.case_manifest_digest == "sha256:manifest"
+    assert r.package.valid
+
+
+def test_a_normalized_case_the_baseline_never_used_is_refused(case, tmp_path):
+    cpath, apath, out = case
+    candidates = json.loads(cpath.read_text())
+    del candidates["provenance"]["source_case"]["case_manifest_run_id"]
+    cpath.write_text(json.dumps(candidates))
+    wrong = tmp_path / "other_normalized.json"
+    wrong.write_text(json.dumps({"execution": {"run_id": "RUN_SOMETHING_ELSE"},
+                                 "provenance": {"source_manifest": {"run_id": "RUN_X"}}}))
+    with pytest.raises(Track1UsageError):
+        export(case, normalized_case=wrong)
+
+
+def test_submitter_name_lands_in_both_filenames(case):
+    r = export(case, submitter="jane-doe")
+    names = [f.name for f in r.package.files]
+    assert "jane-doe_rarepipe-exomiser-adjudicated.csv" in names
+    assert "jane-doe_track1_report.md" in names
+    assert all((r.run_dir / n).exists() for n in names[:2])
+    assert r.package.submission.recommended_upload_filename == "jane-doe_rarepipe-exomiser-adjudicated.csv"
