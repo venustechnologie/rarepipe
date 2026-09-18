@@ -118,10 +118,21 @@ def test_candidates_preserve_solver_ranks_and_scores(normalized, baseline):
     assert a.candidates[0].solver_evidence["HUMAN_PHENO_EVIDENCE"].startswith("synthetic phenotype match")
 
 
+def test_recessive_candidate_with_two_het_variants_is_a_pair(normalized, baseline):
+    """The solver abbreviates MOI as AR/XR; a recessive candidate with two heterozygous
+    contributing variants IS the compound-heterozygous configuration."""
+    from rarepipe.stages.baseline.ingest import RECESSIVE_MODELS
+
+    assert {"AR", "XR"} <= RECESSIVE_MODELS
+    c = baseline(normalized).candidate_set
+    pairs = [x for r in c.results for x in r.candidates if x.is_variant_pair]
+    assert pairs and all(x.contributing_variant_count == 2 for x in pairs)
+
+
 def test_compound_het_is_represented_as_a_pair_with_unresolved_phase(normalized, baseline):
     c = baseline(normalized).candidate_set
     pair = next(x for r in c.results if r.profile_id == "PROFILE_A" for x in r.candidates if x.gene_symbol == "SYNGENE1")
-    assert pair.inheritance_model.endswith("COMP_HET") and pair.is_variant_pair
+    assert pair.inheritance_model == "AR" and pair.is_variant_pair  # Exomiser abbreviates the MOI
     assert pair.contributing_variant_count == 2 and len(pair.contributing_variants) == 2
     assert pair.phase.status == "unresolved" and "not proof they are in trans" in pair.phase.note.lower()
     single = next(x for r in c.results if r.profile_id == "PROFILE_A" for x in r.candidates if x.gene_symbol == "SYNGENE2")

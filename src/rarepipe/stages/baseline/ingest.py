@@ -27,7 +27,13 @@ pysam.set_verbosity(0)
 
 from rarepipe.stages.baseline.model import Candidate, CandidatePhase, ContributingVariant
 
-COMP_HET_MODELS = ("COMP_HET",)
+# Exomiser's TSV writes the mode of inheritance abbreviated (AD/AR/XD/XR/MT), not the long
+# AUTOSOMAL_RECESSIVE_COMP_HET form used in analysis configuration. A recessive candidate carrying
+# exactly two heterozygous contributing variants IS the compound-heterozygous configuration; looking
+# for "COMP_HET" in this column finds nothing and silently reports zero pairs.
+RECESSIVE_MODELS = {"AR", "XR", "AUTOSOMAL_RECESSIVE_COMP_HET", "X_RECESSIVE_COMP_HET",
+                    "AUTOSOMAL_RECESSIVE_HOM_ALT", "X_RECESSIVE_HOM_ALT"}
+HETEROZYGOUS_GENOTYPES = {"0/1", "1/0", "0|1", "1|0"}
 TRUTHY = {"1", "true", "TRUE", "yes", "Y"}
 
 
@@ -130,7 +136,9 @@ def build_candidates(genes_tsv: Path, variants_tsv: Path, source_vcf: Path | Non
             )
             for v in by_gene_moi.get((symbol, moi), [])
         ]
-        is_comp_het = any(tag in moi for tag in COMP_HET_MODELS)
+        recessive = moi.strip().upper() in RECESSIVE_MODELS
+        het_genotypes = [v.genotype for v in contributing if (v.genotype or "").strip() in HETEROZYGOUS_GENOTYPES]
+        is_comp_het_configuration = recessive and len(contributing) == 2 and len(het_genotypes) == 2
         evidence = {k: v for k, v in row.items() if k.endswith("_EVIDENCE") and (v or "").strip()}
         for k in ("HUMAN_PHENO_SCORE", "MOUSE_PHENO_SCORE", "FISH_PHENO_SCORE", "WALKER_SCORE", "OMIM_SCORE", "MATCHES_CANDIDATE_GENE"):
             if (row.get(k) or "").strip():
@@ -140,8 +148,8 @@ def build_candidates(genes_tsv: Path, variants_tsv: Path, source_vcf: Path | Non
             p_value=_f(row, "P-VALUE"), score_combined=_f(row, "EXOMISER_GENE_COMBINED_SCORE"),
             score_phenotype=_f(row, "EXOMISER_GENE_PHENO_SCORE"), score_variant=_f(row, "EXOMISER_GENE_VARIANT_SCORE"),
             contributing_variants=contributing, contributing_variant_count=len(contributing),
-            is_variant_pair=is_comp_het and len(contributing) == 2,
-            phase=CandidatePhase() if is_comp_het and len(contributing) >= 2 else None,
+            is_variant_pair=is_comp_het_configuration,
+            phase=CandidatePhase() if recessive and len(contributing) >= 2 else None,
             any_contributing_variant_non_pass=any(v.source_filter_status not in ("PASS", ".") for v in contributing),
             solver_evidence=evidence,
         ))

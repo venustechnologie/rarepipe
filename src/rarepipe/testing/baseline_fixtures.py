@@ -49,12 +49,12 @@ class SynthGene:
 # Loci deliberately match records in the Stage 02 fixture VCF (normalize_fixtures.RECORDS), so the
 # source-FILTER lookup resolves real labels: 1:10010 is LowQual there, everything else is PASS.
 SYNTH_GENES = [
-    SynthGene("SYNGENE1", "100001", "AUTOSOMAL_RECESSIVE_COMP_HET",
+    SynthGene("SYNGENE1", "100001", "AR",
               [("1", 10001, "A", "G", "PASS"), ("1", 10005, "C", "CT", "PASS")], 0.9321, 0.8712, 0.9900),
-    SynthGene("SYNGENE2", "100002", "AUTOSOMAL_DOMINANT", [("2", 20000, "G", "A", "PASS")], 0.7412, 0.6103, 0.9500),
-    SynthGene("SYNGENE3", "100003", "AUTOSOMAL_DOMINANT", [("1", 10010, "GTA", "G", "LowQual")], 0.6620, 0.5330, 0.9100,
+    SynthGene("SYNGENE2", "100002", "AD", [("2", 20000, "G", "A", "PASS")], 0.7412, 0.6103, 0.9500),
+    SynthGene("SYNGENE3", "100003", "AD", [("1", 10010, "GTA", "G", "LowQual")], 0.6620, 0.5330, 0.9100,
               requires_non_pass=True),
-    SynthGene("SYNGENE4", "100004", "AUTOSOMAL_RECESSIVE_COMP_HET",
+    SynthGene("SYNGENE4", "100004", "AR",
               [("1", 10020, "AC", "GT", "PASS"), ("1", 10040, "A", "G", "PASS")], 0.5840, 0.7001, 0.8800,
               requires_wide_hpo=True),
 ]
