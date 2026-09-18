@@ -318,6 +318,11 @@ class MechanismGraph(BaseModel):
     nodes: list[MechanismNode]
     edges: list[MechanismEdge]
     unknown_edges: list[str] = Field(default_factory=list, description="Edges whose status is UNRESOLVED, named for visibility.")
+    qualifications: list[str] = Field(
+        default_factory=list,
+        description="Accepted evidence that the chain as drawn is incomplete — parallel functions, effects beyond "
+                    "the modelled variables, non-specific causes. Kept as qualifications rather than invented arrows: "
+                    "we have evidence these matter, not evidence of where they attach.")
 
 
 class AlleleMechanism(BaseModel):

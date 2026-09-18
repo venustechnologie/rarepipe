@@ -45,6 +45,12 @@ def render(d: MechanismDossier) -> str:
     w("")
     if d.graph.unknown_edges:
         w("**Unknown links, left unknown:** " + "; ".join(d.graph.unknown_edges) + "\n")
+    if d.graph.qualifications:
+        w("**The chain as drawn is not the whole story.** Accepted evidence says these matter, without placing "
+          "an arrow we could source:\n")
+        for q in d.graph.qualifications:
+            w(f"- {q}")
+        w("")
 
     w("## Claims\n")
     for c in d.claims:

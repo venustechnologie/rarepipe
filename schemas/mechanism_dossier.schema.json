@@ -1018,6 +1018,14 @@
           },
           "title": "Unknown Edges",
           "type": "array"
+        },
+        "qualifications": {
+          "description": "Accepted evidence that the chain as drawn is incomplete \u2014 parallel functions, effects beyond the modelled variables, non-specific causes. Kept as qualifications rather than invented arrows: we have evidence these matter, not evidence of where they attach.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Qualifications",
+          "type": "array"
         }
       },
       "required": [

@@ -305,6 +305,13 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
         mech_claims += imported_claims
         verified += imported_evidence
         invalid += imported_rejected
+    if imported_claims:
+        # Semantic review can qualify the chain without supplying an arrow. Record that, rather than
+        # drawing a link the evidence does not place, or quietly dropping the objection.
+        graph.qualifications = [f"{c.id}: {c.statement}" for c in imported_claims
+                                if c.evidence and c.id.startswith("MC_IMP")
+                                and any(e.direction is Direction.CONTRADICTS for e in imported_evidence
+                                        if e.evidence_id in c.evidence)]
     reviewed = {session.knowledge_task for session in sessions}
     for task in tasks:
         if task.id in reviewed:

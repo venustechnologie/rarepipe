@@ -448,3 +448,19 @@ def test_a_synthesis_may_only_reconcile_evidence_already_accepted(tmp_path, corp
     result = research.import_analysis(root, novel, synthesis_only=True)
     assert not result.accepted_claims and result.rejected[0].reason == "scope_overreach"
     assert "already accepted" in result.rejected[0].detail
+
+
+def test_an_objection_becomes_a_qualification_not_a_silent_drop(tmp_path, corpus, adjudication):
+    """Evidence that the chain is incomplete must survive without inventing an arrow for it."""
+    root = _workspace(tmp_path, corpus)
+    objection = _analysis(root, [{"statement": "BUBR1 has roles beyond the mitotic checkpoint.",
+                                  "claim_type": "protein_effect", "scope": "gene_level", "direction": "contradicts",
+                                  "confidence": "moderate", "reasoning": "stated in the source",
+                                  "evidence": [{"source_id": "PMID:222",
+                                                "quote": "the kinase activity of BUBR1 was dispensable for checkpoint signalling in this system",
+                                                "experimental_level": "animal_model"}]}])
+    research.save_analysis(root, research.import_analysis(root, objection))
+    r = resolve(corpus, adjudication, tmp_path, research_dir=root)
+    assert r.dossier.graph.qualifications, "an accepted objection vanished from the graph"
+    assert any("beyond the mitotic checkpoint" in q for q in r.dossier.graph.qualifications)
+    assert "is not the whole story" in (r.run_dir / "mechanism_dossier.md").read_text()
