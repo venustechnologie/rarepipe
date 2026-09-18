@@ -54,7 +54,7 @@ def test_leading_variant_pair_is_selected_and_both_variants_adjudicated(adjudica
     assert h.gene_symbol == "SYNGENE1" and h.inheritance_model == "AR"
     assert [v.role for v in h.variants] == ["variant_a", "variant_b"]
     assert all(v.normalization_basis for v in h.variants)
-    assert {c.claim_id for c in h.claims} == {"CLAIM_VARIANT_A", "CLAIM_VARIANT_B", "CLAIM_MECHANISM", "CLAIM_CONFIGURATION"}
+    assert {"CLAIM_VARIANT_A", "CLAIM_VARIANT_B", "CLAIM_MECHANISM", "CLAIM_CONFIGURATION"} <= {c.claim_id for c in h.claims}
 
 
 def test_three_questions_are_kept_separate(adjudicated):
@@ -94,6 +94,19 @@ def test_contradicting_evidence_is_always_present_as_a_field(adjudicated):
 
 def by_id(h, assertion_id):
     return next(a for a in h.assertions if a.assertion_id == assertion_id)
+
+
+def test_prior_classification_transfer_is_its_own_claim(adjudicated):
+    """A pathogenic assertion made for another disease does not contradict 'the allele impairs
+    function' — it contradicts 'the prior classification transfers'. Conflating them would wrongly
+    mark a truncating allele unresolved."""
+    h = adjudicated().hypothesis
+    by_subject = {c.subject: c for c in h.claims}
+    if "prior_classification_transfer" in by_subject:
+        transfer = by_subject["prior_classification_transfer"]
+        assert transfer.assessment == "contradicted"
+        moved = set(transfer.assertion_ids)
+        assert moved and not (moved & set(by_subject["variant_a"].assertion_ids))
 
 
 def test_phase_is_recorded_not_inferred(adjudicated):

@@ -112,7 +112,7 @@ class EvidenceAssertion(BaseModel):
 class Claim(BaseModel):
     claim_id: str
     statement: str
-    subject: Literal["gene_disease_mechanism", "variant_a", "variant_b", "configuration"]
+    subject: Literal["gene_disease_mechanism", "variant_a", "variant_b", "configuration", "prior_classification_transfer"]
     assessment: Literal["supported", "contradicted", "unresolved", "not_assessed"]
     assessment_basis: str
     assertion_ids: list[str] = Field(default_factory=list)

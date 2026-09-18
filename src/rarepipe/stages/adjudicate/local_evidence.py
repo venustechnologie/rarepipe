@@ -106,9 +106,9 @@ def build(v: VariantRecord, claim_id: str, data_version: str | None, start_index
     out: list[EvidenceAssertion] = []
     n = start_index
 
-    def add(**kw):
+    def add(claim_override: str | None = None, **kw):
         nonlocal n
-        out.append(_assertion(n, claim_id, **kw))
+        out.append(_assertion(n, claim_override or claim_id, **kw))
         n += 1
 
     # ── technical call quality (from the source VCF itself)
@@ -146,7 +146,8 @@ def build(v: VariantRecord, claim_id: str, data_version: str | None, start_index
             private=f"ClinVar VariationID {clinvar_id}")
         disease = row.get("EXOMISER_ACMG_DISEASE_NAME") or ""
         if disease and "aneuploidy" not in disease.lower():
-            add(cls=EvidenceClass.HUMAN_OBSERVATION,
+            # bears on whether the prior classification transfers, NOT on whether the allele impairs function
+            add(claim_override="CLAIM_PRIOR_CLASSIFICATION_TRANSFER", cls=EvidenceClass.HUMAN_OBSERVATION,
                 statement="The disease context attached to the existing pathogenic assertion is not the phenotype under investigation.",
                 result=f"assertion disease context: {disease}",
                 direction=Direction.CONTRADICTS, strength=Strength.SUPPORTING,

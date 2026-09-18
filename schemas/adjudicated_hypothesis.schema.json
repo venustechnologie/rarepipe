@@ -15,7 +15,8 @@
             "gene_disease_mechanism",
             "variant_a",
             "variant_b",
-            "configuration"
+            "configuration",
+            "prior_classification_transfer"
           ],
           "title": "Subject",
           "type": "string"

@@ -153,13 +153,15 @@ def adjudicate(
     gene: Annotated[str | None, typer.Option(help="Adjudicate this gene's candidate pair (default: the leading pair).")] = None,
     profile: Annotated[str, typer.Option(help="Which analysis profile's candidate to adjudicate.")] = "PROFILE_A",
     native_dir: Annotated[Path | None, typer.Option(help="Native solver output directory, if it has moved.")] = None,
+    resources: Annotated[Path | None, typer.Option(help="Pinned evidence resources (ClinVar/ClinGen/UniProt/literature), read locally.")] = None,
+    uniprot: Annotated[str | None, typer.Option(help="UniProt accession for the gene's protein, e.g. O60566.")] = None,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
 ) -> None:
     """Build an evidence dossier for one causal hypothesis. No diagnosis, no classification, nothing transmitted."""
     from rarepipe.stages.adjudicate.stage import AdjudicateRequest, AdjudicateUsageError, run_adjudication
 
     req = AdjudicateRequest(raw_candidate_set=raw_candidate_set, output=output, gene=gene, profile_id=profile,
-                            native_dir=native_dir, argv=sys.argv[:])
+                            native_dir=native_dir, resources=resources, uniprot_accession=uniprot, argv=sys.argv[:])
     try:
         result = run_adjudication(req, Console(quiet=quiet))
     except AdjudicateUsageError as exc:

@@ -20,6 +20,7 @@ from rarepipe.core.console import Console
 from rarepipe.core.digest import semantic_digest
 from rarepipe.core.provenance import software_provenance
 from rarepipe.core.redaction import clear_restricted
+from rarepipe.stages.adjudicate import external
 from rarepipe.stages.adjudicate import local_evidence as local
 from rarepipe.stages.adjudicate import report
 from rarepipe.stages.adjudicate.model import (
@@ -60,6 +61,8 @@ class AdjudicateRequest:
     gene: str | None = None
     profile_id: str = "PROFILE_A"
     native_dir: Path | None = None
+    resources: Path | None = None
+    uniprot_accession: str | None = None
     argv: list[str] = field(default_factory=list)
 
 
@@ -164,17 +167,16 @@ def run_adjudication(req: AdjudicateRequest, console: Console | None = None) -> 
         n += len(built)
         console.info(f"{rec.role}: {rec.row.get('FUNCTIONAL_CLASS')}; {len(built)} local evidence assertion(s)")
 
+    # ── external evidence, read from pinned local files (nothing transmitted here)
+    console.info("retrieving external evidence from pinned resources (local reads only)")
+    ext, sources_used = _external(req, records, variants, gene, len(assertions) + 1, console)
+    assertions += ext
+
     console.step(3, 4, "Assembling claims, gaps and next actions...")
     phase = _phase(records)
     claims = _claims(assertions, records, gene)
     contradicting = [a.assertion_id for a in assertions if a.direction == Direction.CONTRADICTS]
-    gaps = [
-        "Functional evidence: no assay data retrieved (requires literature//bulk retrieval).",
-        "Gene–disease validity: ClinGen classification for this gene not retrieved.",
-        "Protein/domain context: residue conservation, domain membership and clustering not retrieved.",
-        "ClinVar submitter-level detail: conditions, submitters and evaluation dates not retrieved.",
-        "Population detail: homozygote counts, allele numbers and callability not retrieved.",
-    ]
+    gaps = _gaps(assertions, sources_used)
     hypothesis = AdjudicatedHypothesis(
         visibility="private", case_id=case["case_id"], hypothesis_id=f"HYP_{gene}_{candidate['inheritance_model']}",
         status=Status.ADJUDICATION_COMPLETE_WITH_GAPS, gene_symbol=gene, inheritance_model=candidate["inheritance_model"],
@@ -261,13 +263,50 @@ def _claims(assertions, records, gene: str) -> list[Claim]:
         assessment, basis = assess(cid)
         claims.append(Claim(claim_id=cid, statement=statement, subject=subject, assessment=assessment,
                             assessment_basis=basis, assertion_ids=[a.assertion_id for a in for_claim(cid)]))
+    transfer = [a for a in assertions if a.claim_id == "CLAIM_PRIOR_CLASSIFICATION_TRANSFER"]
+    if transfer:
+        claims.append(Claim(
+            claim_id="CLAIM_PRIOR_CLASSIFICATION_TRANSFER",
+            statement="The existing pathogenic classification for the truncating allele was made for the phenotype under investigation.",
+            subject="prior_classification_transfer",
+            assessment=_transfer_assessment(transfer),
+            assessment_basis=_transfer_basis(transfer),
+            assertion_ids=[a.assertion_id for a in transfer]))
+    mechanism_items = for_claim("CLAIM_MECHANISM")
+    if mechanism_items:
+        m_assessment, m_basis = assess("CLAIM_MECHANISM")
+    else:
+        m_assessment, m_basis = "not_assessed", "Gene–disease validity was not retrieved; no local resource establishes it."
     claims.append(Claim(claim_id="CLAIM_MECHANISM", statement=f"Biallelic loss of {gene} is an established mechanism for this phenotype.",
-                        subject="gene_disease_mechanism", assessment="not_assessed",
-                        assessment_basis="Gene–disease validity was not retrieved; no local resource establishes it."))
+                        subject="gene_disease_mechanism", assessment=m_assessment, assessment_basis=m_basis,
+                        assertion_ids=[a.assertion_id for a in mechanism_items]))
     claims.append(Claim(claim_id="CLAIM_CONFIGURATION", statement="The two alleles lie on different homologues (in trans).",
                         subject="configuration", assessment="unresolved",
                         assessment_basis="No read-backed phase covers the pair and no parental data is available."))
     return claims
+
+
+def _transfer_assessment(items) -> str:
+    supports = [a for a in items if a.direction == Direction.SUPPORTS]
+    contra = [a for a in items if a.direction == Direction.CONTRADICTS]
+    if supports and not contra:
+        return "supported"
+    if supports and contra:
+        return "unresolved"
+    return "contradicted" if contra else "unresolved"
+
+
+def _transfer_basis(items) -> str:
+    supports = [a for a in items if a.direction == Direction.SUPPORTS]
+    contra = [a for a in items if a.direction == Direction.CONTRADICTS]
+    if supports and not contra:
+        return ("The current ClinVar record's reported conditions include the disease ClinGen curates for this gene, "
+                "so the prior classification bears on the same gene–disease relationship.")
+    if supports and contra:
+        return (f"{len(supports)} source(s) place the prior classification in the curated disease context and {len(contra)} do not "
+                "(e.g. an older bundled snapshot); the discrepancy should be resolved against submitter-level records.")
+    return ("The assertion's disease context differs from the curated gene–disease relationship, so it cannot be relied on "
+            "as prior evidence without checking the underlying submissions.")
 
 
 def _summary(assertions, claims) -> EvidenceSummary:
@@ -289,7 +328,9 @@ def _summary(assertions, claims) -> EvidenceSummary:
 
     unresolved = [c for c in claims if c.assessment in ("unresolved", "not_assessed")]
     return EvidenceSummary(
-        human_observation=describe(EvidenceClass.HUMAN_OBSERVATION), functional="absent — no assay evidence retrieved",
+        human_observation=describe(EvidenceClass.HUMAN_OBSERVATION),
+        functional=(describe(EvidenceClass.FUNCTIONAL) if any(a.evidence_class == EvidenceClass.FUNCTIONAL for a in assertions)
+                    else "absent — no literature retrieved"),
         population=describe(EvidenceClass.POPULATION), molecular_mechanistic=describe(EvidenceClass.MOLECULAR_MECHANISTIC),
         computational=describe(EvidenceClass.COMPUTATIONAL), technical_call=describe(EvidenceClass.TECHNICAL_CALL),
         phase="unresolved", overall="unresolved",
@@ -365,3 +406,115 @@ def _next_actions(phase: PhaseEvidence) -> list[NextAction]:
                    expected_information_gain="high", cost="very_high",
                    rationale="Only justified if existing human and functional evidence remains insufficient after retrieval."),
     ]
+
+
+EXTERNAL_KINDS = ("clinvar", "clingen", "uniprot", "literature")
+
+
+def _real_files(directory: Path, pattern: str) -> list[Path]:
+    """macOS writes ._name sidecars on exFAT; they match globs but are binary."""
+    if not directory.is_dir():
+        return []
+    return sorted(p for p in directory.glob(pattern) if not p.name.startswith("._"))
+
+
+def _external(req: AdjudicateRequest, records, variants, gene: str, start_index: int, console: Console):
+    """Assertions from pinned public resources. Each read happens locally; see disclosure.py."""
+    out, used = [], set()
+    if not req.resources:
+        return out, used
+    counter = {"n": start_index}
+
+    def next_id() -> str:
+        counter["n"] += 1
+        return f"EV_{counter['n'] - 1:03d}"
+
+    clinvar_vcf = req.resources / "clinvar" / "clinvar_GRCh38.vcf.gz"
+    clingen_csv = req.resources / "clingen" / "gene_validity.csv"
+    uniprot_dir = req.resources / "uniprot"
+    literature_dir = req.resources / "literature"
+
+    changes = {rec.role: external.parse_hgvs(rec.row.get("HGVS")) for rec in records}
+    for ident in variants:
+        change = changes.get(ident.role)
+        if change:
+            ident.transcript = change.transcript
+            ident.hgvs_protein = f"p.{change.ref_aa3}{change.position}{change.alt_aa3 or ''}"
+
+    if clinvar_vcf.is_file():
+        used.add("clinvar")
+        version = external.clinvar_release(clinvar_vcf)
+        positions = [rec.call.get("pos") or 0 for rec in records if rec.call]
+        contig = records[0].row.get("CONTIG") or ""
+        lo, hi = (min(positions) - 200_000, max(positions) + 200_000) if positions else (0, 0)
+        gene_records = external.clinvar_records(clinvar_vcf, contig, max(lo, 1), hi)
+        for rec in records:
+            claim_id = "CLAIM_VARIANT_A" if rec.role == "variant_a" else "CLAIM_VARIANT_B"
+            exact = external.exact_record(gene_records, int(rec.row["START"]), rec.row["REF"], rec.row["ALT"])
+            out += external.build_clinvar_assertions(next_id, claim_id, exact, gene_records, changes.get(rec.role), version)
+        console.info(f"  ClinVar: {len(gene_records)} record(s) in the gene region of the current release")
+
+    clingen_rows = []
+    if clingen_csv.is_file():
+        used.add("clingen")
+        clingen_rows = external.clingen_validity(clingen_csv, gene)
+        out.append(external.build_clingen_assertion(next_id, "CLAIM_MECHANISM", clingen_rows, gene))
+        console.info(f"  ClinGen: {len(clingen_rows)} gene–disease validity row(s) for {gene}")
+
+    if clinvar_vcf.is_file() and clingen_rows:
+        a_rec = next((r for r in records if r.role == "variant_a"), None)
+        exact_a = external.exact_record(gene_records, int(a_rec.row["START"]), a_rec.row["REF"], a_rec.row["ALT"]) if a_rec else None
+        transfer = external.build_transfer_assertion(next_id, exact_a, clingen_rows, external.clinvar_release(clinvar_vcf))
+        if transfer:
+            out.append(transfer)
+            console.info(f"  prior-classification transfer: {transfer.direction.value}")
+
+    accession = req.uniprot_accession
+    entry = (uniprot_dir / f"{accession}.json") if accession else next(iter(_real_files(uniprot_dir, "*.json")), None)
+    if entry and entry.is_file():
+        used.add("uniprot")
+        for rec in records:
+            change = changes.get(rec.role)
+            if not change:
+                continue
+            claim_id = "CLAIM_VARIANT_A" if rec.role == "variant_a" else "CLAIM_VARIANT_B"
+            features = external.uniprot_features_at(entry, change.position)
+            residue = external.uniprot_sequence_aa(entry, change.position)
+            out.append(external.build_uniprot_assertion(next_id, claim_id, features, residue, change, entry.stem))
+        console.info(f"  UniProt: entry {entry.stem} read for residue context")
+
+    lit_files = _real_files(literature_dir, "*.json")
+    if lit_files:
+        used.add("literature")
+        path = lit_files[0]
+        for rec in records:
+            change = changes.get(rec.role)
+            if not change:
+                continue
+            claim_id = "CLAIM_VARIANT_A" if rec.role == "variant_a" else "CLAIM_VARIANT_B"
+            tokens = [change.short, f"{change.ref_aa3}{change.position}", f"p.{change.ref_aa3}{change.position}",
+                      (change.coding or "").removeprefix("c.")]
+            hits = external.literature_hits(path, [t for t in tokens if t])
+            total = len(json.loads(path.read_text()))
+            out += external.build_literature_assertions(next_id, claim_id, hits, path.stem.replace("_", " "), None, total)
+            console.info(f"  literature: {len(hits)} of {total} record(s) mention {rec.role}'s residue")
+    return out, used
+
+
+def _gaps(assertions, sources_used: set[str]) -> list[str]:
+    gaps = []
+    if "literature" not in sources_used:
+        gaps.append("Functional evidence: no literature retrieved.")
+    elif not any(a.evidence_class == EvidenceClass.FUNCTIONAL and a.direction != Direction.UNCERTAIN for a in assertions):
+        gaps.append("Functional evidence: literature was searched, but no appraised assay evidence was found for these residues; "
+                    "abstract matches are recorded without strength pending assessment of the assays themselves.")
+    if "clingen" not in sources_used:
+        gaps.append("Gene–disease validity: ClinGen curation not retrieved.")
+    if "uniprot" not in sources_used:
+        gaps.append("Protein/domain context: UniProt features not retrieved.")
+    if "clinvar" not in sources_used:
+        gaps.append("ClinVar: current release not consulted; only the solver's bundled snapshot was used.")
+    gaps.append("ClinVar submitter-level detail (individual submissions, evaluation dates) was not retrieved.")
+    gaps.append("Residue conservation across species and structural modelling were not performed.")
+    gaps.append("Population depth (homozygote counts, allele numbers, callability) was not retrieved.")
+    return gaps
