@@ -21,3 +21,11 @@ build/
 *.crai
 *.tbi
 *.csi
+
+# Submission artifacts and raw reads: predictions carry exact variant identity.
+*.fastq
+*.fastq.gz
+*.fq.gz
+track1_submission*.csv
+*_rarepipe-exomiser-adjudicated.csv
+*.CONTROLLED.txt
