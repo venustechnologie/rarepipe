@@ -19,7 +19,7 @@ from rarepipe.core.provenance import SoftwareProvenance
 from rarepipe.core.redaction import restricted
 
 SCHEMA_NAME = "NormalizedCase"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"  # 1.1: location-only fields moved into `execution` (a path is not content)
 STAGE_NAME = "case_normalization"
 STAGE_VERSION = "0.1.0"
 SUPPORTED_MANIFEST_MAJOR = "1"
@@ -112,7 +112,6 @@ class SourceManifest(BaseModel):
     semantic_digest: str | None
     input_fingerprint: str
     seal_verified: bool | None
-    path: str | None = restricted(None)
 
 
 class ResourceRef(BaseModel):
@@ -410,7 +409,6 @@ class Provenance(BaseModel):
     assertions_sha256: str | None
     operations: list[Operation]
     environment_controls: list[str]
-    case_root_override: str | None = restricted(None)
 
 
 class Execution(BaseModel):
@@ -419,6 +417,8 @@ class Execution(BaseModel):
     finished_at: str
     duration_seconds: float
     vcf_stream_seconds: float | None = Field(None, description="Wall-clock of the VCF pass. Execution metadata: excluded from the semantic digest.")
+    source_manifest_path: str | None = restricted(None, description="Where the upstream artifact was read from — a location, not content.")
+    case_root_override: str | None = restricted(None)
     argv: list[str] = restricted(list)
 
 

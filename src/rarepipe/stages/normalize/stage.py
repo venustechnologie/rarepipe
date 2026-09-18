@@ -180,7 +180,7 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
     source = SourceManifest(schema_version=manifest.schema_.version, stage_version=manifest.pipeline.stage_version, run_id=manifest.execution.run_id,
                             intake_status=manifest.status.value, manifest_sha256=hashlib.sha256(raw).hexdigest(),
                             semantic_digest=manifest.semantic_digest, input_fingerprint=manifest.provenance.fingerprints.input_fingerprint,
-                            seal_verified=seal, path=str(req.manifest.resolve()))
+                            seal_verified=seal)
     if seal is False:
         issues.append(_issue(NormIssueCode.UPSTREAM_SEAL_MISMATCH, Severity.BLOCKER, "CaseManifest bytes do not match the Stage 01 run seal (SHA256SUMS); it was modified after intake.",
                              suggested_action="Re-run Stage 01; never edit pipeline artifacts."))
@@ -327,7 +327,7 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
                              "The assembly is identified, but no exact reference FASTA is bound; left-alignment and read alignment are not yet possible."))
         reference = ReferenceBinding(
             assembly=assembly, assembly_confidence=manifest.reference.genome_build.confidence.value,
-            assembly_evidence=[f"CaseManifest {source.run_id}: {e}" for e in manifest.reference.genome_build.evidence],
+            assembly_evidence=[f"CaseManifest: {e}" for e in manifest.reference.genome_build.evidence],
             source_contig_scheme=summary.source_scheme, assembly_resource=asm_ref if asm_report else None,
             declared_references=[DeclaredReference(basename=Path(c.split(":")[-1]).name, raw=c) for c in dict.fromkeys(ref_claims)],
             contig_summary=summary, contigs=bindings,
@@ -482,10 +482,11 @@ def _run(req, console, manifest: CaseManifest, raw: bytes, case_root: Path, asse
         provenance=Provenance(software=software_provenance(), source_manifest=source, verified_assets=verified, resources=resources,
                               assertions_sha256=assertions_sha, operations=ops,
                               environment_controls=env_controls + ["no network access performed by normalization", "source assets opened read-only",
-                                                                   "no derived genomic files written", "FASTQ assets not opened"],
-                              case_root_override=str(req.case_root.resolve()) if req.case_root else None),
+                                                                   "no derived genomic files written", "FASTQ assets not opened"]),
         execution=Execution(run_id=run_id, started_at=started.isoformat(), finished_at=utc_now().isoformat(),
-                            duration_seconds=round(time.monotonic() - t0, 3), vcf_stream_seconds=stream_seconds, argv=req.argv),
+                            duration_seconds=round(time.monotonic() - t0, 3), vcf_stream_seconds=stream_seconds,
+                            source_manifest_path=str(req.manifest.resolve()),
+                            case_root_override=str(req.case_root.resolve()) if req.case_root else None, argv=req.argv),
     )
     case.semantic_digest = _semantic_digest(case)
     return case

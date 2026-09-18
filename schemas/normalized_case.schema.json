@@ -454,6 +454,33 @@
           "description": "Wall-clock of the VCF pass. Execution metadata: excluded from the semantic digest.",
           "title": "Vcf Stream Seconds"
         },
+        "source_manifest_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Where the upstream artifact was read from \u2014 a location, not content.",
+          "restricted": true,
+          "title": "Source Manifest Path"
+        },
+        "case_root_override": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Case Root Override"
+        },
         "argv": {
           "items": {
             "type": "string"
@@ -1130,19 +1157,6 @@
           },
           "title": "Environment Controls",
           "type": "array"
-        },
-        "case_root_override": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "restricted": true,
-          "title": "Case Root Override"
         }
       },
       "required": [
@@ -1612,19 +1626,6 @@
             }
           ],
           "title": "Seal Verified"
-        },
-        "path": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "restricted": true,
-          "title": "Path"
         }
       },
       "required": [
@@ -2064,6 +2065,6 @@
   ],
   "title": "NormalizedCase",
   "type": "object",
-  "$id": "https://rarepipe.local/schemas/normalized_case/1.0.0.json",
-  "description": "NormalizedCase v1.0.0 \u2014 output of the case_normalization stage. Properties carrying `restricted: true` are populated only in the private artifact."
+  "$id": "https://rarepipe.local/schemas/normalized_case/1.1.0.json",
+  "description": "NormalizedCase v1.1.0 \u2014 output of the case_normalization stage. Properties carrying `restricted: true` are populated only in the private artifact."
 }

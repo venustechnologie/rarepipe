@@ -104,7 +104,7 @@ def _load_normalized(path: Path) -> dict:
 def resolve_source_vcf(norm: dict, case_root_override: Path | None) -> tuple[Path, str, str]:
     """(vcf path, asset id, expected sha256) — resolved through the artifact chain, never by
     walking the case directory, and verified against the digests Stage 01/02 recorded."""
-    manifest_path = Path(norm["provenance"]["source_manifest"]["path"] or "")
+    manifest_path = Path(norm["execution"].get("source_manifest_path") or "")
     if not manifest_path.is_file():
         raise BaselineUsageError("the CaseManifest referenced by this NormalizedCase is not at its recorded location.")
     raw = manifest_path.read_bytes()
@@ -286,15 +286,15 @@ def _run(req: BaselineRequest, console: Console, norm: dict, run_id: str, starte
                                    normalized_case_semantic_digest=norm.get("semantic_digest"),
                                    normalized_case_sha256=hashlib.sha256(req.normalized_case.read_bytes()).hexdigest(),
                                    source_vcf_asset_id=asset_id, source_vcf_sha256=expected_sha,
-                                   assembly=(norm["genome"].get("reference") or {}).get("assembly", "unknown"),
-                                   path=str(vcf_path)),
+                                   assembly=(norm["genome"].get("reference") or {}).get("assembly", "unknown")),
             environment_controls=["no network access performed by baseline analysis", "source VCF opened read-only and never rewritten",
                                   "no variant rows written to logs or reports", "solver invoked as a child process inheriting the caller's sandbox"],
             execution_host={"platform": platform.platform(), "machine": platform.machine(), "python": platform.python_version()},
         ),
         execution=Execution(run_id=run_id, started_at=started.isoformat(), finished_at=utc_now().isoformat(),
                             duration_seconds=round(time.monotonic() - t0, 3), profile_runtimes=runtimes,
-                            native_output_root=str(native_root), argv=req.argv),
+                            native_output_root=str(native_root), normalized_case_path=str(req.normalized_case.resolve()),
+                            source_vcf_path=str(vcf_path), argv=req.argv),
     )
     case.semantic_digest = _digest(case)
     return case

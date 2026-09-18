@@ -19,7 +19,7 @@ from rarepipe.core.provenance import SoftwareProvenance
 from rarepipe.core.redaction import restricted
 
 SCHEMA_NAME = "RawCandidateSet"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"  # 1.1: location-only fields moved into `execution` (a path is not content)
 STAGE_NAME = "baseline_analysis"
 STAGE_VERSION = "0.1.0"
 SUPPORTED_NORMALIZED_MAJOR = "1"
@@ -238,7 +238,6 @@ class SourceCase(BaseModel):
     source_vcf_asset_id: str
     source_vcf_sha256: str
     assembly: str
-    path: str | None = restricted(None)
 
 
 class Provenance(BaseModel):
@@ -256,6 +255,8 @@ class Execution(BaseModel):
     duration_seconds: float
     profile_runtimes: list[ProfileRuntime] = Field(default_factory=list)
     native_output_root: str | None = restricted(None)
+    normalized_case_path: str | None = restricted(None)
+    source_vcf_path: str | None = restricted(None)
     argv: list[str] = restricted(list)
 
 

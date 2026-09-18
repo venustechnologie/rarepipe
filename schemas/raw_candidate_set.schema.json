@@ -477,6 +477,32 @@
           "restricted": true,
           "title": "Native Output Root"
         },
+        "normalized_case_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Normalized Case Path"
+        },
+        "source_vcf_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Source Vcf Path"
+        },
         "argv": {
           "items": {
             "type": "string"
@@ -1112,19 +1138,6 @@
         "assembly": {
           "title": "Assembly",
           "type": "string"
-        },
-        "path": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "restricted": true,
-          "title": "Path"
         }
       },
       "required": [
@@ -1358,6 +1371,6 @@
   ],
   "title": "RawCandidateSet",
   "type": "object",
-  "$id": "https://rarepipe.local/schemas/raw_candidate_set/1.0.0.json",
-  "description": "RawCandidateSet v1.0.0 \u2014 output of the baseline_analysis stage. Records what an external solver reported under declared profiles; not a diagnosis. Properties carrying `restricted: true` are populated only in the private artifact."
+  "$id": "https://rarepipe.local/schemas/raw_candidate_set/1.1.0.json",
+  "description": "RawCandidateSet v1.1.0 \u2014 output of the baseline_analysis stage. Records what an external solver reported under declared profiles; not a diagnosis. Properties carrying `restricted: true` are populated only in the private artifact."
 }
