@@ -337,19 +337,51 @@ class NextAction(BaseModel):
     rationale: str
 
 
-class AgentRun(BaseModel):
-    """Why did the agent claim this? Answerable, or the agent does not run."""
+class EvidenceBundle(BaseModel):
+    """The documents a research question was answered from. What the assistant is allowed to see."""
 
-    role: Literal["query_planner", "triage", "evidence_extractor", "contradiction_hunter", "synthesizer"]
+    bundle_id: str
+    knowledge_task: str
+    created_at: str
+    documents: list[str] = Field(default_factory=list)
+    queries: list[str] = Field(default_factory=list)
+    characters: int = 0
+    digest: str = ""
+    contains_case_specific_data: bool = Field(
+        False, description="Always false. A bundle is public literature; the case is matched locally.")
+
+
+class LLMResearchSession(BaseModel):
+    """A human-operated research interaction, recorded so the reasoning step has provenance.
+
+    The whole conversation is not captured — only enough to answer 'which model helped with which
+    scientific reasoning step, and what was it allowed to see'.
+    """
+
+    session_id: str
     provider: str
+    interface: str
     model: str
-    prompt_name: str
-    prompt_version: str
-    prompt_sha256: str
-    inputs: list[str] = Field(default_factory=list)
-    outputs: int = 0
-    invalid_inferences: int = 0
+    mode: Literal["human_operated"] = "human_operated"
+    knowledge_task: str
+    permitted_inputs: list[str] = Field(default_factory=list, description="Source ids the assistant was given.")
+    case_specific_genomic_data_supplied: bool = False
+    prompt_template: str | None = None
+    produced: list[str] = Field(default_factory=list)
+    accepted: list[str] = Field(default_factory=list)
+    rejected: list[str] = Field(default_factory=list)
+    human_reviewed: bool = False
+    performed_at: str | None = None
     note: str = ""
+
+
+class AutomationStatus(BaseModel):
+    """Stated in the artifact, so nobody mistakes this for an autonomous research agent."""
+
+    automated_llm_orchestration: Literal["deferred", "enabled"] = "deferred"
+    current_mode: Literal["human_operated_llm_assistance", "deterministic_only", "automated"] = "deterministic_only"
+    reason: str = "first discover the research workflow before automating it"
+    pipeline_depends_on_an_llm: bool = False
 
 
 class Provenance(BaseModel):
@@ -359,7 +391,8 @@ class Provenance(BaseModel):
     causal_pair_validated_by: str | None = None
     corpus_run_id: str | None = None
     corpus_digest: str | None = None
-    agent_runs: list[AgentRun] = Field(default_factory=list)
+    research_sessions: list[LLMResearchSession] = Field(default_factory=list)
+    evidence_bundles: list[EvidenceBundle] = Field(default_factory=list)
     disclosure_policy: str = ("Retrieval is gene-, protein- and disease-level only. The child's coordinates, alleles, "
                               "HGVS and residue are never transmitted: exact-variant matching runs locally against the "
                               "downloaded corpus.")
@@ -395,6 +428,7 @@ class MechanismDossier(BaseModel):
     knowledge_tasks: list[KnowledgeTask]
     query_log: list[QueryRecord]
     assays: list[AssayRecord]
+    automation_status: AutomationStatus = Field(default_factory=AutomationStatus)
     invalid_inferences: list[InvalidInference] = Field(default_factory=list)
     contradictions: list[str] = Field(default_factory=list)
     unknowns: list[str] = Field(default_factory=list)

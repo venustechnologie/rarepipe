@@ -23,10 +23,10 @@ from rarepipe.core.redaction import clear_restricted
 from rarepipe.stages.mechanism import claims as C
 from rarepipe.stages.mechanism import dossier as report
 from rarepipe.stages.mechanism import extract, questions
-from rarepipe.stages.mechanism.llm import configured_llm
+from rarepipe.stages.mechanism import research
 from rarepipe.stages.mechanism.model import (
-    AgentRun,
     AlleleMechanism,
+    AutomationStatus,
     Applicability,
     ClaimStatus,
     ClaimType,
@@ -94,6 +94,7 @@ class ResolveRequest:
     adjudication: Path
     output: Path
     validation: Path | None = None
+    research_dir: Path | None = None
     argv: list[str] = field(default_factory=list)
 
 
@@ -271,14 +272,22 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
     mech_claims, state, graph = _adjudicate(verified, adjudication, gene, bool(exact_hits), residue, console)
 
     console.step(5, 6, "Assembling the dossier...")
-    llm = configured_llm()
-    agent_runs = [AgentRun(role=role, provider=llm.provider, model=llm.model, prompt_name=name, prompt_version="1",
-                           prompt_sha256="", inputs=[], outputs=0,
-                           note="prompt exists and is versioned, but no provider was configured for this run; "
-                                "the deterministic fallback did the work and is named in every record's extracted_by")
-                  for role, name in (("query_planner", "query_planner"), ("evidence_extractor", "evidence_extractor"),
-                                     ("contradiction_hunter", "contradiction_agent"), ("synthesizer", "mechanism_synthesizer"))
-                  ] if not getattr(llm, "available", False) else []
+    sessions, imported_claims, imported_evidence, imported_rejected = (
+        research.load_analyses(req.research_dir) if req.research_dir else ([], [], [], []))
+    if imported_claims:
+        console.info(f"{len(imported_claims)} claim(s) imported from {len(sessions)} human-operated research "
+                     f"session(s); {len(imported_rejected)} proposal(s) were rejected on import")
+        mech_claims += imported_claims
+        verified += imported_evidence
+        invalid += imported_rejected
+    bundles = ([research.EvidenceBundle(**json.loads(path.read_text())["bundle"])
+                for path in sorted((req.research_dir / "bundles").glob("*/bundle.json"))]
+               if req.research_dir and (req.research_dir / "bundles").exists() else [])
+    automation = AutomationStatus(
+        automated_llm_orchestration="deferred",
+        current_mode="human_operated_llm_assistance" if sessions else "deterministic_only",
+        reason="first discover the research workflow before automating it",
+        pipeline_depends_on_an_llm=False)
     contradictions = sorted({f"{e.source_id}: {e.quote[:160]}" for e in verified if e.direction is Direction.CONTRADICTS})[:20]
     status, basis = _gate(state, mech_claims)
     dossier = MechanismDossier(
@@ -286,7 +295,7 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
         state=state, claims=mech_claims, graph=graph, evidence=verified, documents=list(documents.values()),
         knowledge_tasks=tasks, query_log=query_log,
         assays=C.assay_inventory([e for e in verified if e.source_id.startswith("PMID")], ASSAY_QUESTIONS),
-        invalid_inferences=invalid, contradictions=contradictions,
+        automation_status=automation, invalid_inferences=invalid, contradictions=contradictions,
         unknowns=_unknowns(mech_claims), evidence_strongest_at=_strongest(mech_claims),
         evidence_weakest_at=_weakest(mech_claims), what_would_change_our_mind=_mind_changers(state, bool(exact_hits)),
         next_actions=_next_actions(state, bool(exact_hits), documents),
@@ -298,7 +307,7 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
                                       f"{validation['result']['match']} at rank {validation['result']['full_match_rank']}"
                                       if validation else None),
             corpus_run_id=req.corpus_run.name, corpus_digest=corpus_index.get("corpus_digest"),
-            agent_runs=agent_runs,
+            research_sessions=sessions, evidence_bundles=bundles,
             environment_controls=["resolution performed offline; the corpus was acquired in a separate networked run",
                                   "no case-specific identity was transmitted: exact-allele matching ran locally",
                                   "every evidence quote was re-found in the stored source before acceptance"]),

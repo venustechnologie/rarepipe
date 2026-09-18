@@ -197,12 +197,156 @@ def mechanism_fetch_corpus(
     typer.echo(str(result.run_dir))
 
 
+research_app = typer.Typer(no_args_is_help=True, help="Human-in-the-loop research: tasks, evidence bundles, briefs, "
+                                                     "and the import gate. The pipeline never calls a model.")
+app.add_typer(research_app, name="research")
+
+
+@research_app.command("create-task")
+def research_create_task(
+    research: Annotated[Path, typer.Option(help="Research workspace directory.")],
+    question: Annotated[str, typer.Option(help="The research question this task answers.")],
+    reason: Annotated[str, typer.Option(help="Why the pipeline needs it — which claim it would resolve.")],
+    query: Annotated[list[str] | None, typer.Option(help="A public query to run. Repeat for several.")] = None,
+    local_only: Annotated[bool, typer.Option(help="Answered locally against an existing corpus; nothing is transmitted.")] = False,
+) -> None:
+    """Record a KnowledgeTask. The pipeline owns the questions, whoever answers them."""
+    from rarepipe.stages.mechanism.model import DisclosureLevel, KnowledgeTask
+    from rarepipe.stages.mechanism.research import next_task_id, save_task, workspace
+
+    for q in query or []:
+        from rarepipe.stages.mechanism.retrieve import check_search_query
+
+        try:
+            check_search_query(q)
+        except ValueError as exc:
+            typer.echo(f"error: {exc}", err=True)
+            raise typer.Exit(EXIT_USAGE)
+    root = workspace(research)
+    task = KnowledgeTask(
+        id=next_task_id(root), question=question, reason=reason,
+        disclosure_level=DisclosureLevel.LOCAL_ONLY if local_only else DisclosureLevel.PUBLIC_GENE_LEVEL,
+        retrieval_plan=["local corpus search only"] if local_only else ["Europe PMC", "PMC open-access full text"],
+        queries=list(query or []))
+    typer.echo(str(save_task(root, task)))
+
+
+@research_app.command("retrieve")
+def research_retrieve(
+    task: Annotated[str, typer.Option(help="KnowledgeTask id, e.g. KT_0003.")],
+    research: Annotated[Path, typer.Option(help="Research workspace directory.")],
+    corpus_run: Annotated[Path | None, typer.Option(help="Carve the bundle out of an existing corpus run instead of querying.")] = None,
+    select_top: Annotated[int, typer.Option(help="Documents kept per query, by relevance.")] = 6,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Build the evidence bundle for a task: the documents, and only those, that answer it."""
+    from rarepipe.stages.mechanism.research import ResearchError, bundle_from_corpus, load_task, save_task, workspace
+    from rarepipe.stages.mechanism.retrieve import Corpus
+
+    console = Console(quiet=quiet)
+    root = workspace(research)
+    try:
+        kt = load_task(root, task)
+    except ResearchError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    if corpus_run is None:
+        target = root / "bundles" / kt.id
+        target.mkdir(parents=True, exist_ok=True)
+        corpus = Corpus(root=target)
+        for q in kt.queries:
+            corpus.run_query(q, kt.id, generated_by="human_operated_research", select_top=select_top, console=console)
+        documents = [d.model_dump(mode="json") for d in corpus.documents.values()]
+        import hashlib as _h
+        import json as _j
+
+        from rarepipe.core.artifacts import utc_now as _now
+        from rarepipe.stages.mechanism.model import EvidenceBundle
+
+        bundle = EvidenceBundle(bundle_id=kt.id, knowledge_task=kt.id, created_at=_now().isoformat(),
+                                documents=[d["source_id"] for d in documents], queries=list(kt.queries),
+                                characters=sum(d["characters_stored"] for d in documents),
+                                digest="sha256:" + _h.sha256(_j.dumps(sorted(d["content_hash"] for d in documents)).encode()).hexdigest())
+        (target / "bundle.json").write_text(_j.dumps({"bundle": bundle.model_dump(mode="json"),
+                                                      "documents": documents}, indent=2, ensure_ascii=False) + "\n")
+        kt.documents_found = bundle.documents
+    else:
+        bundle = bundle_from_corpus(corpus_run, kt, root)
+    kt.status = "completed" if bundle.documents else "blocked"
+    save_task(root, kt)
+    typer.echo(str(root / "bundles" / kt.id))
+
+
+@research_app.command("brief")
+def research_brief(
+    task: Annotated[str, typer.Option(help="KnowledgeTask id.")],
+    research: Annotated[Path, typer.Option(help="Research workspace directory.")],
+    template: Annotated[str, typer.Option(help="Prompt template name, e.g. evidence_extractor.")] = "evidence_extractor",
+    output: Annotated[Path | None, typer.Option(help="Write the brief to a file instead of stdout.")] = None,
+) -> None:
+    """Emit the brief a person hands to an assistant: the rules, the documents, the return shape."""
+    import json as _j
+
+    from rarepipe.stages.mechanism.model import EvidenceBundle
+    from rarepipe.stages.mechanism.research import ResearchError, load_prompt_template, load_task, render_brief
+
+    try:
+        kt = load_task(research, task)
+        payload = _j.loads((research / "bundles" / kt.id / "bundle.json").read_text())
+        text, template_id = load_prompt_template(template)
+    except (ResearchError, FileNotFoundError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    brief = render_brief(kt, EvidenceBundle(**payload["bundle"]), payload["documents"], text, template_id)
+    if output:
+        output.write_text(brief)
+        typer.echo(str(output))
+    else:
+        typer.echo(brief, nl=False)
+
+
+@research_app.command("import-analysis")
+def research_import_analysis(
+    analysis: Annotated[Path, typer.Option(help="The YAML an assistant produced, after your review.")],
+    research: Annotated[Path, typer.Option(help="Research workspace directory.")],
+    adjudication_run: Annotated[Path | None, typer.Option(help="Stage 04 private artifact, for checking exact-variant scope claims locally.")] = None,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Validate a proposed analysis against the evidence store. Proposals prove themselves or are rejected."""
+    import json as _j
+
+    from rarepipe.stages.mechanism.research import ResearchError, import_analysis, save_analysis
+    from rarepipe.stages.mechanism.stage import residue_needles
+
+    console = Console(quiet=quiet)
+    needles: list[str] = []
+    if adjudication_run:
+        needles, _ = residue_needles(_j.loads(adjudication_run.read_text()))
+    existing = len(list((research / "analyses").glob("LLMRS_*.json"))) if (research / "analyses").exists() else 0
+    try:
+        result = import_analysis(research, analysis, residue_needles=needles, session_index=existing + 1)
+    except ResearchError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    for claim in result.accepted_claims:
+        console.ok(f"{claim.id} accepted · scope {claim.scope.value} · {len(claim.evidence)} verified citation(s)")
+    for bad in result.rejected:
+        console.fail(f"rejected ({bad.reason}): {bad.statement[:70]} — {bad.detail}")
+    path = save_analysis(research, result)
+    console.line()
+    console.line(f"{len(result.accepted_claims)} accepted, {len(result.rejected)} rejected")
+    typer.echo(str(path))
+    if result.rejected and not result.accepted_claims:
+        raise typer.Exit(EXIT_BLOCKED)
+
+
 @mechanism_app.command("resolve")
 def mechanism_resolve(
     corpus_run: Annotated[Path, typer.Option(help="A sealed corpus run directory from `mechanism fetch-corpus`.")],
     adjudication_run: Annotated[Path, typer.Option(help="Stage 04 adjudicated_hypothesis.private.json.")],
     output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
     validation: Annotated[Path | None, typer.Option(help="Stage 05 external_validation_result.json, if the causal pair was validated.")] = None,
+    research: Annotated[Path | None, typer.Option(help="Research workspace whose validated imported analyses to include.")] = None,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
 ) -> None:
     """Resolve the molecular mechanism from the local corpus. Offline; no intervention reasoning."""
@@ -210,7 +354,7 @@ def mechanism_resolve(
     from rarepipe.stages.mechanism.stage import MechanismUsageError, ResolveRequest, run_resolve
 
     req = ResolveRequest(corpus_run=corpus_run, adjudication=adjudication_run, output=output,
-                         validation=validation, argv=sys.argv[:])
+                         validation=validation, research_dir=research, argv=sys.argv[:])
     try:
         result = run_resolve(req, Console(quiet=quiet))
     except MechanismUsageError as exc:

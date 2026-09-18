@@ -151,6 +151,7 @@ def render(d: MechanismDossier) -> str:
       f"accessible full text, {sum(1 for x in d.documents if not x.full_text)} as metadata and abstract only")
     w(f"- {len(d.evidence)} evidence record(s), every quote re-found in its stored source before acceptance")
     w(f"- {len(d.invalid_inferences)} claim(s) rejected for failing provenance validation")
+    w(f"- automation: {d.automation_status.current_mode}; the pipeline does not call a model and runs without one")
     for task in d.knowledge_tasks:
         w(f"  - `{task.id}` {task.status}: {task.question} — {len(task.documents_found)} document(s); "
           f"stop rule: {task.stop_reason}")
@@ -163,8 +164,17 @@ def render(d: MechanismDossier) -> str:
     w(f"- disclosure: {pv.disclosure_policy}")
     for control in pv.environment_controls:
         w(f"- control: {control}")
-    for run in pv.agent_runs:
-        w(f"- agent `{run.role}`: {run.provider}:{run.model} — {run.note}")
+    a = d.automation_status
+    w(f"- automation: orchestration **{a.automated_llm_orchestration}**, mode **{a.current_mode}**, "
+      f"pipeline depends on an LLM: **{str(a.pipeline_depends_on_an_llm).lower()}** ({a.reason})")
+    for session in pv.research_sessions:
+        w(f"- research session `{session.session_id}` ({session.mode}): {session.provider} {session.model} via "
+          f"{session.interface}, task {session.knowledge_task}, template {session.prompt_template}, "
+          f"{len(session.accepted)} claim(s) accepted, {len(session.rejected)} rejected, "
+          f"case genomic data supplied: {str(session.case_specific_genomic_data_supplied).lower()}, "
+          f"human reviewed: {str(session.human_reviewed).lower()}")
+    for b in pv.evidence_bundles:
+        w(f"- evidence bundle `{b.bundle_id}`: {len(b.documents)} document(s), {b.characters} characters, {b.digest}")
     w(f"- schema {d.schema_['name']} {d.schema_['version']}; run {d.execution.run_id}")
     w("")
     w("## Not done here\n")

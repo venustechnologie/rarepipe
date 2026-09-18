@@ -1,73 +1,5 @@
 {
   "$defs": {
-    "AgentRun": {
-      "description": "Why did the agent claim this? Answerable, or the agent does not run.",
-      "properties": {
-        "role": {
-          "enum": [
-            "query_planner",
-            "triage",
-            "evidence_extractor",
-            "contradiction_hunter",
-            "synthesizer"
-          ],
-          "title": "Role",
-          "type": "string"
-        },
-        "provider": {
-          "title": "Provider",
-          "type": "string"
-        },
-        "model": {
-          "title": "Model",
-          "type": "string"
-        },
-        "prompt_name": {
-          "title": "Prompt Name",
-          "type": "string"
-        },
-        "prompt_version": {
-          "title": "Prompt Version",
-          "type": "string"
-        },
-        "prompt_sha256": {
-          "title": "Prompt Sha256",
-          "type": "string"
-        },
-        "inputs": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Inputs",
-          "type": "array"
-        },
-        "outputs": {
-          "default": 0,
-          "title": "Outputs",
-          "type": "integer"
-        },
-        "invalid_inferences": {
-          "default": 0,
-          "title": "Invalid Inferences",
-          "type": "integer"
-        },
-        "note": {
-          "default": "",
-          "title": "Note",
-          "type": "string"
-        }
-      },
-      "required": [
-        "role",
-        "provider",
-        "model",
-        "prompt_name",
-        "prompt_version",
-        "prompt_sha256"
-      ],
-      "title": "AgentRun",
-      "type": "object"
-    },
     "AlleleMechanism": {
       "properties": {
         "role": {
@@ -191,6 +123,42 @@
       "title": "AssayRecord",
       "type": "object"
     },
+    "AutomationStatus": {
+      "description": "Stated in the artifact, so nobody mistakes this for an autonomous research agent.",
+      "properties": {
+        "automated_llm_orchestration": {
+          "default": "deferred",
+          "enum": [
+            "deferred",
+            "enabled"
+          ],
+          "title": "Automated Llm Orchestration",
+          "type": "string"
+        },
+        "current_mode": {
+          "default": "deterministic_only",
+          "enum": [
+            "human_operated_llm_assistance",
+            "deterministic_only",
+            "automated"
+          ],
+          "title": "Current Mode",
+          "type": "string"
+        },
+        "reason": {
+          "default": "first discover the research workflow before automating it",
+          "title": "Reason",
+          "type": "string"
+        },
+        "pipeline_depends_on_an_llm": {
+          "default": false,
+          "title": "Pipeline Depends On An Llm",
+          "type": "boolean"
+        }
+      },
+      "title": "AutomationStatus",
+      "type": "object"
+    },
     "ClaimStatus": {
       "enum": [
         "SUPPORTED",
@@ -252,6 +220,60 @@
       ],
       "title": "EpistemicClass",
       "type": "string"
+    },
+    "EvidenceBundle": {
+      "description": "The documents a research question was answered from. What the assistant is allowed to see.",
+      "properties": {
+        "bundle_id": {
+          "title": "Bundle Id",
+          "type": "string"
+        },
+        "knowledge_task": {
+          "title": "Knowledge Task",
+          "type": "string"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "documents": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Documents",
+          "type": "array"
+        },
+        "queries": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Queries",
+          "type": "array"
+        },
+        "characters": {
+          "default": 0,
+          "title": "Characters",
+          "type": "integer"
+        },
+        "digest": {
+          "default": "",
+          "title": "Digest",
+          "type": "string"
+        },
+        "contains_case_specific_data": {
+          "default": false,
+          "description": "Always false. A bundle is public literature; the case is matched locally.",
+          "title": "Contains Case Specific Data",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "bundle_id",
+        "knowledge_task",
+        "created_at"
+      ],
+      "title": "EvidenceBundle",
+      "type": "object"
     },
     "EvidenceLevel": {
       "description": "The source hierarchy from PRD 006 \u00a72. Weighting is contextual, not arithmetic.",
@@ -682,6 +704,114 @@
         "retrieval_plan"
       ],
       "title": "KnowledgeTask",
+      "type": "object"
+    },
+    "LLMResearchSession": {
+      "description": "A human-operated research interaction, recorded so the reasoning step has provenance.\n\nThe whole conversation is not captured \u2014 only enough to answer 'which model helped with which\nscientific reasoning step, and what was it allowed to see'.",
+      "properties": {
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "interface": {
+          "title": "Interface",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "mode": {
+          "const": "human_operated",
+          "default": "human_operated",
+          "title": "Mode",
+          "type": "string"
+        },
+        "knowledge_task": {
+          "title": "Knowledge Task",
+          "type": "string"
+        },
+        "permitted_inputs": {
+          "description": "Source ids the assistant was given.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Permitted Inputs",
+          "type": "array"
+        },
+        "case_specific_genomic_data_supplied": {
+          "default": false,
+          "title": "Case Specific Genomic Data Supplied",
+          "type": "boolean"
+        },
+        "prompt_template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Template"
+        },
+        "produced": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Produced",
+          "type": "array"
+        },
+        "accepted": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Accepted",
+          "type": "array"
+        },
+        "rejected": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rejected",
+          "type": "array"
+        },
+        "human_reviewed": {
+          "default": false,
+          "title": "Human Reviewed",
+          "type": "boolean"
+        },
+        "performed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Performed At"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "session_id",
+        "provider",
+        "interface",
+        "model",
+        "knowledge_task"
+      ],
+      "title": "LLMResearchSession",
       "type": "object"
     },
     "MechanismClaim": {
@@ -1134,11 +1264,18 @@
           "default": null,
           "title": "Corpus Digest"
         },
-        "agent_runs": {
+        "research_sessions": {
           "items": {
-            "$ref": "#/$defs/AgentRun"
+            "$ref": "#/$defs/LLMResearchSession"
           },
-          "title": "Agent Runs",
+          "title": "Research Sessions",
+          "type": "array"
+        },
+        "evidence_bundles": {
+          "items": {
+            "$ref": "#/$defs/EvidenceBundle"
+          },
+          "title": "Evidence Bundles",
           "type": "array"
         },
         "disclosure_policy": {
@@ -1560,6 +1697,9 @@
       },
       "title": "Assays",
       "type": "array"
+    },
+    "automation_status": {
+      "$ref": "#/$defs/AutomationStatus"
     },
     "invalid_inferences": {
       "items": {
