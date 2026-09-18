@@ -1,0 +1,1650 @@
+{
+  "$defs": {
+    "AgentRun": {
+      "description": "Why did the agent claim this? Answerable, or the agent does not run.",
+      "properties": {
+        "role": {
+          "enum": [
+            "query_planner",
+            "triage",
+            "evidence_extractor",
+            "contradiction_hunter",
+            "synthesizer"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "prompt_name": {
+          "title": "Prompt Name",
+          "type": "string"
+        },
+        "prompt_version": {
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "prompt_sha256": {
+          "title": "Prompt Sha256",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "outputs": {
+          "default": 0,
+          "title": "Outputs",
+          "type": "integer"
+        },
+        "invalid_inferences": {
+          "default": 0,
+          "title": "Invalid Inferences",
+          "type": "integer"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "provider",
+        "model",
+        "prompt_name",
+        "prompt_version",
+        "prompt_sha256"
+      ],
+      "title": "AgentRun",
+      "type": "object"
+    },
+    "AlleleMechanism": {
+      "properties": {
+        "role": {
+          "enum": [
+            "variant_a",
+            "variant_b"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "molecular_consequence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Molecular Consequence"
+        },
+        "transcript_effect": {
+          "default": "unresolved",
+          "title": "Transcript Effect",
+          "type": "string"
+        },
+        "transcript_effect_status": {
+          "$ref": "#/$defs/ClaimStatus",
+          "default": "UNRESOLVED"
+        },
+        "protein_effect": {
+          "default": "unresolved",
+          "title": "Protein Effect",
+          "type": "string"
+        },
+        "protein_effect_status": {
+          "$ref": "#/$defs/ClaimStatus",
+          "default": "UNRESOLVED"
+        },
+        "exact_functional_evidence": {
+          "default": "none found",
+          "title": "Exact Functional Evidence",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        }
+      },
+      "required": [
+        "role"
+      ],
+      "title": "AlleleMechanism",
+      "type": "object"
+    },
+    "Applicability": {
+      "enum": [
+        "direct",
+        "indirect",
+        "background"
+      ],
+      "title": "Applicability",
+      "type": "string"
+    },
+    "AssayRecord": {
+      "description": "What the field actually measures \u2014 the menu for any future external experiment.",
+      "properties": {
+        "assay": {
+          "title": "Assay",
+          "type": "string"
+        },
+        "biological_question": {
+          "title": "Biological Question",
+          "type": "string"
+        },
+        "models_used": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Models Used",
+          "type": "array"
+        },
+        "readout": {
+          "default": "",
+          "title": "Readout",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "case_applicability": {
+          "$ref": "#/$defs/Applicability",
+          "default": "indirect"
+        }
+      },
+      "required": [
+        "assay",
+        "biological_question"
+      ],
+      "title": "AssayRecord",
+      "type": "object"
+    },
+    "ClaimStatus": {
+      "enum": [
+        "SUPPORTED",
+        "PARTIALLY_SUPPORTED",
+        "CONTRADICTED",
+        "UNRESOLVED"
+      ],
+      "title": "ClaimStatus",
+      "type": "string"
+    },
+    "ClaimType": {
+      "enum": [
+        "gene_disease",
+        "transcript_effect",
+        "protein_effect",
+        "checkpoint_effect",
+        "segregation_effect",
+        "aneuploidy",
+        "disease_bridge",
+        "combined_genotype"
+      ],
+      "title": "ClaimType",
+      "type": "string"
+    },
+    "Confidence": {
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "Direction": {
+      "enum": [
+        "supports",
+        "contradicts",
+        "uncertain"
+      ],
+      "title": "Direction",
+      "type": "string"
+    },
+    "DisclosureLevel": {
+      "enum": [
+        "public_gene_level",
+        "public_disease_level",
+        "local_only"
+      ],
+      "title": "DisclosureLevel",
+      "type": "string"
+    },
+    "EpistemicClass": {
+      "description": "The four classes. Deliberately no LLM_KNOWLEDGE.",
+      "enum": [
+        "observation",
+        "external_evidence",
+        "derived_inference",
+        "unknown"
+      ],
+      "title": "EpistemicClass",
+      "type": "string"
+    },
+    "EvidenceLevel": {
+      "description": "The source hierarchy from PRD 006 \u00a72. Weighting is contextual, not arithmetic.",
+      "enum": [
+        "this_case",
+        "human_experimental",
+        "expert_curated",
+        "primary_literature",
+        "model_system",
+        "computational",
+        "review_or_secondary",
+        "llm_synthesis"
+      ],
+      "title": "EvidenceLevel",
+      "type": "string"
+    },
+    "EvidenceRecord": {
+      "description": "One extracted finding, anchored to text that provably exists in a stored source.",
+      "properties": {
+        "evidence_id": {
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Verbatim span from the stored source. Short by design.",
+          "title": "Quote",
+          "type": "string"
+        },
+        "quote_offsets": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quote Offsets"
+        },
+        "epistemic_class": {
+          "$ref": "#/$defs/EpistemicClass"
+        },
+        "evidence_level": {
+          "$ref": "#/$defs/EvidenceLevel"
+        },
+        "experimental_level": {
+          "$ref": "#/$defs/ExperimentalLevel",
+          "default": "not_applicable"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "applicability_to_case": {
+          "$ref": "#/$defs/Applicability"
+        },
+        "direction": {
+          "$ref": "#/$defs/Direction"
+        },
+        "assay": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assay"
+        },
+        "model_system": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model System"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result"
+        },
+        "rescue_experiment": {
+          "default": false,
+          "title": "Rescue Experiment",
+          "type": "boolean"
+        },
+        "variant_tested": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What the source tested, in the source's own terms.",
+          "title": "Variant Tested"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "extracted_by": {
+          "description": "Extractor identity and version, or provider:model:prompt_version.",
+          "title": "Extracted By",
+          "type": "string"
+        },
+        "verified_from_source": {
+          "default": false,
+          "description": "The quote was found verbatim in the stored document.",
+          "title": "Verified From Source",
+          "type": "boolean"
+        },
+        "pub_year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pub Year"
+        },
+        "case_specific_detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Case Specific Detail"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "source_id",
+        "statement",
+        "quote",
+        "epistemic_class",
+        "evidence_level",
+        "scope",
+        "applicability_to_case",
+        "direction",
+        "extracted_by"
+      ],
+      "title": "EvidenceRecord",
+      "type": "object"
+    },
+    "Execution": {
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "corpus_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Corpus Path"
+        },
+        "adjudication_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Adjudication Path"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "ExperimentalLevel": {
+      "enum": [
+        "patient_derived_cells",
+        "human_unrelated_cells",
+        "engineered_human_cell_line",
+        "animal_model",
+        "biochemical_assay",
+        "in_silico",
+        "not_applicable"
+      ],
+      "title": "ExperimentalLevel",
+      "type": "string"
+    },
+    "Inference": {
+      "properties": {
+        "derived_by": {
+          "title": "Derived By",
+          "type": "string"
+        },
+        "reasoning": {
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "inputs": {
+          "description": "Evidence ids the inference rests on.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "derived_by",
+        "reasoning"
+      ],
+      "title": "Inference",
+      "type": "object"
+    },
+    "InvalidInference": {
+      "description": "An agent claim that failed provenance validation. Kept, not silently dropped.",
+      "properties": {
+        "produced_by": {
+          "title": "Produced By",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "no_citation",
+            "source_not_in_corpus",
+            "quote_not_found_in_source",
+            "scope_overreach"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "produced_by",
+        "statement",
+        "reason"
+      ],
+      "title": "InvalidInference",
+      "type": "object"
+    },
+    "KnowledgeTask": {
+      "description": "A question the pipeline asked itself, kept alongside the answer it produced.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "disclosure_level": {
+          "$ref": "#/$defs/DisclosureLevel"
+        },
+        "retrieval_plan": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Retrieval Plan",
+          "type": "array"
+        },
+        "status": {
+          "default": "planned",
+          "enum": [
+            "planned",
+            "completed",
+            "blocked",
+            "abandoned"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "queries": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Queries",
+          "type": "array"
+        },
+        "documents_found": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Documents Found",
+          "type": "array"
+        },
+        "evidence_found": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Found",
+          "type": "array"
+        },
+        "resolved_claims": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resolved Claims",
+          "type": "array"
+        },
+        "information_gain": {
+          "anyOf": [
+            {
+              "enum": [
+                "high",
+                "moderate",
+                "low",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Information Gain"
+        },
+        "stop_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Which stopping rule ended the search (PRD 006 \u00a736).",
+          "title": "Stop Reason"
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "reason",
+        "disclosure_level",
+        "retrieval_plan"
+      ],
+      "title": "KnowledgeTask",
+      "type": "object"
+    },
+    "MechanismClaim": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ClaimType"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "epistemic_class": {
+          "$ref": "#/$defs/EpistemicClass"
+        },
+        "evidence": {
+          "description": "Evidence that can establish this claim.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "indirect_evidence": {
+          "description": "Consistent with the claim but unable to establish it \u2014 domain location, predictors, evidence at a wider scope.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Indirect Evidence",
+          "type": "array"
+        },
+        "contradicting_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Contradicting Evidence",
+          "type": "array"
+        },
+        "inference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "unknown_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unknown Reason"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "statement",
+        "status",
+        "scope",
+        "epistemic_class"
+      ],
+      "title": "MechanismClaim",
+      "type": "object"
+    },
+    "MechanismEdge": {
+      "description": "An arrow nobody is allowed to draw for free.",
+      "properties": {
+        "from_node": {
+          "title": "From Node",
+          "type": "string"
+        },
+        "to_node": {
+          "title": "To Node",
+          "type": "string"
+        },
+        "relation": {
+          "title": "Relation",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "claim_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claim Id"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "best_evidence_level": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_node",
+        "to_node",
+        "relation",
+        "status",
+        "scope"
+      ],
+      "title": "MechanismEdge",
+      "type": "object"
+    },
+    "MechanismGraph": {
+      "properties": {
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/MechanismNode"
+          },
+          "title": "Nodes",
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/MechanismEdge"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "unknown_edges": {
+          "description": "Edges whose status is UNRESOLVED, named for visibility.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknown Edges",
+          "type": "array"
+        }
+      },
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "title": "MechanismGraph",
+      "type": "object"
+    },
+    "MechanismNode": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "allele",
+            "transcript",
+            "protein",
+            "cellular_process",
+            "cellular_state",
+            "clinical"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind"
+      ],
+      "title": "MechanismNode",
+      "type": "object"
+    },
+    "MechanismState": {
+      "properties": {
+        "causal_genotype_externally_validated": {
+          "title": "Causal Genotype Externally Validated",
+          "type": "boolean"
+        },
+        "gene_disease_status": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "allele_a": {
+          "$ref": "#/$defs/AlleleMechanism"
+        },
+        "allele_b": {
+          "$ref": "#/$defs/AlleleMechanism"
+        },
+        "combined_genotype_state": {
+          "title": "Combined Genotype State",
+          "type": "string"
+        },
+        "combined_genotype_status": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "spindle_checkpoint": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "chromosome_segregation": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "aneuploidy": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "disease_bridge": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "mechanistic_classes": {
+          "description": "Distinct mechanisms the literature reports; never averaged into one.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Mechanistic Classes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "causal_genotype_externally_validated",
+        "gene_disease_status",
+        "allele_a",
+        "allele_b",
+        "combined_genotype_state",
+        "combined_genotype_status",
+        "spindle_checkpoint",
+        "chromosome_segregation",
+        "aneuploidy",
+        "disease_bridge"
+      ],
+      "title": "MechanismState",
+      "type": "object"
+    },
+    "MindChanger": {
+      "properties": {
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        },
+        "would_change": {
+          "title": "Would Change",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence",
+        "why",
+        "would_change"
+      ],
+      "title": "MindChanger",
+      "type": "object"
+    },
+    "NextAction": {
+      "description": "Ordinal, never decimal. We have no calibrated cost model.",
+      "properties": {
+        "rank": {
+          "title": "Rank",
+          "type": "integer"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "expected_information_gain": {
+          "enum": [
+            "high",
+            "moderate",
+            "low"
+          ],
+          "title": "Expected Information Gain",
+          "type": "string"
+        },
+        "cost": {
+          "enum": [
+            "very_low",
+            "low",
+            "moderate",
+            "high",
+            "very_high"
+          ],
+          "title": "Cost",
+          "type": "string"
+        },
+        "time": {
+          "enum": [
+            "hours",
+            "days",
+            "weeks",
+            "months"
+          ],
+          "title": "Time",
+          "type": "string"
+        },
+        "friction": {
+          "enum": [
+            "none",
+            "low",
+            "moderate",
+            "high"
+          ],
+          "title": "Friction",
+          "type": "string"
+        },
+        "importance_for_intervention_search": {
+          "enum": [
+            "blocking",
+            "high",
+            "moderate",
+            "low"
+          ],
+          "title": "Importance For Intervention Search",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rank",
+        "action",
+        "expected_information_gain",
+        "cost",
+        "time",
+        "friction",
+        "importance_for_intervention_search",
+        "rationale"
+      ],
+      "title": "NextAction",
+      "type": "object"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "adjudication_run_id": {
+          "title": "Adjudication Run Id",
+          "type": "string"
+        },
+        "validation_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Run Id"
+        },
+        "causal_pair_validated_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causal Pair Validated By"
+        },
+        "corpus_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corpus Run Id"
+        },
+        "corpus_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corpus Digest"
+        },
+        "agent_runs": {
+          "items": {
+            "$ref": "#/$defs/AgentRun"
+          },
+          "title": "Agent Runs",
+          "type": "array"
+        },
+        "disclosure_policy": {
+          "default": "Retrieval is gene-, protein- and disease-level only. The child's coordinates, alleles, HGVS and residue are never transmitted: exact-variant matching runs locally against the downloaded corpus.",
+          "title": "Disclosure Policy",
+          "type": "string"
+        },
+        "environment_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Environment Controls",
+          "type": "array"
+        }
+      },
+      "required": [
+        "software",
+        "adjudication_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "QueryRecord": {
+      "description": "The research process is pipeline data: which strategies actually find evidence.",
+      "properties": {
+        "query": {
+          "title": "Query",
+          "type": "string"
+        },
+        "generated_by": {
+          "description": "Planner identity and version, or the LLM model that proposed it.",
+          "title": "Generated By",
+          "type": "string"
+        },
+        "executed_on": {
+          "title": "Executed On",
+          "type": "string"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "results": {
+          "title": "Results",
+          "type": "integer"
+        },
+        "selected": {
+          "title": "Selected",
+          "type": "integer"
+        },
+        "knowledge_task": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Knowledge Task"
+        },
+        "rejected": {
+          "default": 0,
+          "title": "Rejected",
+          "type": "integer"
+        },
+        "rejection_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rejection Reason"
+        }
+      },
+      "required": [
+        "query",
+        "generated_by",
+        "executed_on",
+        "timestamp",
+        "results",
+        "selected"
+      ],
+      "title": "QueryRecord",
+      "type": "object"
+    },
+    "RetrievedDocument": {
+      "properties": {
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_type": {
+          "enum": [
+            "journal_article",
+            "preprint",
+            "curated_database",
+            "ontology",
+            "other"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "pmid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pmid"
+        },
+        "pmcid": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pmcid"
+        },
+        "doi": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Doi"
+        },
+        "journal": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Journal"
+        },
+        "pub_year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pub Year"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "retrieved_at": {
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "query": {
+          "description": "The exact query that surfaced this document. Never case-specific.",
+          "title": "Query",
+          "type": "string"
+        },
+        "content_hash": {
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "full_text": {
+          "default": false,
+          "description": "True only when legitimately accessible full text was stored.",
+          "title": "Full Text",
+          "type": "boolean"
+        },
+        "access_note": {
+          "default": "",
+          "title": "Access Note",
+          "type": "string"
+        },
+        "characters_stored": {
+          "default": 0,
+          "title": "Characters Stored",
+          "type": "integer"
+        },
+        "is_review": {
+          "default": false,
+          "title": "Is Review",
+          "type": "boolean"
+        },
+        "local_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Local Path"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_type",
+        "title",
+        "retrieved_at",
+        "query",
+        "content_hash"
+      ],
+      "title": "RetrievedDocument",
+      "type": "object"
+    },
+    "Scope": {
+      "description": "What the evidence is actually about. Never widened, never narrowed.",
+      "enum": [
+        "exact_variant",
+        "same_residue",
+        "nearby_variant",
+        "variant_class",
+        "gene_level",
+        "disease_level"
+      ],
+      "title": "Scope",
+      "type": "string"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "MECHANISM_READY_FOR_INTERVENTION_SEARCH",
+        "MECHANISM_BLOCKED"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "title": "Pipeline",
+      "type": "object"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "gene_symbol": {
+      "title": "Gene Symbol",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "status_basis": {
+      "title": "Status Basis",
+      "type": "string"
+    },
+    "interpretation_note": {
+      "default": "A mechanism dossier, not a mechanism story. Claims are separated by scope: what is known about the gene and the disease is not evidence about this child's alleles. No diagnosis, no treatment reasoning, no intervention search.",
+      "title": "Interpretation Note",
+      "type": "string"
+    },
+    "state": {
+      "$ref": "#/$defs/MechanismState"
+    },
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/MechanismClaim"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
+    "graph": {
+      "$ref": "#/$defs/MechanismGraph"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRecord"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/RetrievedDocument"
+      },
+      "title": "Documents",
+      "type": "array"
+    },
+    "knowledge_tasks": {
+      "items": {
+        "$ref": "#/$defs/KnowledgeTask"
+      },
+      "title": "Knowledge Tasks",
+      "type": "array"
+    },
+    "query_log": {
+      "items": {
+        "$ref": "#/$defs/QueryRecord"
+      },
+      "title": "Query Log",
+      "type": "array"
+    },
+    "assays": {
+      "items": {
+        "$ref": "#/$defs/AssayRecord"
+      },
+      "title": "Assays",
+      "type": "array"
+    },
+    "invalid_inferences": {
+      "items": {
+        "$ref": "#/$defs/InvalidInference"
+      },
+      "title": "Invalid Inferences",
+      "type": "array"
+    },
+    "contradictions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Contradictions",
+      "type": "array"
+    },
+    "unknowns": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unknowns",
+      "type": "array"
+    },
+    "evidence_strongest_at": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Strongest At",
+      "type": "array"
+    },
+    "evidence_weakest_at": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Weakest At",
+      "type": "array"
+    },
+    "what_would_change_our_mind": {
+      "items": {
+        "$ref": "#/$defs/MindChanger"
+      },
+      "title": "What Would Change Our Mind",
+      "type": "array"
+    },
+    "next_actions": {
+      "items": {
+        "$ref": "#/$defs/NextAction"
+      },
+      "title": "Next Actions",
+      "type": "array"
+    },
+    "highest_value_unresolved_question": {
+      "default": "",
+      "title": "Highest Value Unresolved Question",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "visibility",
+    "case_id",
+    "gene_symbol",
+    "status",
+    "status_basis",
+    "state",
+    "claims",
+    "graph",
+    "evidence",
+    "documents",
+    "knowledge_tasks",
+    "query_log",
+    "assays",
+    "provenance",
+    "execution"
+  ],
+  "title": "MechanismDossier",
+  "type": "object"
+}

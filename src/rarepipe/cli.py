@@ -69,7 +69,7 @@ def intake(
 @app.command()
 def schema(
     output: Annotated[Path | None, typer.Option(help="Write to file instead of stdout.")] = None,
-    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result")] = "case_manifest",
+    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result | mechanism_dossier")] = "case_manifest",
 ) -> None:
     """Emit an artifact's JSON Schema."""
     if artifact == "case_manifest":
@@ -78,6 +78,8 @@ def schema(
         from rarepipe.stages.baseline.schema import schema_json
     elif artifact == "adjudicated_hypothesis":
         from rarepipe.stages.adjudicate.schema import schema_json
+    elif artifact == "mechanism_dossier":
+        from rarepipe.stages.mechanism.schema import schema_json
     elif artifact in ("track1_submission_package", "external_validation_result"):
         from rarepipe.stages.track1.schema import schema_json as _track1_schema
 
@@ -173,6 +175,50 @@ def adjudicate(
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_USAGE)
     typer.echo(str(result.run_dir))
+
+
+mechanism_app = typer.Typer(no_args_is_help=True, help="Stage 06 — molecular mechanism resolution.")
+app.add_typer(mechanism_app, name="mechanism")
+
+
+@mechanism_app.command("fetch-corpus")
+def mechanism_fetch_corpus(
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable corpus run is created.")],
+    select_top: Annotated[int, typer.Option(help="Documents kept per query, by relevance.")] = 6,
+    page_size: Annotated[int, typer.Option(help="Records requested per query.")] = 25,
+    full_text: Annotated[bool, typer.Option(help="Fetch open-access full text where available.")] = True,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Acquire the public literature corpus. Uses the network; never opens a case artifact."""
+    from rarepipe.stages.mechanism.corpus_stage import FetchRequest, run_fetch
+
+    result = run_fetch(FetchRequest(output=output, select_top=select_top, page_size=page_size,
+                                    full_text=full_text, argv=sys.argv[:]), Console(quiet=quiet))
+    typer.echo(str(result.run_dir))
+
+
+@mechanism_app.command("resolve")
+def mechanism_resolve(
+    corpus_run: Annotated[Path, typer.Option(help="A sealed corpus run directory from `mechanism fetch-corpus`.")],
+    adjudication_run: Annotated[Path, typer.Option(help="Stage 04 adjudicated_hypothesis.private.json.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    validation: Annotated[Path | None, typer.Option(help="Stage 05 external_validation_result.json, if the causal pair was validated.")] = None,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Resolve the molecular mechanism from the local corpus. Offline; no intervention reasoning."""
+    from rarepipe.stages.mechanism.model import Status
+    from rarepipe.stages.mechanism.stage import MechanismUsageError, ResolveRequest, run_resolve
+
+    req = ResolveRequest(corpus_run=corpus_run, adjudication=adjudication_run, output=output,
+                         validation=validation, argv=sys.argv[:])
+    try:
+        result = run_resolve(req, Console(quiet=quiet))
+    except MechanismUsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(result.run_dir))
+    if result.dossier.status is Status.BLOCKED:
+        raise typer.Exit(EXIT_BLOCKED)
 
 
 export_app = typer.Typer(no_args_is_help=True, help="Generate external submission packages. Nothing is uploaded — a person submits.")
