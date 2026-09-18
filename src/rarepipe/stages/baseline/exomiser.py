@@ -9,6 +9,7 @@ import re
 import resource
 import shutil
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -109,9 +110,10 @@ def run_job(install: Installation, *, sample: Path, analysis: Path, output_optio
             code, timed_out = 124, True
     elapsed = time.monotonic() - t0
     after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-    # ru_maxrss is the high-water mark across all children; macOS reports bytes, Linux kilobytes
-    peak = max(after - before, 0) or after
-    peak_bytes = peak if peak > 1 << 32 else peak * 1024
+    # ru_maxrss is a high-water mark across all children, so it is taken as-is rather than differenced.
+    # Units differ by platform: macOS reports bytes, Linux kilobytes. A magnitude heuristic gets this
+    # wrong (a 1.9 GB peak looks "small" and gets multiplied by 1024 into a nonsensical 1.9 TB).
+    peak_bytes = max(after, before) * (1 if sys.platform == "darwin" else 1024)
     text = log_path.read_text(errors="replace")
     tail = "\n".join(text.splitlines()[-40:])
     return RunOutcome(exit_code=code, wall_clock_seconds=round(elapsed, 2), peak_rss_bytes=peak_bytes, log_path=log_path,

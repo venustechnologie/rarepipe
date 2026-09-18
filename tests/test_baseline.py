@@ -294,3 +294,17 @@ def test_solver_resources_are_pinned_from_the_lock(normalized, baseline, tmp_pat
     register(res, ResourceKind.EXOMISER_DATA, data, name="Exomiser hg38 data", version="2602_hg38")
     c = baseline(normalized, resources=res).candidate_set
     assert c.provenance.solver.distribution_sha256 and c.provenance.solver.data_sha256["exomiser_data:2602_hg38"]
+
+
+def test_peak_rss_is_reported_in_plausible_units(normalized, baseline):
+    """A magnitude heuristic once turned a 1.9 GB peak into 1.9 TB; units are platform-determined."""
+    import resource
+    import sys
+
+    c = baseline(normalized).candidate_set
+    host_total = 512e9  # no host this pipeline targets has more than 512 GB of RAM
+    for rt in c.execution.profile_runtimes:
+        assert rt.peak_rss_bytes is None or 0 < rt.peak_rss_bytes < host_total, f"implausible peak RSS: {rt.peak_rss_bytes}"
+    raw = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    scaled = raw * (1 if sys.platform == "darwin" else 1024)
+    assert scaled < host_total
