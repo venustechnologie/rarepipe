@@ -160,7 +160,16 @@ def run_export(req: ExportRequest, console: Console | None = None) -> ExportResu
     exclude = select.configuration_key([v.model_dump() for v in leading.variants])
     ranked = select.rank_configurations(candidates, exclude, None)
     rows = [leading]
-    for entry in ranked[: MAX_ROWS - 1]:
+    emitted = [exclude]
+    for entry in ranked:
+        if len(rows) >= MAX_ROWS:
+            break
+        key = select.configuration_key(entry["variants"])
+        if any(key <= previous for previous in emitted):
+            console.info(f"skipping {entry['gene_symbol']}: already covered by row "
+                         f"{emitted.index(next(p for p in emitted if key <= p)) + 1}")
+            continue
+        emitted.append(key)
         rows.append(SubmissionRow(
             rank=len(rows) + 1, epcr=1.0, configuration=entry["configuration"], gene_symbol=entry["gene_symbol"],
             inheritance_model=entry["inheritance_model"] or "unspecified", finding_type="primary",

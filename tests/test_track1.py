@@ -184,3 +184,18 @@ def test_official_parser_accepts_the_file(case):
     assert r.package.official_scorer.parsed_ok is True
     assert r.package.official_scorer.ranks_as_submitted is True
     assert r.package.official_scorer.rows_parsed == len(r.package.rows)
+
+
+def test_a_single_allele_of_an_already_submitted_pair_does_not_waste_a_row(case, tmp_path):
+    """Exomiser reports the same gene under several models; one allele of a pair we already
+    submitted cannot earn a point that pair does not already earn."""
+    cpath, apath, out = case
+    candidates = json.loads(cpath.read_text())
+    lone = _candidate(2, "BUB1B", "AD", [_variant("chr15", 40200000, "C", "T", 1.0, "stop_gained")])
+    for result in candidates["results"]:
+        result["candidates"].insert(1, lone)
+    cpath.write_text(json.dumps(candidates))
+    r = export(case)
+    rows = rows_of(r)
+    assert not any(not x["chrom_2"] and x["pos_1"] == "40200000" for x in rows), "submitted half of our own pair"
+    assert [x.gene_symbol for x in r.package.rows].count("BUB1B") == 1

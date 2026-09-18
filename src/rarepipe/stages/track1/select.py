@@ -21,7 +21,9 @@ SELECTION_STEPS = [
     "other candidate becomes its single highest-scoring variant.",
     "Key each configuration by its variant set, so the same configuration found under several profiles, "
     "inheritance models or ranks collapses to one row.",
-    "Drop the configuration already occupying row 1 (the adjudicated hypothesis).",
+    "Drop any configuration that is a subset of one already emitted — a single allele of a pair we have "
+    "already submitted is not an independent hypothesis, and it cannot earn a point the pair does not "
+    "already earn, so the row is better spent on a different candidate.",
     "Order by robustness across profiles: number of profiles reporting the configuration (descending), then "
     "best rank achieved in any profile (ascending), then mean rank across the profiles reporting it (ascending).",
     "Emit the top 9.",
