@@ -13,15 +13,17 @@ SAFE = [
     "https://rest.uniprot.org/uniprotkb/O60566.json",
     "clinvar variant_summary.txt.gz",
 ]
+# Invented, and deliberately so: a guard against disclosing case identity must not be tested
+# with the case's own identifiers. Every value below is fabricated for the shape, not the content.
 CASE_SPECIFIC = [
-    "chr15:40460234 C>T",
-    "15:40460234",
-    "NM_001211.6:c.1288G>A",
-    "p.(Arg430Cys)",
-    "R430C BUB1B",
+    "chr7:11111111 C>T",
+    "7:11111111",
+    "NM_999999.9:c.1111G>A",
+    "p.(Arg111Cys)",
+    "R111C EXAMPLE1",
     "rs111111111",
     "ClinVar VariationID: 111111",
-    "HP:0001250 HP:0001263",
+    "HP:0000001 HP:0000002",
 ]
 
 

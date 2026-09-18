@@ -118,7 +118,9 @@ def _resolve_intake(candidates: dict, normalized: dict | None, expected_run: str
     digest = normalized.get("semantic_digest")
     recorded = candidates.get("provenance", {}).get("source_case", {}).get("normalized_case_semantic_digest")
     if recorded and digest != recorded:
-        raise Track1UsageError("the NormalizedCase supplied does not match the digest the baseline recorded")
+        hint = (" — this looks like the sanitized sibling of the right run; the baseline consumed the private "
+                "artifact, whose digest differs") if run_id == expected_run else ""
+        raise Track1UsageError(f"the NormalizedCase supplied does not match the digest the baseline recorded{hint}")
     manifest = normalized.get("provenance", {}).get("source_manifest", {})
     if not manifest.get("run_id"):
         return None, "not resolved: the NormalizedCase supplied carries no CaseManifest run id"
