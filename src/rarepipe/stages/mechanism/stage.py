@@ -192,6 +192,7 @@ def case_evidence(adjudication: dict, start: int) -> list[EvidenceRecord]:
             direction=Direction(assertion.get("direction", "uncertain")),
             assay=assertion.get("evidence_class"), model_system="this case",
             result=assertion.get("result"), limitations=assertion.get("limitations", []),
+            independence_group=independence_group(assertion["statement"] + " " + str(assertion.get("result", ""))),
             extracted_by="rarepipe.case_observation_v1", verified_from_source=assertion["statement"] in body))
         n += 1
     return records
@@ -212,6 +213,24 @@ def _with_progress(task: KnowledgeTask) -> KnowledgeTask:
             task.progress.retrieval = "not_applicable"
     task.state = task.progress.state()
     return task
+
+
+INDEPENDENCE = {
+    "alphamissense": re.compile(r"alphamissense", re.I),
+    "revel": re.compile(r"\brevel\b", re.I),
+    "spliceai": re.compile(r"spliceai", re.I),
+    "clinvar": re.compile(r"clinvar", re.I),
+    "clingen": re.compile(r"clingen", re.I),
+    "gnomad_constraint": re.compile(r"constraint|gnomad", re.I),
+    "phylogenetic_conservation": re.compile(r"phastcons|cactus|conserv", re.I),
+}
+
+
+def independence_group(text: str) -> str | None:
+    for group, pattern in INDEPENDENCE.items():
+        if pattern.search(text):
+            return group
+    return None
 
 
 def alphagenome_evidence(path: Path, start: int) -> list[EvidenceRecord]:
@@ -237,9 +256,15 @@ def alphagenome_evidence(path: Path, start: int) -> list[EvidenceRecord]:
                          + (f", which is the {percentile:.1f}th percentile among all "
                             f"{neighbourhood.get('of', 0):,} scored substitutions in the gene region"
                             if percentile is not None else ""))
+            group = independence_group(key)
+            embeds = []
+            if key == "AVI_SCORE":
+                group = "alphagenome_avi"
+                embeds = ["alphamissense"]  # the AVI composite incorporates AlphaMissense for coding variants
             records.append(EvidenceRecord(
                 evidence_id=f"EV_AG_{n:04d}", source_id=source, statement=statement,
-                quote=f"{key}={value:.6g}", epistemic_class=EpistemicClass.EXTERNAL_EVIDENCE,
+                quote=f"{key}={value:.6g}", independence_group=group, embeds=embeds,
+                epistemic_class=EpistemicClass.EXTERNAL_EVIDENCE,
                 evidence_level=EvidenceLevel.COMPUTATIONAL, experimental_level=ExperimentalLevel.IN_SILICO,
                 scope=Scope.EXACT_VARIANT, applicability_to_case=Applicability.DIRECT,
                 direction=Direction.UNCERTAIN, assay=f"AlphaGenome Atlas {key}",

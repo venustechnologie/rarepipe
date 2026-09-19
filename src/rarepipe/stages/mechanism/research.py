@@ -51,12 +51,28 @@ def workspace(root: Path) -> Path:
 
 
 def next_task_id(root: Path) -> str:
-    existing = sorted((root / TASKS).glob("KT_*.json"))
-    return f"KT_{len(existing) + 1:04d}"
+    """One past the highest id, never a count.
+
+    Counting files assigns an id that already exists as soon as the sequence has a gap — and a
+    workspace that adopts tasks from a corpus run always has gaps. The first version of this
+    silently overwrote two existing tasks.
+    """
+    highest = 0
+    for path in (root / TASKS).glob("KT_*.json"):
+        try:
+            highest = max(highest, int(path.stem.split("_")[1]))
+        except (IndexError, ValueError):
+            continue
+    return f"KT_{highest + 1:04d}"
 
 
-def save_task(root: Path, task: KnowledgeTask) -> Path:
+def save_task(root: Path, task: KnowledgeTask, *, allow_overwrite: bool = True) -> Path:
     path = workspace(root) / TASKS / f"{task.id}.json"
+    if path.exists() and not allow_overwrite:
+        existing = KnowledgeTask(**json.loads(path.read_text()))
+        if existing.question != task.question:
+            raise ResearchError(
+                f"{task.id} already exists and asks a different question; refusing to overwrite it")
     path.write_text(json.dumps(task.model_dump(mode="json"), indent=2) + "\n")
     return path
 

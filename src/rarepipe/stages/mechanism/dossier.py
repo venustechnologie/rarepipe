@@ -60,7 +60,12 @@ def render(d: MechanismDossier) -> str:
         if c.evidence:
             w(f"- supporting ({len(c.evidence)}): {', '.join(c.evidence[:8])}{' …' if len(c.evidence) > 8 else ''}")
         if c.indirect_evidence:
+            groups = sorted({ev[i].independence_group for i in c.indirect_evidence
+                             if i in ev and ev[i].independence_group})
             w(f"- consistent but not establishing ({len(c.indirect_evidence)}): {', '.join(c.indirect_evidence[:8])}")
+            if groups:
+                w(f"  - independent sources among them: {len(groups)} ({', '.join(groups)}) — records sharing a "
+                  f"group are not independent witnesses")
         if c.contradicting_evidence:
             w(f"- contradicting: {', '.join(c.contradicting_evidence[:8])}")
         if c.unknown_reason:

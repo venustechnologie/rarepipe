@@ -464,3 +464,24 @@ def test_an_objection_becomes_a_qualification_not_a_silent_drop(tmp_path, corpus
     assert r.dossier.graph.qualifications, "an accepted objection vanished from the graph"
     assert any("beyond the mitotic checkpoint" in q for q in r.dossier.graph.qualifications)
     assert "is not the whole story" in (r.run_dir / "mechanism_dossier.md").read_text()
+
+
+def test_task_ids_never_collide_with_an_existing_task(tmp_path, corpus):
+    """A workspace that adopts tasks from a corpus run has gaps, and a count-based id lands in one."""
+    from rarepipe.stages.mechanism.model import DisclosureLevel, KnowledgeTask
+
+    root = _workspace(tmp_path, corpus)  # creates KT_0001
+    for task_id in ("KT_0004", "KT_0008"):
+        research.save_task(root, KnowledgeTask(id=task_id, question=f"adopted {task_id}", reason="r",
+                                               disclosure_level=DisclosureLevel.PUBLIC_GENE_LEVEL,
+                                               retrieval_plan=["Europe PMC"], queries=["BUB1B"]))
+    assert research.next_task_id(root) == "KT_0009"
+    new = KnowledgeTask(id=research.next_task_id(root), question="a new question", reason="r",
+                        disclosure_level=DisclosureLevel.PUBLIC_GENE_LEVEL, retrieval_plan=["Europe PMC"],
+                        queries=["BUB1B"])
+    research.save_task(root, new, allow_overwrite=False)
+    assert research.load_task(root, "KT_0008").question == "adopted KT_0008"
+
+    clash = new.model_copy(update={"id": "KT_0008", "question": "something else entirely"})
+    with pytest.raises(research.ResearchError):
+        research.save_task(root, clash, allow_overwrite=False)

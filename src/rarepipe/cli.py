@@ -69,7 +69,7 @@ def intake(
 @app.command()
 def schema(
     output: Annotated[Path | None, typer.Option(help="Write to file instead of stdout.")] = None,
-    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result | mechanism_dossier")] = "case_manifest",
+    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result | mechanism_dossier | intervention_map")] = "case_manifest",
 ) -> None:
     """Emit an artifact's JSON Schema."""
     if artifact == "case_manifest":
@@ -80,6 +80,13 @@ def schema(
         from rarepipe.stages.adjudicate.schema import schema_json
     elif artifact == "mechanism_dossier":
         from rarepipe.stages.mechanism.schema import schema_json
+    elif artifact == "intervention_map":
+        import json as _json
+
+        from rarepipe.stages.intervention.model import InterventionMap
+
+        def schema_json() -> str:
+            return _json.dumps(InterventionMap.model_json_schema(by_alias=True), indent=2) + "\n"
     elif artifact in ("track1_submission_package", "external_validation_result"):
         from rarepipe.stages.track1.schema import schema_json as _track1_schema
 
@@ -197,6 +204,28 @@ def mechanism_fetch_corpus(
     typer.echo(str(result.run_dir))
 
 
+@app.command("intervention")
+def intervention(
+    mechanism_run: Annotated[Path, typer.Option(help="A sealed Stage 06 mechanism run directory.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    research: Annotated[Path | None, typer.Option(help="Research workspace, for recording which sessions informed this.")] = None,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Build the InterventionMap: what a treatment would have to accomplish. Names no medication."""
+    from rarepipe.stages.intervention.model import Status
+    from rarepipe.stages.intervention.stage import BuildRequest, InterventionUsageError, build
+
+    try:
+        result = build(BuildRequest(mechanism_run=mechanism_run, output=output, research_dir=research,
+                                    argv=sys.argv[:]), Console(quiet=quiet))
+    except InterventionUsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(result.run_dir))
+    if result.intervention_map.status is Status.BLOCKED:
+        raise typer.Exit(EXIT_BLOCKED)
+
+
 alphagenome_app = typer.Typer(no_args_is_help=True, help="AlphaGenome Atlas as a variant-mechanism evidence source.")
 app.add_typer(alphagenome_app, name="alphagenome")
 
@@ -304,7 +333,7 @@ def research_create_task(
 ) -> None:
     """Record a KnowledgeTask. The pipeline owns the questions, whoever answers them."""
     from rarepipe.stages.mechanism.model import DisclosureLevel, KnowledgeTask
-    from rarepipe.stages.mechanism.research import next_task_id, save_task, workspace
+    from rarepipe.stages.mechanism.research import ResearchError, next_task_id, save_task, workspace
 
     for q in query or []:
         from rarepipe.stages.mechanism.retrieve import check_search_query
@@ -320,7 +349,12 @@ def research_create_task(
         disclosure_level=DisclosureLevel.LOCAL_ONLY if local_only else DisclosureLevel.PUBLIC_GENE_LEVEL,
         retrieval_plan=["local corpus search only"] if local_only else ["Europe PMC", "PMC open-access full text"],
         queries=list(query or []))
-    typer.echo(str(save_task(root, task)))
+    try:
+        path = save_task(root, task, allow_overwrite=False)
+    except ResearchError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(path))
 
 
 @research_app.command("adopt-task")

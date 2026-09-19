@@ -91,12 +91,30 @@ def test_the_key_is_read_from_the_environment_only(monkeypatch):
     assert configured_provider().api_key == "test-key"
 
 
-def test_no_api_key_is_committed_anywhere():
+def test_no_api_key_material_is_committed_anywhere():
+    """Looks for key-shaped values, not for the variable's name.
+
+    Documenting `export ALPHAGENOME_API_KEY=$(cat ...)` is exactly what we want people to do, so a
+    scan that flags the name flags the good practice and teaches everyone to ignore it.
+    """
+    import re as _re
     import subprocess
 
-    out = subprocess.run(["git", "grep", "-rIl", "-e", "AIza", "-e", "ALPHAGENOME_API_KEY="],
-                         capture_output=True, text=True, cwd=Path(__file__).resolve().parents[1])
-    assert not out.stdout.strip(), f"possible key material committed: {out.stdout}"
+    root = Path(__file__).resolve().parents[1]
+    tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True, cwd=root).stdout.split()
+    key_like = _re.compile(r"AIza[0-9A-Za-z_\-]{30,}|ALPHAGENOME_API_KEY\s*=\s*[\"\']?[A-Za-z0-9_\-]{20,}")
+    offenders = []
+    for name in tracked:
+        path = root / name
+        try:
+            body = path.read_text()
+        except (UnicodeDecodeError, FileNotFoundError, IsADirectoryError):
+            continue
+        for match in key_like.finditer(body):
+            if "$(" in body[max(0, match.start() - 4): match.end()]:
+                continue
+            offenders.append(f"{name}: {match.group(0)[:12]}…")
+    assert not offenders, f"key-shaped material committed: {offenders}"
 
 
 def test_atlas_predictions_enter_as_computational_evidence_that_cannot_establish_function(tmp_path, cache):

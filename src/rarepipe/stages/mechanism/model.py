@@ -252,6 +252,12 @@ class EvidenceRecord(BaseModel):
     rescue_experiment: bool = False
     variant_tested: str | None = Field(None, description="What the source tested, in the source's own terms.")
     limitations: list[str] = Field(default_factory=list)
+    independence_group: str | None = Field(
+        None, description="Evidence sharing a source model shares a group. Two scores from models that embed one "
+                          "another are not two independent witnesses, and counting them as such is how a single "
+                          "predictor comes to look like a consensus.")
+    embeds: list[str] = Field(default_factory=list, description="Other independence groups this record's source "
+                                                                "incorporates (e.g. a composite score embedding a predictor).")
     extracted_by: str = Field(description="Extractor identity and version, or provider:model:prompt_version.")
     verified_from_source: bool = Field(False, description="The quote was found verbatim in the stored document.")
     pub_year: int | None = None
