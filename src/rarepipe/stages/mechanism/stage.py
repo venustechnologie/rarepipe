@@ -96,6 +96,7 @@ class ResolveRequest:
     output: Path
     validation: Path | None = None
     research_dir: Path | None = None
+    alphagenome: Path | None = None
     argv: list[str] = field(default_factory=list)
 
 
@@ -213,6 +214,43 @@ def _with_progress(task: KnowledgeTask) -> KnowledgeTask:
     return task
 
 
+def alphagenome_evidence(path: Path, start: int) -> list[EvidenceRecord]:
+    """Atlas predictions as evidence: an identifiable external source, at computational weight.
+
+    The Atlas states a value for this variant, so it is external evidence rather than an observation —
+    but it is a model output, not a measurement, so it enters at COMPUTATIONAL level and can never
+    establish a functional claim. It can only stand beside one, which is the correct weight for a
+    model its authors say is not validated for clinical use.
+    """
+    payload = json.loads(path.read_text())
+    records: list[EvidenceRecord] = []
+    n = start
+    for item in payload.get("evidence", []):
+        if not item.get("local_match_found"):
+            continue
+        region = item["region"]
+        source = f"ALPHAGENOME_ATLAS:{region['gene_symbol']}:{region['start']}-{region['end']}"
+        for key, value in sorted(item.get("scores", {}).items()):
+            neighbourhood = item.get("neighbourhood", {}).get(key, {})
+            percentile = neighbourhood.get("percentile")
+            statement = (f"AlphaGenome Atlas {key} for this case's {item['variant_role']}: {value:.4g}"
+                         + (f", which is the {percentile:.1f}th percentile among all "
+                            f"{neighbourhood.get('of', 0):,} scored substitutions in the gene region"
+                            if percentile is not None else ""))
+            records.append(EvidenceRecord(
+                evidence_id=f"EV_AG_{n:04d}", source_id=source, statement=statement,
+                quote=f"{key}={value:.6g}", epistemic_class=EpistemicClass.EXTERNAL_EVIDENCE,
+                evidence_level=EvidenceLevel.COMPUTATIONAL, experimental_level=ExperimentalLevel.IN_SILICO,
+                scope=Scope.EXACT_VARIANT, applicability_to_case=Applicability.DIRECT,
+                direction=Direction.UNCERTAIN, assay=f"AlphaGenome Atlas {key}",
+                model_system="in silico", result=f"{value:.6g}",
+                limitations=list(item.get("limitations", [])),
+                extracted_by="rarepipe.alphagenome_adapter_v1", verified_from_source=True,
+                case_specific_detail=f"{key}={value}"))
+            n += 1
+    return records
+
+
 def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveResult:
     console = console or Console()
     started, t0 = utc_now(), time.monotonic()
@@ -294,6 +332,15 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
 
     console.step(4, 6, "Adjudicating claims by workstream...")
     verified += case_evidence(adjudication, index)
+    if req.alphagenome:
+        ag_path = (req.alphagenome / "alphagenome_evidence.private.json"
+                   if req.alphagenome.is_dir() else req.alphagenome)
+        if not ag_path.exists():
+            raise MechanismUsageError(f"no AlphaGenome evidence at {ag_path}")
+        ag_records = alphagenome_evidence(ag_path, index + 10000)
+        verified += ag_records
+        console.info(f"{len(ag_records)} AlphaGenome Atlas prediction(s) added at computational weight "
+                     "(they can accompany a functional claim, never establish one)")
     mech_claims, state, graph = _adjudicate(verified, adjudication, gene, bool(exact_hits), residue, console)
 
     console.step(5, 6, "Assembling the dossier...")

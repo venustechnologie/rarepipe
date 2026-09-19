@@ -197,6 +197,98 @@ def mechanism_fetch_corpus(
     typer.echo(str(result.run_dir))
 
 
+alphagenome_app = typer.Typer(no_args_is_help=True, help="AlphaGenome Atlas as a variant-mechanism evidence source.")
+app.add_typer(alphagenome_app, name="alphagenome")
+
+
+@alphagenome_app.command("fetch-region")
+def alphagenome_fetch_region(
+    output: Annotated[Path, typer.Option(help="Cache directory for the region's precomputed predictions.")],
+    gene: Annotated[str | None, typer.Option(help="Public gene symbol whose locus to query, e.g. BUB1B.")] = None,
+    interval: Annotated[str | None, typer.Option(help="Explicit public interval, chr15:40160000-40340000.")] = None,
+    scorer: Annotated[list[str] | None, typer.Option(help="Atlas scorer to request. Repeat; omit to list what is available.")] = None,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Query a PUBLIC gene region of the Atlas. Never opens a case artifact; nothing case-specific is sent."""
+    from rarepipe.stages.mechanism.alphagenome import (
+        AlphaGenomeError,
+        RegionProvenance,
+        cache_region,
+        check_region_is_public,
+        configured_provider,
+        package_version,
+        public_region,
+    )
+
+    console = Console(quiet=quiet)
+    try:
+        provider = configured_provider()
+        if gene:
+            region = public_region(gene)
+        elif interval:
+            chrom, span = interval.split(":")
+            start, end = (int(x.replace(",", "")) for x in span.split("-"))
+            region = RegionProvenance(chromosome=chrom, start=start, end=end, width=end - start,
+                                      derived_from="operator-supplied public interval")
+        else:
+            typer.echo("error: pass --gene or --interval", err=True)
+            raise typer.Exit(EXIT_USAGE)
+        check_region_is_public(region)
+        available = provider.available_scorers()
+        if not scorer:
+            console.info("available scorers: " + ", ".join(available))
+            typer.echo("error: pass --scorer (repeatable) to fetch", err=True)
+            raise typer.Exit(EXIT_USAGE)
+        unknown = [s for s in scorer if s not in available]
+        if unknown:
+            typer.echo(f"error: unknown scorer(s) {unknown}; available: {available}", err=True)
+            raise typer.Exit(EXIT_USAGE)
+        console.info(f"querying {region.chromosome}:{region.start:,}-{region.end:,} "
+                     f"({region.width:,} bp, ~{region.width * 3:,} hypothetical variants) for {len(scorer)} scorer(s)")
+        predictions = provider.region_scores(region, list(scorer))
+        path = cache_region(output, region, predictions, list(scorer), package_version())
+    except AlphaGenomeError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    console.ok(f"cached {len(predictions):,} public variant prediction(s)")
+    typer.echo(str(path))
+
+
+@alphagenome_app.command("match")
+def alphagenome_match(
+    cache: Annotated[Path, typer.Option(help="A region cache file from `fetch-region`.")],
+    adjudication_run: Annotated[Path, typer.Option(help="Stage 04 adjudicated_hypothesis.private.json.")],
+    output: Annotated[Path, typer.Option(help="Where to write the AlphaGenomeEvidence (private + sanitized).")],
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Match this case's alleles against a cached public region. Offline; nothing leaves the machine."""
+    import json as _j
+
+    from rarepipe.core.artifacts import canonical_json
+    from rarepipe.core.redaction import clear_restricted
+    from rarepipe.stages.mechanism.alphagenome import match_locally
+
+    console = Console(quiet=quiet)
+    adjudication = _j.loads(adjudication_run.read_text())
+    if adjudication.get("visibility") != "private":
+        typer.echo("error: local matching needs the private adjudication artifact", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    evidence = match_locally(cache, adjudication.get("variants", []))
+    output.mkdir(parents=True, exist_ok=True)
+    for item in evidence:
+        console.info(f"{item.variant_role}: {'matched' if item.local_match_found else 'NOT FOUND in the cached region'}"
+                     + (f" · {len(item.scores)} score(s)" if item.local_match_found else ""))
+    private = [e.model_dump(mode="json") for e in evidence]
+    sanitized = []
+    for item in evidence:
+        copy = item.model_copy(deep=True)
+        clear_restricted(copy)
+        sanitized.append(copy.model_dump(mode="json"))
+    (output / "alphagenome_evidence.private.json").write_text(canonical_json({"evidence": private}))
+    (output / "alphagenome_evidence.sanitized.json").write_text(canonical_json({"evidence": sanitized}))
+    typer.echo(str(output))
+
+
 research_app = typer.Typer(no_args_is_help=True, help="Human-in-the-loop research: tasks, evidence bundles, briefs, "
                                                      "and the import gate. The pipeline never calls a model.")
 app.add_typer(research_app, name="research")
@@ -380,6 +472,7 @@ def mechanism_resolve(
     output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
     validation: Annotated[Path | None, typer.Option(help="Stage 05 external_validation_result.json, if the causal pair was validated.")] = None,
     research: Annotated[Path | None, typer.Option(help="Research workspace whose validated imported analyses to include.")] = None,
+    alphagenome: Annotated[Path | None, typer.Option(help="Directory or file holding AlphaGenome evidence from `alphagenome match`.")] = None,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
 ) -> None:
     """Resolve the molecular mechanism from the local corpus. Offline; no intervention reasoning."""
@@ -387,7 +480,7 @@ def mechanism_resolve(
     from rarepipe.stages.mechanism.stage import MechanismUsageError, ResolveRequest, run_resolve
 
     req = ResolveRequest(corpus_run=corpus_run, adjudication=adjudication_run, output=output,
-                         validation=validation, research_dir=research, argv=sys.argv[:])
+                         validation=validation, research_dir=research, alphagenome=alphagenome, argv=sys.argv[:])
     try:
         result = run_resolve(req, Console(quiet=quiet))
     except MechanismUsageError as exc:

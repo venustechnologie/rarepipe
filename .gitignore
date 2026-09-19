@@ -29,3 +29,7 @@ build/
 track1_submission*.csv
 *_rarepipe-exomiser-adjudicated.csv
 *.CONTROLLED.txt
+
+# Local secrets, never tracked
+*.key
+secrets/
