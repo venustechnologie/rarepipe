@@ -69,7 +69,7 @@ def intake(
 @app.command()
 def schema(
     output: Annotated[Path | None, typer.Option(help="Write to file instead of stdout.")] = None,
-    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result | mechanism_dossier | intervention_map | intervention_discovery")] = "case_manifest",
+    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result | mechanism_dossier | intervention_map | intervention_discovery | track2_hypothesis_set")] = "case_manifest",
 ) -> None:
     """Emit an artifact's JSON Schema."""
     if artifact == "case_manifest":
@@ -80,6 +80,13 @@ def schema(
         from rarepipe.stages.adjudicate.schema import schema_json
     elif artifact == "mechanism_dossier":
         from rarepipe.stages.mechanism.schema import schema_json
+    elif artifact == "track2_hypothesis_set":
+        import json as _json
+
+        from rarepipe.stages.track2.model import Track2HypothesisSet
+
+        def schema_json() -> str:
+            return _json.dumps(Track2HypothesisSet.model_json_schema(by_alias=True), indent=2) + "\n"
     elif artifact == "intervention_discovery":
         import json as _json
 
@@ -209,6 +216,64 @@ def mechanism_fetch_corpus(
     result = run_fetch(FetchRequest(output=output, select_top=select_top, page_size=page_size,
                                     full_text=full_text, argv=sys.argv[:]), Console(quiet=quiet))
     typer.echo(str(result.run_dir))
+
+
+track2_app = typer.Typer(no_args_is_help=True, help="Stage 09 — Track 2 research-hypothesis adjudication.")
+app.add_typer(track2_app, name="track2")
+
+
+@track2_app.command("import-hypotheses")
+def track2_import_hypotheses(
+    analysis: Annotated[Path, typer.Option(help="YAML of proposed research hypotheses, after your review.")],
+    research: Annotated[Path, typer.Option(help="Research workspace holding the bundles.")],
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Validate proposed hypotheses arrow by arrow: every evidenced link must cite retrieved, verbatim text."""
+    from rarepipe.stages.track2.ingest import IngestError, import_hypotheses, save
+
+    console = Console(quiet=quiet)
+    existing = len(list((research / "hypotheses").glob("LLMRS_*.json"))) if (research / "hypotheses").exists() else 0
+    try:
+        result = import_hypotheses(research, analysis, session_index=existing + 1)
+    except IngestError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    for h in result.hypotheses:
+        evidenced = sum(1 for link in h.proposed_chain if link.kind == "evidenced")
+        console.ok(f"{h.id} {h.active_ingredient[:26]:28} {len(h.proposed_chain)} link(s), {evidenced} evidenced")
+    for bad in result.rejected:
+        console.fail(f"rejected ({bad.reason}): {bad.statement[:60]} — {bad.detail}")
+    path = save(research, result)
+    console.line()
+    console.line(f"{len(result.hypotheses)} accepted, {len(result.rejected)} rejected")
+    typer.echo(str(path))
+    if result.rejected and not result.hypotheses:
+        raise typer.Exit(EXIT_BLOCKED)
+
+
+@track2_app.command("adjudicate")
+def track2_adjudicate(
+    discovery_run: Annotated[Path, typer.Option(help="A sealed Stage 08 discovery run directory.")],
+    research: Annotated[Path, typer.Option(help="Research workspace with bundles and imported hypotheses.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    approval_cache: Annotated[Path | None, typer.Option(help="Cache directory for verified approval records.")] = None,
+    offline: Annotated[bool, typer.Option(help="Skip approval verification (records it as unverified).")] = False,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Run the promotion gate and seal the pre-network baseline. Uploads nothing."""
+    from rarepipe.stages.track2.model import Status
+    from rarepipe.stages.track2.stage import BuildRequest, Track2UsageError, build
+
+    try:
+        result = build(BuildRequest(discovery_run=discovery_run, research_dir=research, output=output,
+                                    approval_cache=approval_cache, offline=offline, argv=sys.argv[:]),
+                       Console(quiet=quiet))
+    except Track2UsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(str(result.run_dir))
+    if result.hypothesis_set.status is Status.BLOCKED:
+        raise typer.Exit(EXIT_BLOCKED)
 
 
 discovery_app = typer.Typer(no_args_is_help=True, help="Stage 08 — approved intervention and experience discovery.")

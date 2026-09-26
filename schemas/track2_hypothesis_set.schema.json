@@ -1,0 +1,1064 @@
+{
+  "$defs": {
+    "Action": {
+      "properties": {
+        "rank": {
+          "title": "Rank",
+          "type": "integer"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "expected_information_gain": {
+          "enum": [
+            "high",
+            "moderate",
+            "low"
+          ],
+          "title": "Expected Information Gain",
+          "type": "string"
+        },
+        "cost": {
+          "enum": [
+            "very_low",
+            "low",
+            "moderate",
+            "high",
+            "very_high"
+          ],
+          "title": "Cost",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "blocked_by": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blocked By",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rank",
+        "action",
+        "expected_information_gain",
+        "cost",
+        "rationale"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "BaselineSnapshot": {
+      "description": "The sealed pre-network baseline. Frozen whichever branch the stage takes.",
+      "properties": {
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "created_before_network_search": {
+          "default": true,
+          "title": "Created Before Network Search",
+          "type": "boolean"
+        },
+        "public_evidence_only": {
+          "default": true,
+          "title": "Public Evidence Only",
+          "type": "boolean"
+        },
+        "validation_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Run Id"
+        },
+        "mechanism_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mechanism Run Id"
+        },
+        "mechanism_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mechanism Digest"
+        },
+        "intervention_map_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention Map Run Id"
+        },
+        "intervention_map_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention Map Digest"
+        },
+        "discovery_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Discovery Run Id"
+        },
+        "discovery_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Discovery Digest"
+        },
+        "git_commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Git Commit"
+        },
+        "git_describe": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Git Describe"
+        },
+        "hypotheses_found": {
+          "default": 0,
+          "title": "Hypotheses Found",
+          "type": "integer"
+        },
+        "note": {
+          "default": "Established from public evidence alone, before any institutional or node outreach. A later rerun with node evidence can be compared against this to measure what the network added.",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "created_at"
+      ],
+      "title": "BaselineSnapshot",
+      "type": "object"
+    },
+    "ChainLink": {
+      "description": "One arrow of the proposed drug \u2192 rescue chain. Evidenced or explicitly inferred, never blurred.",
+      "properties": {
+        "step": {
+          "title": "Step",
+          "type": "string"
+        },
+        "kind": {
+          "default": "inference",
+          "enum": [
+            "evidenced",
+            "inference"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step"
+      ],
+      "title": "ChainLink",
+      "type": "object"
+    },
+    "EvidenceGrade": {
+      "description": "How far the evidence actually reaches. Never a probability of working.",
+      "enum": [
+        "DIRECT",
+        "STRONG_INDIRECT",
+        "MECHANISTIC_INDIRECT"
+      ],
+      "title": "EvidenceGrade",
+      "type": "string"
+    },
+    "Execution": {
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "discovery_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Discovery Path"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "GateCheck": {
+      "properties": {
+        "check": {
+          "title": "Check",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check",
+        "passed"
+      ],
+      "title": "GateCheck",
+      "type": "object"
+    },
+    "HypothesisState": {
+      "enum": [
+        "TRACK2_ELIGIBLE_DIRECT",
+        "TRACK2_ELIGIBLE_STRONG_INDIRECT",
+        "TRACK2_ELIGIBLE_MECHANISTIC_INDIRECT",
+        "INSUFFICIENT_EVIDENCE",
+        "WRONG_DIRECTION",
+        "APPROVAL_UNVERIFIED",
+        "NOT_APPROVED",
+        "CONTRADICTED",
+        "DISCOVERY_ONLY"
+      ],
+      "title": "HypothesisState",
+      "type": "string"
+    },
+    "MindChanger": {
+      "properties": {
+        "would_strengthen": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Would Strengthen",
+          "type": "array"
+        },
+        "would_weaken": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Would Weaken",
+          "type": "array"
+        },
+        "would_falsify": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Would Falsify",
+          "type": "array"
+        }
+      },
+      "title": "MindChanger",
+      "type": "object"
+    },
+    "PediatricContext": {
+      "properties": {
+        "status": {
+          "default": "not collected",
+          "title": "Status",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "clinical_suitability": {
+          "const": "NOT_ASSESSED",
+          "default": "NOT_ASSESSED",
+          "title": "Clinical Suitability",
+          "type": "string"
+        }
+      },
+      "title": "PediatricContext",
+      "type": "object"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "discovery_run_id": {
+          "title": "Discovery Run Id",
+          "type": "string"
+        },
+        "discovery_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Discovery Digest"
+        },
+        "intervention_map_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention Map Run Id"
+        },
+        "mechanism_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mechanism Run Id"
+        },
+        "validation_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Run Id"
+        },
+        "research_sessions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Research Sessions",
+          "type": "array"
+        },
+        "approval_sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Approval Sources",
+          "type": "array"
+        },
+        "disclosure_policy": {
+          "default": "Public evidence only. Gene, protein, disease, mechanism and medication names may be queried; exact variants, HGVS, coordinates, the variant pair and the phenotype fingerprint never leave local compute.",
+          "title": "Disclosure Policy",
+          "type": "string"
+        },
+        "environment_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Environment Controls",
+          "type": "array"
+        }
+      },
+      "required": [
+        "software",
+        "discovery_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "RejectedHypothesis": {
+      "properties": {
+        "intervention": {
+          "title": "Intervention",
+          "type": "string"
+        },
+        "discovered_because": {
+          "title": "Discovered Because",
+          "type": "string"
+        },
+        "rejected_because": {
+          "$ref": "#/$defs/HypothesisState"
+        },
+        "failed_checks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Failed Checks",
+          "type": "array"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "intervention",
+        "discovered_because",
+        "rejected_because"
+      ],
+      "title": "RejectedHypothesis",
+      "type": "object"
+    },
+    "ResearchRepurposingHypothesis": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "active_ingredient": {
+          "title": "Active Ingredient",
+          "type": "string"
+        },
+        "canonical_ids": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Canonical Ids",
+          "type": "object"
+        },
+        "approval_verified": {
+          "default": false,
+          "title": "Approval Verified",
+          "type": "boolean"
+        },
+        "approval_jurisdictions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Approval Jurisdictions",
+          "type": "array"
+        },
+        "approval_authority": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approval Authority"
+        },
+        "approval_note": {
+          "default": "",
+          "title": "Approval Note",
+          "type": "string"
+        },
+        "intervention_spec": {
+          "default": "SPEC_001",
+          "title": "Intervention Spec",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "proposed_chain": {
+          "items": {
+            "$ref": "#/$defs/ChainLink"
+          },
+          "title": "Proposed Chain",
+          "type": "array"
+        },
+        "required_direction": {
+          "default": "restore_toward_normal",
+          "title": "Required Direction",
+          "type": "string"
+        },
+        "observed_direction": {
+          "default": "unknown",
+          "enum": [
+            "concordant",
+            "discordant",
+            "unknown"
+          ],
+          "title": "Observed Direction",
+          "type": "string"
+        },
+        "evidence_grade": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceGrade"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "establishing_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Establishing Evidence",
+          "type": "array"
+        },
+        "supporting_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Evidence",
+          "type": "array"
+        },
+        "contradicting_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Contradicting Evidence",
+          "type": "array"
+        },
+        "negative_experiences": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Negative Experiences",
+          "type": "array"
+        },
+        "unknown_experiences": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknown Experiences",
+          "type": "array"
+        },
+        "not_tested_note": {
+          "default": "",
+          "title": "Not Tested Note",
+          "type": "string"
+        },
+        "independence_groups": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Independence Groups",
+          "type": "array"
+        },
+        "exact_allele_dependency": {
+          "default": false,
+          "title": "Exact Allele Dependency",
+          "type": "boolean"
+        },
+        "tested_in_bub1b_deficiency": {
+          "default": false,
+          "title": "Tested In Bub1B Deficiency",
+          "type": "boolean"
+        },
+        "tested_in_mva": {
+          "default": false,
+          "title": "Tested In Mva",
+          "type": "boolean"
+        },
+        "pediatric_context": {
+          "$ref": "#/$defs/PediatricContext"
+        },
+        "validation_plan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValidationPlan"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "what_would_change_our_mind": {
+          "$ref": "#/$defs/MindChanger"
+        },
+        "gate": {
+          "items": {
+            "$ref": "#/$defs/GateCheck"
+          },
+          "title": "Gate",
+          "type": "array"
+        },
+        "state": {
+          "$ref": "#/$defs/HypothesisState",
+          "default": "DISCOVERY_ONLY"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "clinical_actionability": {
+          "const": "NOT_ASSESSED",
+          "default": "NOT_ASSESSED",
+          "title": "Clinical Actionability",
+          "type": "string"
+        },
+        "treatment_recommendation": {
+          "const": false,
+          "default": false,
+          "title": "Treatment Recommendation",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "active_ingredient",
+        "statement"
+      ],
+      "title": "ResearchRepurposingHypothesis",
+      "type": "object"
+    },
+    "SearchOutcome": {
+      "description": "What a search actually established, and \u2014 said out loud \u2014 what it did not.\n\nFormalised because the pipeline has needed it at every stage, and because a node network will\neventually return exactly this shape.",
+      "properties": {
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "corpus": {
+          "title": "Corpus",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/SearchResult"
+        },
+        "interpretation": {
+          "title": "Interpretation",
+          "type": "string"
+        },
+        "does_not_mean": {
+          "title": "Does Not Mean",
+          "type": "string"
+        },
+        "queries": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Queries",
+          "type": "array"
+        },
+        "documents_examined": {
+          "default": 0,
+          "title": "Documents Examined",
+          "type": "integer"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "question",
+        "corpus",
+        "result",
+        "interpretation",
+        "does_not_mean"
+      ],
+      "title": "SearchOutcome",
+      "type": "object"
+    },
+    "SearchResult": {
+      "enum": [
+        "POSITIVE",
+        "NEGATIVE_EXPERIENCE_FOUND",
+        "NO_EVIDENCE_FOUND",
+        "CONTRADICTORY",
+        "INACCESSIBLE",
+        "EXHAUSTED_TO_THRESHOLD"
+      ],
+      "title": "SearchResult",
+      "type": "string"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "TRACK2_RESEARCH_HYPOTHESIS_READY",
+        "TRACK2_SUBMISSION_BLOCKED_NO_DEFENSIBLE_HYPOTHESIS"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "SubmissionClaim": {
+      "description": "Every substantive sentence intended for the report, tied to what it rests on.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "type": {
+          "enum": [
+            "observation",
+            "external_evidence",
+            "derived_inference"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "scope": {
+          "default": "disease_level",
+          "title": "Scope",
+          "type": "string"
+        },
+        "allowed_in_submission": {
+          "default": true,
+          "title": "Allowed In Submission",
+          "type": "boolean"
+        },
+        "basis_note": {
+          "default": "",
+          "title": "Basis Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "statement",
+        "type"
+      ],
+      "title": "SubmissionClaim",
+      "type": "object"
+    },
+    "ValidationPlan": {
+      "description": "What experiment would settle it. The point is worth testing, not worth administering.",
+      "properties": {
+        "system": {
+          "title": "System",
+          "type": "string"
+        },
+        "intervention": {
+          "title": "Intervention",
+          "type": "string"
+        },
+        "readouts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Readouts",
+          "type": "array"
+        },
+        "hypothesis": {
+          "title": "Hypothesis",
+          "type": "string"
+        },
+        "falsification": {
+          "title": "Falsification",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system",
+        "intervention",
+        "hypothesis",
+        "falsification"
+      ],
+      "title": "ValidationPlan",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "title": "Pipeline",
+      "type": "object"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "gene_symbol": {
+      "title": "Gene Symbol",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "status_basis": {
+      "title": "Status Basis",
+      "type": "string"
+    },
+    "interpretation_note": {
+      "default": "Research hypotheses, not treatment. An entry here means the evidence justifies testing whether an approved medication produces the required biological effect \u2014 not that it does, and not a recommendation to administer anything to anyone.",
+      "title": "Interpretation Note",
+      "type": "string"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/ResearchRepurposingHypothesis"
+      },
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "rejected": {
+      "items": {
+        "$ref": "#/$defs/RejectedHypothesis"
+      },
+      "title": "Rejected",
+      "type": "array"
+    },
+    "search_outcomes": {
+      "items": {
+        "$ref": "#/$defs/SearchOutcome"
+      },
+      "title": "Search Outcomes",
+      "type": "array"
+    },
+    "submission_claims": {
+      "items": {
+        "$ref": "#/$defs/SubmissionClaim"
+      },
+      "title": "Submission Claims",
+      "type": "array"
+    },
+    "node_query_specs": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Node Query Specs",
+      "type": "array"
+    },
+    "baseline": {
+      "$ref": "#/$defs/BaselineSnapshot"
+    },
+    "next_actions": {
+      "items": {
+        "$ref": "#/$defs/Action"
+      },
+      "title": "Next Actions",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "visibility",
+    "case_id",
+    "gene_symbol",
+    "status",
+    "status_basis",
+    "baseline",
+    "provenance",
+    "execution"
+  ],
+  "title": "Track2HypothesisSet",
+  "type": "object"
+}
