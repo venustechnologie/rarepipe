@@ -1,0 +1,1158 @@
+{
+  "$defs": {
+    "ApprovalRecord": {
+      "description": "Verified against a regulator's own data, never because a paper called something 'a drug'.",
+      "properties": {
+        "verified": {
+          "default": false,
+          "title": "Verified",
+          "type": "boolean"
+        },
+        "ingredient": {
+          "title": "Ingredient",
+          "type": "string"
+        },
+        "jurisdictions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Jurisdictions",
+          "type": "array"
+        },
+        "authority_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authority Source"
+        },
+        "identifiers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Identifiers",
+          "type": "object"
+        },
+        "indications_sampled": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Indications Sampled",
+          "type": "array"
+        },
+        "retrieved_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retrieved At"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ingredient"
+      ],
+      "title": "ApprovalRecord",
+      "type": "object"
+    },
+    "CandidateState": {
+      "enum": [
+        "DISCOVERED",
+        "MECHANISM_MATCH",
+        "CONTRADICTED",
+        "INSUFFICIENT_EVIDENCE",
+        "NOT_APPROVED"
+      ],
+      "title": "CandidateState",
+      "type": "string"
+    },
+    "Directness": {
+      "enum": [
+        "direct_BUBR1",
+        "BUB1B_model",
+        "related_model",
+        "pathway_only"
+      ],
+      "title": "Directness",
+      "type": "string"
+    },
+    "EvidenceSource": {
+      "properties": {
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "pub_year": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pub Year"
+        },
+        "verified_from_source": {
+          "default": false,
+          "title": "Verified From Source",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "source_id",
+        "quote"
+      ],
+      "title": "EvidenceSource",
+      "type": "object"
+    },
+    "Execution": {
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "intervention_map_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Intervention Map Path"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "InterventionExperience": {
+      "description": "Something that was actually tried, and what happened.\n\nSource-agnostic on purpose: a paper, a trial, a case report or a hospital node should all\npopulate this unchanged.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "intervention_ingredient": {
+          "title": "Intervention Ingredient",
+          "type": "string"
+        },
+        "intervention_identifiers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Intervention Identifiers",
+          "type": "object"
+        },
+        "disease": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Disease"
+        },
+        "gene": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gene"
+        },
+        "mechanism": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mechanism"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "subject_scope": {
+          "$ref": "#/$defs/SubjectScope"
+        },
+        "intervention_intent": {
+          "default": "",
+          "title": "Intervention Intent",
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Outcome"
+        },
+        "measured_endpoints": {
+          "items": {
+            "$ref": "#/$defs/MeasuredEndpoint"
+          },
+          "title": "Measured Endpoints",
+          "type": "array"
+        },
+        "relevant_to": {
+          "description": "Intervention point and spec ids.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Relevant To",
+          "type": "array"
+        },
+        "lane": {
+          "$ref": "#/$defs/Lane"
+        },
+        "evidence_source": {
+          "$ref": "#/$defs/EvidenceSource"
+        },
+        "independence_group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Independence Group"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "extracted_by": {
+          "default": "",
+          "title": "Extracted By",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "intervention_ingredient",
+        "subject_scope",
+        "outcome",
+        "lane",
+        "evidence_source"
+      ],
+      "title": "InterventionExperience",
+      "type": "object"
+    },
+    "Lane": {
+      "enum": [
+        "A_direct_bubr1_restoration",
+        "B_rescue_in_deficient_biology",
+        "C_mechanistic_lead",
+        "D_failure_or_negative_experience"
+      ],
+      "title": "Lane",
+      "type": "string"
+    },
+    "MatchStatus": {
+      "enum": [
+        "MATCH",
+        "POSSIBLE",
+        "NO_MATCH"
+      ],
+      "title": "MatchStatus",
+      "type": "string"
+    },
+    "MeasuredEndpoint": {
+      "description": "\"No effect\" is meaningless without an endpoint. This is how a failure stays reusable.",
+      "properties": {
+        "endpoint": {
+          "title": "Endpoint",
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "improved",
+            "unchanged",
+            "worsened",
+            "not_reported"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "magnitude_if_reported": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Magnitude If Reported"
+        },
+        "timeframe": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeframe"
+        },
+        "system": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What it was measured in, in the source's own words.",
+          "title": "System"
+        }
+      },
+      "required": [
+        "endpoint",
+        "direction"
+      ],
+      "title": "MeasuredEndpoint",
+      "type": "object"
+    },
+    "MechanismMatch": {
+      "description": "Does what it does point the way the mechanism needs? Direction decides, not pathway membership.",
+      "properties": {
+        "intervention": {
+          "title": "Intervention",
+          "type": "string"
+        },
+        "specification": {
+          "title": "Specification",
+          "type": "string"
+        },
+        "required_effect": {
+          "title": "Required Effect",
+          "type": "string"
+        },
+        "observed_or_reported_effect": {
+          "title": "Observed Or Reported Effect",
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "concordant",
+            "discordant",
+            "unknown"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "evidence_directness": {
+          "$ref": "#/$defs/Directness"
+        },
+        "establishing_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Establishing Evidence",
+          "type": "array"
+        },
+        "related_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Related Evidence",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/MatchStatus"
+        },
+        "basis": {
+          "default": "",
+          "title": "Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "intervention",
+        "specification",
+        "required_effect",
+        "observed_or_reported_effect",
+        "direction",
+        "evidence_directness",
+        "status"
+      ],
+      "title": "MechanismMatch",
+      "type": "object"
+    },
+    "MechanisticReferenceCompound": {
+      "description": "Not approved, so not a Track 2 candidate \u2014 but proof the biology is pharmacologically movable.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "ingredient": {
+          "title": "Ingredient",
+          "type": "string"
+        },
+        "what_it_showed": {
+          "title": "What It Showed",
+          "type": "string"
+        },
+        "track2_eligible": {
+          "default": false,
+          "title": "Track2 Eligible",
+          "type": "boolean"
+        },
+        "proves_pharmacologic_modifiability": {
+          "default": false,
+          "title": "Proves Pharmacologic Modifiability",
+          "type": "boolean"
+        },
+        "experiences": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Experiences",
+          "type": "array"
+        },
+        "follow_up_question": {
+          "default": "is there an approved medication producing the same relevant molecular effect? Sharing a nominal target is not the same effect.",
+          "title": "Follow Up Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "ingredient",
+        "what_it_showed"
+      ],
+      "title": "MechanisticReferenceCompound",
+      "type": "object"
+    },
+    "MedicationCandidate": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "ingredient": {
+          "title": "Ingredient",
+          "type": "string"
+        },
+        "canonical_ids": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Canonical Ids",
+          "type": "object"
+        },
+        "approval": {
+          "$ref": "#/$defs/ApprovalRecord"
+        },
+        "intervention_point": {
+          "title": "Intervention Point",
+          "type": "string"
+        },
+        "specification": {
+          "title": "Specification",
+          "type": "string"
+        },
+        "proposed_effect": {
+          "default": "",
+          "title": "Proposed Effect",
+          "type": "string"
+        },
+        "required_direction": {
+          "default": "",
+          "title": "Required Direction",
+          "type": "string"
+        },
+        "mechanism_match": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MechanismMatch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "direct_gene_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Direct Gene Evidence",
+          "type": "array"
+        },
+        "experiences_positive": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Experiences Positive",
+          "type": "array"
+        },
+        "experiences_negative": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Experiences Negative",
+          "type": "array"
+        },
+        "experiences_harmful": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Experiences Harmful",
+          "type": "array"
+        },
+        "experiences_mixed": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Experiences Mixed",
+          "type": "array"
+        },
+        "experiences_unknown": {
+          "description": "Tried-or-considered with no measured outcome \u2014 e.g. a clinician's decision to withhold. Informative, and not the same as observed harm.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Experiences Unknown",
+          "type": "array"
+        },
+        "adversarial_search_performed": {
+          "default": false,
+          "title": "Adversarial Search Performed",
+          "type": "boolean"
+        },
+        "adversarial_search_note": {
+          "default": "",
+          "title": "Adversarial Search Note",
+          "type": "string"
+        },
+        "forbidden_direction_conflict": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Forbidden Direction Conflict"
+        },
+        "pediatric_metadata": {
+          "$ref": "#/$defs/PediatricMetadata"
+        },
+        "independence_groups": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Independence Groups",
+          "type": "array"
+        },
+        "state": {
+          "$ref": "#/$defs/CandidateState",
+          "default": "DISCOVERED"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "ingredient",
+        "approval",
+        "intervention_point",
+        "specification"
+      ],
+      "title": "MedicationCandidate",
+      "type": "object"
+    },
+    "NodeQuerySpec": {
+      "description": "A question for a future network node. Generated here, not sent.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "desired_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Desired Evidence",
+          "type": "array"
+        },
+        "useful_negative_result": {
+          "default": true,
+          "title": "Useful Negative Result",
+          "type": "boolean"
+        },
+        "patient_identity_required": {
+          "default": false,
+          "title": "Patient Identity Required",
+          "type": "boolean"
+        },
+        "acceptable_output": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Acceptable Output",
+          "type": "array"
+        },
+        "disclosure_level": {
+          "default": "disease_gene_level",
+          "title": "Disclosure Level",
+          "type": "string"
+        },
+        "arises_from": {
+          "default": "",
+          "description": "The unresolved evidence need that produced this question.",
+          "title": "Arises From",
+          "type": "string"
+        },
+        "sent": {
+          "default": false,
+          "title": "Sent",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "question"
+      ],
+      "title": "NodeQuerySpec",
+      "type": "object"
+    },
+    "Outcome": {
+      "description": "What happened when someone tried it. UNKNOWN means untested \u2014 never 'we didn't find it'.",
+      "enum": [
+        "improved",
+        "no_effect",
+        "worsened",
+        "mixed",
+        "unknown"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "PediatricMetadata": {
+      "description": "Collected, never evaluated here. Stage 09 assesses; this only records what exists.",
+      "properties": {
+        "pediatric_labelling_found": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pediatric Labelling Found"
+        },
+        "note": {
+          "default": "not evaluated at this stage",
+          "title": "Note",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "title": "PediatricMetadata",
+      "type": "object"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "intervention_map_run_id": {
+          "title": "Intervention Map Run Id",
+          "type": "string"
+        },
+        "intervention_map_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention Map Digest"
+        },
+        "specifications_consumed": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Specifications Consumed",
+          "type": "array"
+        },
+        "research_sessions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Research Sessions",
+          "type": "array"
+        },
+        "approval_sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Approval Sources",
+          "type": "array"
+        },
+        "disclosure_policy": {
+          "default": "Retrieval is gene-, mechanism-, disease- and drug-level. No exact patient variant, allele, HGVS or phenotype combination enters any external query.",
+          "title": "Disclosure Policy",
+          "type": "string"
+        },
+        "environment_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Environment Controls",
+          "type": "array"
+        }
+      },
+      "required": [
+        "software",
+        "intervention_map_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "RejectedCandidate": {
+      "properties": {
+        "intervention": {
+          "title": "Intervention",
+          "type": "string"
+        },
+        "discovered_because": {
+          "title": "Discovered Because",
+          "type": "string"
+        },
+        "rejected_because": {
+          "$ref": "#/$defs/RejectionReason"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "lane": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Lane"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "intervention",
+        "discovered_because",
+        "rejected_because"
+      ],
+      "title": "RejectedCandidate",
+      "type": "object"
+    },
+    "RejectionReason": {
+      "enum": [
+        "NOT_APPROVED",
+        "WRONG_DIRECTION",
+        "DATABASE_ONLY",
+        "NO_CAUSAL_BRIDGE",
+        "FAILED_IN_RELEVANT_MODEL",
+        "HARMFUL_SIGNAL",
+        "DUPLICATE",
+        "OTHER"
+      ],
+      "title": "RejectionReason",
+      "type": "string"
+    },
+    "SearchRecord": {
+      "properties": {
+        "lane": {
+          "$ref": "#/$defs/Lane"
+        },
+        "knowledge_task": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Knowledge Task"
+        },
+        "queries": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Queries",
+          "type": "array"
+        },
+        "documents": {
+          "default": 0,
+          "title": "Documents",
+          "type": "integer"
+        },
+        "interventions_named": {
+          "default": 0,
+          "title": "Interventions Named",
+          "type": "integer"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "lane"
+      ],
+      "title": "SearchRecord",
+      "type": "object"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "APPROVED_DRUG_CANDIDATES_FOUND",
+        "ONLY_LOW_CONFIDENCE_CANDIDATES",
+        "NO_DEFENSIBLE_APPROVED_DRUG_CANDIDATE_FOUND"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "SubjectScope": {
+      "enum": [
+        "patient",
+        "patient_cohort",
+        "patient_cells",
+        "engineered_human_cells",
+        "animal",
+        "biochemical"
+      ],
+      "title": "SubjectScope",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "title": "Pipeline",
+      "type": "object"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "gene_symbol": {
+      "title": "Gene Symbol",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "status_basis": {
+      "title": "Status Basis",
+      "type": "string"
+    },
+    "interpretation_note": {
+      "default": "Discovered interventions with the evidence for and against them. Not a ranking, not a dose, not a recommendation, and not medical advice. An approved medicine appearing here means evidence exists worth examining \u2014 nothing more.",
+      "title": "Interpretation Note",
+      "type": "string"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/MedicationCandidate"
+      },
+      "title": "Candidates",
+      "type": "array"
+    },
+    "experiences": {
+      "items": {
+        "$ref": "#/$defs/InterventionExperience"
+      },
+      "title": "Experiences",
+      "type": "array"
+    },
+    "reference_compounds": {
+      "items": {
+        "$ref": "#/$defs/MechanisticReferenceCompound"
+      },
+      "title": "Reference Compounds",
+      "type": "array"
+    },
+    "rejected": {
+      "items": {
+        "$ref": "#/$defs/RejectedCandidate"
+      },
+      "title": "Rejected",
+      "type": "array"
+    },
+    "node_query_specs": {
+      "items": {
+        "$ref": "#/$defs/NodeQuerySpec"
+      },
+      "title": "Node Query Specs",
+      "type": "array"
+    },
+    "searches": {
+      "items": {
+        "$ref": "#/$defs/SearchRecord"
+      },
+      "title": "Searches",
+      "type": "array"
+    },
+    "untested_note": {
+      "default": "Interventions for which no experience was found are recorded as UNKNOWN, never as failures. A search that found nothing is not a negative result.",
+      "title": "Untested Note",
+      "type": "string"
+    },
+    "unresolved_evidence_needs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unresolved Evidence Needs",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "visibility",
+    "case_id",
+    "gene_symbol",
+    "status",
+    "status_basis",
+    "provenance",
+    "execution"
+  ],
+  "title": "InterventionDiscovery",
+  "type": "object"
+}

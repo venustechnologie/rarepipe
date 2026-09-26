@@ -69,7 +69,7 @@ def intake(
 @app.command()
 def schema(
     output: Annotated[Path | None, typer.Option(help="Write to file instead of stdout.")] = None,
-    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result | mechanism_dossier | intervention_map")] = "case_manifest",
+    artifact: Annotated[str, typer.Option(help="case_manifest | normalized_case | case_assertions | raw_candidate_set | adjudicated_hypothesis | track1_submission_package | external_validation_result | mechanism_dossier | intervention_map | intervention_discovery")] = "case_manifest",
 ) -> None:
     """Emit an artifact's JSON Schema."""
     if artifact == "case_manifest":
@@ -80,6 +80,13 @@ def schema(
         from rarepipe.stages.adjudicate.schema import schema_json
     elif artifact == "mechanism_dossier":
         from rarepipe.stages.mechanism.schema import schema_json
+    elif artifact == "intervention_discovery":
+        import json as _json
+
+        from rarepipe.stages.discovery.model import InterventionDiscovery
+
+        def schema_json() -> str:
+            return _json.dumps(InterventionDiscovery.model_json_schema(by_alias=True), indent=2) + "\n"
     elif artifact == "intervention_map":
         import json as _json
 
@@ -201,6 +208,60 @@ def mechanism_fetch_corpus(
 
     result = run_fetch(FetchRequest(output=output, select_top=select_top, page_size=page_size,
                                     full_text=full_text, argv=sys.argv[:]), Console(quiet=quiet))
+    typer.echo(str(result.run_dir))
+
+
+discovery_app = typer.Typer(no_args_is_help=True, help="Stage 08 — approved intervention and experience discovery.")
+app.add_typer(discovery_app, name="discovery")
+
+
+@discovery_app.command("import-experiences")
+def discovery_import_experiences(
+    analysis: Annotated[Path, typer.Option(help="YAML of intervention experiences, after your review.")],
+    research: Annotated[Path, typer.Option(help="Research workspace holding the lane bundles.")],
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Validate proposed intervention experiences against the lane bundles, then store them."""
+    from rarepipe.stages.discovery.ingest import IngestError, import_experiences, save
+
+    console = Console(quiet=quiet)
+    existing = len(list((research / "experiences").glob("LLMRS_*.json"))) if (research / "experiences").exists() else 0
+    try:
+        result = import_experiences(research, analysis, session_index=existing + 1)
+    except IngestError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    for e in result.experiences:
+        console.ok(f"{e.id} {e.intervention_ingredient[:30]:32} {e.outcome.value:10} lane {e.lane.value}")
+    for bad in result.rejected:
+        console.fail(f"rejected ({bad.reason}): {bad.statement[:60]} — {bad.detail}")
+    path = save(research, result)
+    console.line()
+    console.line(f"{len(result.experiences)} accepted, {len(result.rejected)} rejected")
+    typer.echo(str(path))
+    if result.rejected and not result.experiences:
+        raise typer.Exit(EXIT_BLOCKED)
+
+
+@discovery_app.command("build")
+def discovery_build(
+    intervention_map_run: Annotated[Path, typer.Option(help="A sealed Stage 07 intervention run directory.")],
+    research: Annotated[Path, typer.Option(help="Research workspace with lane bundles and imported experiences.")],
+    output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    approval_cache: Annotated[Path | None, typer.Option(help="Cache directory for verified approval records.")] = None,
+    offline: Annotated[bool, typer.Option(help="Skip approval verification (records it as unverified).")] = False,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Assemble discovered interventions, their experiences, and what must not happen. Ranks nothing."""
+    from rarepipe.stages.discovery.stage import BuildRequest, DiscoveryUsageError, build
+
+    try:
+        result = build(BuildRequest(intervention_map_run=intervention_map_run, research_dir=research,
+                                    output=output, approval_cache=approval_cache, offline=offline,
+                                    argv=sys.argv[:]), Console(quiet=quiet))
+    except DiscoveryUsageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_USAGE)
     typer.echo(str(result.run_dir))
 
 
@@ -330,16 +391,19 @@ def research_create_task(
     reason: Annotated[str, typer.Option(help="Why the pipeline needs it — which claim it would resolve.")],
     query: Annotated[list[str] | None, typer.Option(help="A public query to run. Repeat for several.")] = None,
     local_only: Annotated[bool, typer.Option(help="Answered locally against an existing corpus; nothing is transmitted.")] = False,
+    intervention: Annotated[bool, typer.Option(help="Stage 08 lane: lifts the therapy-term filter. The case-identity guard still applies.")] = False,
 ) -> None:
     """Record a KnowledgeTask. The pipeline owns the questions, whoever answers them."""
     from rarepipe.stages.mechanism.model import DisclosureLevel, KnowledgeTask
     from rarepipe.stages.mechanism.research import ResearchError, next_task_id, save_task, workspace
 
     for q in query or []:
+        from rarepipe.stages.discovery.lanes import check_intervention_query
         from rarepipe.stages.mechanism.retrieve import check_search_query
 
+        validate = check_intervention_query if intervention else check_search_query
         try:
-            check_search_query(q)
+            validate(q)
         except ValueError as exc:
             typer.echo(f"error: {exc}", err=True)
             raise typer.Exit(EXIT_USAGE)
@@ -347,7 +411,9 @@ def research_create_task(
     task = KnowledgeTask(
         id=next_task_id(root), question=question, reason=reason,
         disclosure_level=DisclosureLevel.LOCAL_ONLY if local_only else DisclosureLevel.PUBLIC_GENE_LEVEL,
-        retrieval_plan=["local corpus search only"] if local_only else ["Europe PMC", "PMC open-access full text"],
+        retrieval_plan=(["local corpus search only"] if local_only else
+                        ["Europe PMC", "PMC open-access full text"]
+                        + (["intervention lane: therapy terms permitted, case identity never"] if intervention else [])),
         queries=list(query or []))
     try:
         path = save_task(root, task, allow_overwrite=False)
@@ -394,6 +460,8 @@ def research_retrieve(
     research: Annotated[Path, typer.Option(help="Research workspace directory.")],
     corpus_run: Annotated[Path | None, typer.Option(help="Carve the bundle out of an existing corpus run instead of querying.")] = None,
     select_top: Annotated[int, typer.Option(help="Documents kept per query, by relevance.")] = 6,
+    min_score: Annotated[int, typer.Option(help="Relevance threshold for keeping a document.")] = 4,
+    intervention: Annotated[bool, typer.Option(help="Stage 08 lane: lifts the therapy-term filter for this task's queries.")] = False,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
 ) -> None:
     """Build the evidence bundle for a task: the documents, and only those, that answer it."""
@@ -411,8 +479,14 @@ def research_retrieve(
         target = root / "bundles" / kt.id
         target.mkdir(parents=True, exist_ok=True)
         corpus = Corpus(root=target)
+        validator = None
+        if intervention:
+            from rarepipe.stages.discovery.lanes import check_intervention_query
+
+            validator = check_intervention_query
         for q in kt.queries:
-            corpus.run_query(q, kt.id, generated_by="human_operated_research", select_top=select_top, console=console)
+            corpus.run_query(q, kt.id, generated_by="human_operated_research", select_top=select_top,
+                             min_score=min_score, console=console, validator=validator)
         documents = [d.model_dump(mode="json") for d in corpus.documents.values()]
         import hashlib as _h
         import json as _j

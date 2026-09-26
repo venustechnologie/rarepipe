@@ -147,8 +147,10 @@ class Corpus:
 
     def run_query(self, query: str, task_id: str | None, *, generated_by: str, select_top: int = 6,
                   min_score: int = 4, page_size: int = 25, want_full_text: bool = True,
-                  console=None) -> list[RetrievedDocument]:
-        check_search_query(query)
+                  console=None, validator=None) -> list[RetrievedDocument]:
+        # Stage 08 supplies its own validator: the therapy filter is lifted there, the
+        # case-identity guard never is.
+        (validator or check_search_query)(query)
         try:
             results = search(query, page_size=page_size)
         except Exception as exc:
