@@ -344,12 +344,12 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
                       "NAD+-dependent deacetylase activity, SIRT2 activity or BUBR1 abundance?"),
             corpus="Europe PMC, KT_T2_08",
             result=SearchResult.NEGATIVE_EXPERIENCE_FOUND,
-            interpretation=("no positive evidence for this arrow was found, and the one direct test in the corpus "
-                            "was null: nicotinic acid at 20-100 uM for two days did not change protein acetylation "
-                            "in differentiated adipocytes"),
-            does_not_mean=("that nicotinic acid cannot raise deacetylase activity in the cells that matter here: "
-                           "that experiment measured global acetylation in adipocytes, and never measured NAD+, "
-                           "SIRT2 or BUBR1"),
+            interpretation=("no positive evidence for this arrow was found. The closest related experimental test "
+                            "in the retrieved corpus was null: nicotinic acid at 20-100 uM for two days did not "
+                            "change global protein acetylation in differentiated adipocytes"),
+            does_not_mean=("that the arrow was tested and failed. That experiment did not measure intracellular "
+                           "NAD+, SIRT2 activity, BUBR1 abundance or BUBR1 K668 acetylation, so it weakens the "
+                           "proposed bridge without directly testing it"),
             **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, ["KT_0026"]), strict=True))),
     ]
     if not promoted:

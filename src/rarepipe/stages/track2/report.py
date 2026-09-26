@@ -229,9 +229,12 @@ def pitch(s: Track2HypothesisSet, discovery: dict) -> str:
            "useful for a clinician.\n"]
     if lead:
         out += ["## 2:00 — one hypothesis worth testing\n",
-                f"{lead.active_ingredient}, approval verified. {lead.statement} Every arrow in that chain is either "
-                "cited to a retrieved paper or marked as an inference. It has never been tested in this disease, "
-                "and we propose the experiment rather than the treatment.\n"]
+                f"{lead.active_ingredient}, approval verified against the regulator's approvals database. Every "
+                "arrow in that chain is either cited to a retrieved paper or marked as an inference — and the "
+                "pivotal arrow is unevidenced, with the closest related experiment we found coming back null. We "
+                "are showing you exactly where the chain stops being evidenced, because that is the experiment "
+                "worth running. It has never been tested in this disease, and we propose the experiment rather "
+                "than the treatment.\n"]
     else:
         out += ["## 2:00 — where the public literature ends\n",
                 "No approved medication met the evidence bar. That is the finding: we have mapped precisely where "
