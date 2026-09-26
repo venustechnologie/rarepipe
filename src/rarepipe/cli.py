@@ -256,6 +256,7 @@ def track2_adjudicate(
     discovery_run: Annotated[Path, typer.Option(help="A sealed Stage 08 discovery run directory.")],
     research: Annotated[Path, typer.Option(help="Research workspace with bundles and imported hypotheses.")],
     output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
+    intervention_map_run: Annotated[Path | None, typer.Option(help="The Stage 07 run the pinned discovery consumed, to resolve the mechanism link.")] = None,
     approval_cache: Annotated[Path | None, typer.Option(help="Cache directory for verified approval records.")] = None,
     offline: Annotated[bool, typer.Option(help="Skip approval verification (records it as unverified).")] = False,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
@@ -266,6 +267,7 @@ def track2_adjudicate(
 
     try:
         result = build(BuildRequest(discovery_run=discovery_run, research_dir=research, output=output,
+                                    intervention_map_run=intervention_map_run,
                                     approval_cache=approval_cache, offline=offline, argv=sys.argv[:]),
                        Console(quiet=quiet))
     except Track2UsageError as exc:

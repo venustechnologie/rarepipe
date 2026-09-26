@@ -54,6 +54,7 @@ class BuildRequest:
     discovery_run: Path
     research_dir: Path
     output: Path
+    intervention_map_run: Path | None = None
     approval_cache: Path | None = None
     offline: bool = False
     argv: list[str] = field(default_factory=list)
@@ -152,6 +153,22 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
     console.info(f"discovery run {discovery['execution']['run_id']} · {discovery.get('semantic_digest')}")
     console.info(f"Stage 08 status: {discovery['status']}")
 
+    # The chain must not break here. Stage 08 records which map it consumed but not which mechanism
+    # run produced that map, so the link is resolved by reading the map itself.
+    mechanism_run_id = mechanism_digest = None
+    if req.intervention_map_run:
+        imap = _load(req.intervention_map_run / "intervention_map.private.json")
+        mechanism_run_id = imap["provenance"].get("mechanism_run_id")
+        mechanism_digest = imap["provenance"].get("mechanism_digest")
+        if imap["execution"]["run_id"] != discovery["provenance"].get("intervention_map_run_id"):
+            raise Track2UsageError(
+                f"the intervention map supplied is run {imap['execution']['run_id']}, but the pinned discovery "
+                f"artifact consumed {discovery['provenance'].get('intervention_map_run_id')}")
+        console.info(f"provenance chain resolved: mechanism {mechanism_run_id} → map "
+                     f"{imap['execution']['run_id']} → discovery {discovery['execution']['run_id']}")
+    else:
+        console.warn("no --intervention-map-run given: the mechanism link in the baseline will be unresolved")
+
     console.step(2, 5, "Loading proposed hypotheses...")
     sessions, hypotheses, evidence, rejected_imports = ingest.load_all(req.research_dir)
     console.info(f"{len(hypotheses)} proposed hypothesis(es) from {len(sessions)} session(s); "
@@ -193,6 +210,8 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
 
     console.step(4, 5, "Recording search outcomes and the sealed baseline...")
     outcomes = _outcomes(req.research_dir, discovery, promoted)
+    console.info(f"{len(outcomes)} search outcome(s), covering "
+                 f"{sum(o.documents_examined for o in outcomes)} document examinations")
     status, basis = ((Status.READY, _ready_basis(promoted)) if promoted
                      else (Status.BLOCKED, _blocked_basis(discovery)))
     baseline = BaselineSnapshot(
@@ -201,6 +220,7 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
         discovery_run_id=discovery["execution"]["run_id"], discovery_digest=discovery.get("semantic_digest"),
         intervention_map_run_id=discovery["provenance"].get("intervention_map_run_id"),
         intervention_map_digest=discovery["provenance"].get("intervention_map_digest"),
+        mechanism_run_id=mechanism_run_id, mechanism_digest=mechanism_digest,
         git_commit=_git(["rev-parse", "HEAD"]), git_describe=_git(["describe", "--tags", "--always"]),
         hypotheses_found=len(promoted))
     claims = _claims(promoted, discovery, outcomes)
@@ -215,6 +235,7 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
             software=software_provenance(), discovery_run_id=discovery["execution"]["run_id"],
             discovery_digest=discovery.get("semantic_digest"),
             intervention_map_run_id=discovery["provenance"].get("intervention_map_run_id"),
+            mechanism_run_id=mechanism_run_id,
             research_sessions=[s.session_id for s in sessions],
             approval_sources=sorted({h.approval_authority for h in hypotheses if h.approval_authority}),
             environment_controls=[
@@ -258,15 +279,37 @@ def _unverified(ingredient: str):
     return ApprovalRecord(ingredient=ingredient, verified=False, note="approval not checked: offline run")
 
 
+def _task_stats(research_dir: Path, task_ids: list[str]) -> tuple[list[str], int]:
+    """What a search outcome actually rests on.
+
+    A NO_EVIDENCE_FOUND assertion carrying zero queries and zero documents is indistinguishable from
+    a search that never ran, which is precisely the confusion this pipeline exists to prevent.
+    """
+    queries: list[str] = []
+    documents: set[str] = set()
+    for task_id in task_ids:
+        path = research_dir / "tasks" / f"{task_id}.json"
+        if not path.exists():
+            continue
+        task = json.loads(path.read_text())
+        queries += task.get("queries", [])
+        documents |= set(task.get("documents_found", []))
+    return queries, len(documents)
+
+
 def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutcome]:
     """What each search established, and what it explicitly did not."""
+    lane_tasks = [task["id"] for task in
+                  (json.loads(p.read_text()) for p in sorted((research_dir / "tasks").glob("KT_*.json")))
+                  if task.get("reason", "").startswith("[")]
     outcomes = [
         SearchOutcome(
             question="Is there an approved medication with demonstrated rescue in BUB1B-deficient biology?",
             corpus="Europe PMC, lanes A-D (Stage 08) plus the Track 2 tasks",
             result=SearchResult.NO_EVIDENCE_FOUND,
             interpretation="no pharmacological rescue in BUB1B-deficient or MVA biology was found, in either direction",
-            does_not_mean="that pharmacological rescue has been shown not to work: the space appears untested"),
+            does_not_mean="that pharmacological rescue has been shown not to work: the space appears untested",
+            **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, lane_tasks), strict=True))),
         SearchOutcome(
             question="Which regulators control BUBR1 abundance, and is any pharmacologically addressable?",
             corpus="Europe PMC, KT_T2_01/03/04",
@@ -274,14 +317,18 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
             interpretation=("BUBR1 stability is controlled by acetylation at K668, opposed by the NAD+-dependent "
                             "deacetylase SIRT2; raising NAD+ with a precursor increases BubR1 abundance in vivo"),
             does_not_mean=("that this has been shown in BUB1B-deficient cells, in MVA, or with an approved "
-                           "medication: the in vivo experiment used a precursor that is not an approved medicine")),
+                           "medication: the in vivo experiment used a precursor that is not an approved medicine"),
+            **dict(zip(("queries", "documents_examined"),
+                       _task_stats(research_dir, ["KT_0019", "KT_0021", "KT_0022"]), strict=True))),
         SearchOutcome(
             question="Does an approved NAD+ precursor raise NAD+ in humans?",
             corpus="Europe PMC, KT_T2_05/06/07",
             result=SearchResult.POSITIVE,
             interpretation="high-dose nicotinic acid produces a large, dose-dependent rise in blood NAD+ in humans",
             does_not_mean=("that it raises NAD+ in the tissues that matter here, or that the rise reaches BUBR1: "
-                           "neither was measured")),
+                           "neither was measured"),
+            **dict(zip(("queries", "documents_examined"),
+                       _task_stats(research_dir, ["KT_0023", "KT_0024", "KT_0025"]), strict=True))),
         SearchOutcome(
             question="Does any evidence contradict the sirtuin route?",
             corpus="Europe PMC, KT_T2_05",
@@ -289,7 +336,21 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
             interpretation=("nicotinamide — a different B3 form and a downstream NAD+ metabolite — inhibits sirtuin "
                             "deacetylase activity, and circulating terminal metabolites of both B3 forms have been "
                             "associated with cardiovascular risk"),
-            does_not_mean="that nicotinic acid itself inhibits sirtuins: that was not shown either way"),
+            does_not_mean="that nicotinic acid itself inhibits sirtuins: that was not shown either way",
+            **dict(zip(("queries", "documents_examined"),
+                       _task_stats(research_dir, ["KT_0023", "KT_0026"]), strict=True))),
+        SearchOutcome(
+            question=("Does nicotinic acid specifically raise intracellular NAD+ in a way that increases "
+                      "NAD+-dependent deacetylase activity, SIRT2 activity or BUBR1 abundance?"),
+            corpus="Europe PMC, KT_T2_08",
+            result=SearchResult.NEGATIVE_EXPERIENCE_FOUND,
+            interpretation=("no positive evidence for this arrow was found, and the one direct test in the corpus "
+                            "was null: nicotinic acid at 20-100 uM for two days did not change protein acetylation "
+                            "in differentiated adipocytes"),
+            does_not_mean=("that nicotinic acid cannot raise deacetylase activity in the cells that matter here: "
+                           "that experiment measured global acetylation in adipocytes, and never measured NAD+, "
+                           "SIRT2 or BUBR1"),
+            **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, ["KT_0026"]), strict=True))),
     ]
     if not promoted:
         outcomes.append(SearchOutcome(
@@ -297,7 +358,8 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
             corpus="all Stage 08 and Stage 09 tasks",
             result=SearchResult.EXHAUSTED_TO_THRESHOLD,
             interpretation="no approved medication passed every promotion check",
-            does_not_mean="that none exists: it means public evidence does not currently support one"))
+            does_not_mean="that none exists: it means public evidence does not currently support one",
+            **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, lane_tasks), strict=True))))
     return outcomes
 
 

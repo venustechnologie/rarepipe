@@ -30,10 +30,14 @@ Three more distinctions the schema enforces:
 * **An outcome needs an endpoint.** `improved` / `no_effect` / `worsened` are refused on import
   without at least one measured endpoint — "no effect" without saying what was measured is not
   reusable by anyone.
-* **Approval is verified, not asserted.** RxNorm normalises the ingredient; the openFDA NDC
-  directory establishes that finished human products are marketed. A class name is not an active
-  ingredient and fails verification, which is correct. Jurisdiction is preserved: "not in the US
-  directory" is not evidence of non-approval elsewhere, and the record says so.
+* **Approval is verified against an approvals database, not a product directory.** Drugs@FDA
+  establishes approval — an application with an approved submission; the NDC Directory establishes
+  only that products exist and are marketed. The FDA says plainly that NDC inclusion does not
+  indicate approval, and the first version of this check proved it by marking an ingredient approved
+  on the strength of an `UNAPPROVED HOMEOPATHIC` listing whose sampled indications were multivitamins
+  and "Circulation Drops". It now fails closed, records the non-approval categories it saw, and
+  resolves synonyms through RxNorm rather than through an assistant's chemistry recall.
+  Jurisdiction is preserved: "no approved US application" is not evidence of non-approval elsewhere.
 
 ## The four lanes
 

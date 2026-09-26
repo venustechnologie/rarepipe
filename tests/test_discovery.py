@@ -178,3 +178,80 @@ def test_a_blocked_intervention_map_cannot_start_a_drug_search(imap, workspace, 
     (imap / "intervention_map.private.json").write_text(json.dumps(payload))
     with pytest.raises(DiscoveryUsageError):
         make(imap, workspace, tmp_path)
+
+
+# ── approval: the bug that made a homeopathic listing look approved ─────────
+
+def test_directory_presence_is_identity_evidence_not_approval(monkeypatch):
+    """The FDA says NDC inclusion does not indicate approval. The first version of this ignored that
+    and marked an ingredient approved on an UNAPPROVED HOMEOPATHIC listing."""
+    from rarepipe.stages.discovery import approval as mod
+
+    def fake_get(url, timeout=60):
+        if "rxcui.json" in url:
+            return {"idGroup": {"rxnormId": ["7393"]}}
+        if "properties.json" in url:
+            return {"properties": {"name": "widgetol"}}
+        if "drugsfda" in url:
+            return {"results": []}  # no approved application anywhere
+        return {"results": [{"marketing_category": "UNAPPROVED HOMEOPATHIC", "finished": True,
+                             "product_type": "HUMAN OTC DRUG", "generic_name": "Circulation Drops"}],
+                "meta": {"results": {"total": 69}}}
+
+    monkeypatch.setattr(mod, "_get", fake_get)
+    record = mod.verify("widgetol")
+    assert record.verified is False, "a directory listing must never establish approval"
+    assert record.approval_basis is None
+    assert record.marketed_products_identity["total_products"] == 69
+    assert "UNAPPROVED HOMEOPATHIC" in record.marketed_products_identity["non_approval_categories_present"]
+    assert "does not indicate approval" in record.marketed_products_identity["note"]
+
+
+def test_an_approved_application_is_what_establishes_approval(monkeypatch):
+    from rarepipe.stages.discovery import approval as mod
+
+    def fake_get(url, timeout=60):
+        if "rxcui.json" in url:
+            return {"idGroup": {"rxnormId": ["7393"]}}
+        if "properties.json" in url:
+            return {"properties": {"name": "niacin"}}
+        if "drugsfda" in url:
+            return {"results": [{"application_number": "ANDA040378", "sponsor_name": "AVONDALE PHARMS",
+                                 "submissions": [{"submission_status": "AP", "submission_status_date": "20000503"}],
+                                 "products": [{"brand_name": "NIACIN", "dosage_form": "TABLET, EXTENDED RELEASE",
+                                               "marketing_status": "Prescription"}]}]}
+        return {"results": [], "meta": {"results": {"total": 0}}}
+
+    monkeypatch.setattr(mod, "_get", fake_get)
+    record = mod.verify("niacin (nicotinic acid)")
+    assert record.verified is True
+    assert record.authority_source.startswith("Drugs@FDA")
+    assert "ANDA040378" in record.approval_basis and "20000503" in record.approval_basis
+    assert record.applications[0]["approved_submissions"] == 1
+
+
+def test_an_application_without_an_approved_submission_does_not_count(monkeypatch):
+    from rarepipe.stages.discovery import approval as mod
+
+    def fake_get(url, timeout=60):
+        if "rxcui.json" in url:
+            return {"idGroup": {"rxnormId": ["1"]}}
+        if "properties.json" in url:
+            return {"properties": {"name": "thing"}}
+        if "drugsfda" in url:
+            return {"results": [{"application_number": "ANDA999999", "sponsor_name": "X",
+                                 "submissions": [{"submission_status": "TA"}], "products": []}]}
+        return {"results": [], "meta": {"results": {"total": 0}}}
+
+    monkeypatch.setattr(mod, "_get", fake_get)
+    assert mod.verify("thing").verified is False
+
+
+def test_the_synonym_comes_from_an_authority_not_from_memory(monkeypatch):
+    from rarepipe.stages.discovery import approval as mod
+
+    monkeypatch.setattr(mod, "_get", lambda url, timeout=60: {"properties": {"name": "niacin"}})
+    variants = mod.name_variants("nicotinic acid", "7393")
+    assert variants[0] == "nicotinic acid" and "niacin" in variants
+    assert mod.name_variants("niacin (nicotinic acid)", None) == ["niacin (nicotinic acid)", "niacin",
+                                                                  "nicotinic acid"]

@@ -115,6 +115,29 @@ def import_hypotheses(root: Path, analysis_path: Path, *, session_index: int = 1
             rejected.append(failure)
             continue
 
+        contradicting: list[str] = []
+        for citation in item.get("contradicting_evidence") or []:
+            source_id = str(citation.get("source_id", "")).strip()
+            quote = str(citation.get("quote", "")).strip()
+            if source_id not in documents:
+                rejected.append(InvalidInference(produced_by=who, statement=f"{hid} contradiction",
+                                                 reason="source_not_in_corpus", detail=source_id))
+                continue
+            if source_id not in cache:
+                path = doc_roots[source_id] / "docs" / f"{source_id.replace(':', '_')}.txt"
+                cache[source_id] = path.read_text() if path.exists() else ""
+            if not quote or _normalise(quote) not in _normalise(cache[source_id]):
+                rejected.append(InvalidInference(produced_by=who, statement=f"{hid} contradiction",
+                                                 reason="quote_not_found_in_source", detail=source_id))
+                continue
+            eid = f"EV_T2_{hid}_CONTRA_{len(contradicting) + 1:02d}"
+            evidence_index[eid] = {
+                "evidence_id": eid, "source_id": source_id, "quote": quote[:600],
+                "pub_year": documents[source_id].get("pub_year"), "system": citation.get("system"),
+                "independence_group": citation.get("independence_group"), "verified_from_source": True,
+                "contradicts": citation.get("contradicts", "")}
+            contradicting.append(eid)
+
         plan = item.get("validation_plan") or {}
         mind = item.get("what_would_change_our_mind") or {}
         hypotheses.append(ResearchRepurposingHypothesis(
@@ -122,6 +145,7 @@ def import_hypotheses(root: Path, analysis_path: Path, *, session_index: int = 1
             proposed_chain=links, observed_direction=str(item.get("observed_direction", "unknown")),
             establishing_evidence=[e for link in links if link.kind == "evidenced" for e in link.evidence],
             supporting_evidence=list(item.get("supporting_evidence") or []),
+            contradicting_evidence=contradicting,
             tested_in_bub1b_deficiency=bool(item.get("tested_in_bub1b_deficiency")),
             tested_in_mva=bool(item.get("tested_in_mva")),
             not_tested_note=str(item.get("not_tested_note", "")),

@@ -205,3 +205,53 @@ def test_a_missing_discovery_artifact_is_refused(workspace, tmp_path):
     with pytest.raises(Track2UsageError):
         build(BuildRequest(discovery_run=tmp_path / "nope", research_dir=workspace, output=tmp_path / "o",
                            argv=["t"]))
+
+
+# ── Stage 09R closure ───────────────────────────────────────────────────────
+
+def test_contradicting_evidence_must_also_be_verbatim(workspace):
+    fabricated = _hypothesis(contradicting_evidence=[{"source_id": "PMID:111", "quote": "invented contradiction"}])
+    result = import_hypotheses(workspace, _write(workspace, [fabricated]))
+    assert any(r.reason == "quote_not_found_in_source" for r in result.rejected)
+
+    real = _hypothesis(contradicting_evidence=[{"source_id": "PMID:111", "quote": Q3,
+                                                "contradicts": "the pivotal arrow"}])
+    result = import_hypotheses(workspace, _write(workspace, [real], "d.yaml"))
+    assert result.hypotheses[0].contradicting_evidence
+
+
+def test_a_no_evidence_outcome_must_say_what_was_searched(discovery, workspace, tmp_path):
+    """Zero queries and zero documents is indistinguishable from never having searched."""
+    (workspace / "tasks").mkdir(parents=True, exist_ok=True)
+    (workspace / "tasks" / "KT_0001.json").write_text(json.dumps({
+        "id": "KT_0001", "question": "q", "reason": "[D_failure_or_negative_experience] lane",
+        "disclosure_level": "public_gene_level", "retrieval_plan": [], "queries": ["a", "b"],
+        "documents_found": ["PMID:111", "PMID:222"]}))
+    r = make(discovery, workspace, tmp_path)
+    negatives = [o for o in r.hypothesis_set.search_outcomes
+                 if o.result.value in ("NO_EVIDENCE_FOUND", "EXHAUSTED_TO_THRESHOLD")]
+    assert negatives
+    for outcome in negatives:
+        assert outcome.queries, f"{outcome.result.value} with no queries recorded"
+        assert outcome.documents_examined > 0
+
+
+def test_the_baseline_resolves_the_whole_provenance_chain(discovery, workspace, tmp_path):
+    imap_run = tmp_path / "map" / "RUN_MAP"
+    imap_run.mkdir(parents=True)
+    (imap_run / "intervention_map.private.json").write_text(json.dumps({
+        "execution": {"run_id": "RUN_MAP"},
+        "provenance": {"mechanism_run_id": "RUN_MECH", "mechanism_digest": "sha256:mech"}}))
+    r = make(discovery, workspace, tmp_path, intervention_map_run=imap_run)
+    b = r.hypothesis_set.baseline
+    assert b.mechanism_run_id == "RUN_MECH" and b.mechanism_digest == "sha256:mech"
+    assert b.intervention_map_run_id == "RUN_MAP" and b.discovery_run_id == "RUN_DISC"
+
+
+def test_a_mismatched_intervention_map_is_refused(discovery, workspace, tmp_path):
+    other = tmp_path / "other" / "RUN_OTHER"
+    other.mkdir(parents=True)
+    (other / "intervention_map.private.json").write_text(json.dumps({
+        "execution": {"run_id": "RUN_OTHER"}, "provenance": {"mechanism_run_id": "RUN_MECH"}}))
+    with pytest.raises(Track2UsageError):
+        make(discovery, workspace, tmp_path, intervention_map_run=other)

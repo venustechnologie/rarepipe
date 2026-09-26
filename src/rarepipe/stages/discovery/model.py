@@ -142,12 +142,24 @@ class InterventionExperience(BaseModel):
 
 
 class ApprovalRecord(BaseModel):
-    """Verified against a regulator's own data, never because a paper called something 'a drug'."""
+    """Verified against a regulator's own approvals database — not against a product directory.
+
+    The distinction is not pedantic. The FDA states that inclusion in the NDC Directory does not
+    indicate approval, and the first version of this check proved it by marking an ingredient
+    "approved" on the strength of an UNAPPROVED HOMEOPATHIC listing. Marketed-product presence is
+    now recorded as identity evidence and can never, by itself, set `verified`.
+    """
 
     verified: bool = False
     ingredient: str
+    canonical_ingredient: str | None = Field(None, description="The name the regulator's record uses.")
     jurisdictions: list[str] = Field(default_factory=list)
     authority_source: str | None = None
+    approval_basis: str | None = Field(None, description="The specific application that establishes approval.")
+    applications: list[dict] = Field(default_factory=list, description="Approved applications, as the authority lists them.")
+    marketed_products_identity: dict = Field(
+        default_factory=dict,
+        description="Product-directory presence. Identity and marketing evidence only — never approval evidence.")
     identifiers: dict[str, str] = Field(default_factory=dict)
     indications_sampled: list[str] = Field(default_factory=list)
     retrieved_at: str | None = None
