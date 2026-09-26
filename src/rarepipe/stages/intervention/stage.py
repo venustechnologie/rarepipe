@@ -20,6 +20,7 @@ from rarepipe.core.redaction import clear_restricted
 from rarepipe.stages.intervention import report
 from rarepipe.stages.intervention.model import (
     ActionOutcome,
+    RelatedRescue,
     AxisState,
     AxisSupport,
     CandidateAxis,
@@ -262,6 +263,31 @@ ATTACH = {
     "IP_002": {"checkpoint_effect", "segregation_effect", "aneuploidy"},
 }
 CILIARY = re.compile(r"cili", re.I)
+GENE = re.compile(r"BUB1B|BubR1|BUBR1", re.I)
+RESTORES_GENE = re.compile(
+    r"(restor\w*|re-?express\w*|ectopic\w*|complement\w*|overexpress\w*)[^.]{0,60}(BUB1B|BubR1|BUBR1)"
+    r"|(BUB1B|BubR1|BUBR1)[^.]{0,60}(restor\w*|re-?express\w*|ectopic\w*|complement\w*|overexpress\w*)", re.I)
+DEFICIENT = re.compile(r"(BUB1B|BubR1|BUBR1)[^.]{0,80}(deficien\w*|hypomorph\w*|mutant|null|knock-?down|depleted)"
+                       r"|(deficien\w*|hypomorph\w*|knock-?down|depleted)[^.]{0,80}(BUB1B|BubR1|BUBR1)", re.I)
+IMPROVES = re.compile(r"improv\w*|restor\w*|rescu\w*|reduc\w*|suppress\w*|correct\w*|protect\w*", re.I)
+
+RESCUE_CRITERION = {
+    "IP_001": ("a record showing that restoring or raising BUBR1 itself improved a relevant endpoint"),
+    "IP_002": ("a record showing a relevant endpoint improved in a BUB1B-deficient system WITHOUT restoring "
+               "BUB1B/BUBR1 — that is what downstream compensation means"),
+}
+
+
+def classify_rescue(record: dict, point_id: str) -> str:
+    """Does this rescue record establish this point, or merely sit near it?"""
+    text = f"{record.get('quote', '')} {record.get('statement', '')}"
+    if point_id == "IP_001":
+        return "establishing" if GENE.search(text) and RESTORES_GENE.search(text) else "related"
+    if point_id == "IP_002":
+        if DEFICIENT.search(text) and IMPROVES.search(text) and not RESTORES_GENE.search(text):
+            return "establishing"
+        return "related"
+    return "related"
 ONGOING = re.compile(r"postnatal|ongoing|with (natural )?ageing|with (natural )?aging|progeroid", re.I)
 
 
@@ -289,9 +315,21 @@ def _attach_imported(points: list[InterventionPoint], imported: dict, dossier: d
         for point_id, types in ATTACH.items():
             if claim["type"] in types:
                 by_id[point_id].mechanism_claims.append(claim_id)
-                if any(evidence.get(e, {}).get("rescue_experiment") for e in claim.get("evidence", [])):
-                    by_id[point_id].rescue_evidence += [e for e in claim.get("evidence", [])
-                                                        if evidence.get(e, {}).get("rescue_experiment")]
+                for eid in claim.get("evidence", []):
+                    record = evidence.get(eid, {})
+                    if not record.get("rescue_experiment"):
+                        continue
+                    point = by_id[point_id]
+                    if classify_rescue(record, point_id) == "establishing":
+                        point.establishing_rescue_evidence.append(eid)
+                    else:
+                        point.related_rescue_evidence.append(RelatedRescue(
+                            what_it_shows=record.get("statement", "")[:160],
+                            why_not_establishing=("rescue by restoring the deficient regulator itself, which is the "
+                                                  "same pattern as IP_001 rather than a downstream bypass"
+                                                  if RESTORES_GENE.search(record.get("quote", "")) or point_id == "IP_002"
+                                                  else "does not demonstrate this point's own premise"),
+                            evidence=[eid]))
         if claim["type"] == "disease_bridge" and ONGOING.search(statement):
             ip1 = by_id["IP_001"]
             ip1.reversibility = ReversibilityClaim(
@@ -312,8 +350,18 @@ def _attach_imported(points: list[InterventionPoint], imported: dict, dossier: d
             "connects ciliary dysfunction to a phenotype in this genotype.")
     for point in points:
         point.mechanism_claims = sorted(set(point.mechanism_claims))
-        point.rescue_evidence = sorted(set(point.rescue_evidence))
-        console.info(f"{point.id}: {len(point.mechanism_claims)} claim(s), {len(point.rescue_evidence)} rescue record(s)")
+        point.establishing_rescue_evidence = sorted(set(point.establishing_rescue_evidence))
+        seen: set[str] = set()
+        unique: list[RelatedRescue] = []
+        for related in point.related_rescue_evidence:
+            key = tuple(related.evidence)
+            if key not in seen:
+                seen.add(key)
+                unique.append(related)
+        point.related_rescue_evidence = unique
+        console.info(f"{point.id}: {len(point.mechanism_claims)} claim(s), "
+                     f"{len(point.establishing_rescue_evidence)} establishing rescue, "
+                     f"{len(point.related_rescue_evidence)} related rescue")
 
 
 def _points(gene: str, claims: dict, rescue: list[dict], endpoints: ValidationEndpoints,
@@ -339,7 +387,8 @@ def _points(gene: str, claims: dict, rescue: list[dict], endpoints: ValidationEn
         mechanism_claims=["MC_0001", "MC_0004", "MC_0007", "MC_0012"], evidence_scope=Scope.GENE_LEVEL,
         axis="MA_001",
         expected_downstream_effect="improved checkpoint response, chromosome alignment and segregation fidelity",
-        rescue_evidence=rescue_ids, validation_endpoints=endpoints,
+        establishing_rescue_evidence=rescue_ids, rescue_criterion=RESCUE_CRITERION["IP_001"],
+        validation_endpoints=endpoints,
         reversibility=ReversibilityClaim(
             biological_state="mitotic fidelity", timing="unknown", reversible="unknown",
             note="whether correcting mitotic biology later reverses developmental consequences is not established "
@@ -375,7 +424,8 @@ def _points(gene: str, claims: dict, rescue: list[dict], endpoints: ValidationEn
                    "improved without correcting the gene."),
         mechanism_claims=["MC_0008", "MC_0009", "MC_0010"], evidence_scope=Scope.CELLULAR_PROCESS, axis="MA_002",
         expected_downstream_effect="reduced missegregation, and so reduced accumulation of aneuploid cells",
-        rescue_evidence=[], validation_endpoints=endpoints,
+        establishing_rescue_evidence=[], rescue_criterion=RESCUE_CRITERION["IP_002"],
+        validation_endpoints=endpoints,
         reversibility=ReversibilityClaim(biological_state="aneuploidy burden", timing="ongoing", reversible="unknown",
                                          note="existing aneuploid cells are not corrected by preventing future "
                                               "missegregation; prevention and reversal are different goals"),
@@ -404,7 +454,7 @@ def _points(gene: str, claims: dict, rescue: list[dict], endpoints: ValidationEn
                    "contribution to this disease process. Promoting it to an intervention point would require "
                    "evidence connecting ciliary dysfunction to MVA phenotypes, which the corpus does not supply."),
         mechanism_claims=[], evidence_scope=Scope.GENE_LEVEL, axis=None,
-        expected_downstream_effect="unknown", rescue_evidence=[],
+        expected_downstream_effect="unknown", establishing_rescue_evidence=[],
         validation_endpoints=ValidationEndpoints(),
         reversibility=ReversibilityClaim(biological_state="ciliary function", timing="unknown", reversible="unknown"),
         directness="upstream", requires_exact_allele_mechanism=False,
@@ -429,7 +479,7 @@ def _points(gene: str, claims: dict, rescue: list[dict], endpoints: ValidationEn
                    "this child's protein is unstable, and no experiment has measured it."),
         mechanism_claims=["MC_0005", "MC_0006"], evidence_scope=Scope.EXACT_VARIANT, axis="MA_001",
         expected_downstream_effect="higher functional BUBR1 availability, if the premise holds",
-        rescue_evidence=[], validation_endpoints=endpoints,
+        establishing_rescue_evidence=[], validation_endpoints=endpoints,
         reversibility=ReversibilityClaim(biological_state="protein abundance", timing="ongoing", reversible="unknown"),
         directness="upstream", requires_exact_allele_mechanism=True,
         status=PointStatus.NOT_JUSTIFIED if not exact_measured else PointStatus.UNRESOLVED,
@@ -476,8 +526,14 @@ def _spec(point: InterventionPoint, gene: str, endpoints: ValidationEndpoints) -
     return InterventionSearchSpec(
         spec_id=f"SPEC_{point.id.split('_')[1]}", intervention_point=point.id,
         biological_target=point.biological_state, desired_effect=point.desired_effect.direction,
-        acceptable_mechanisms=["any mechanism with evidence of raising functional BUBR1 availability or activity",
-                               "any mechanism with evidence of improving mitotic fidelity in cells deficient for it"],
+        acceptable_mechanisms=[
+            "A. evidence that the intervention increases or restores functional BUBR1 availability or activity",
+            "B. direct experimental evidence that the intervention improves a relevant rescue endpoint in a "
+            "BUB1B-deficient or BUB1B-MVA model"],
+        insufficient_for_match=[
+            "generic improvement of mitotic fidelity in another genetic or model context: discovery evidence only, "
+            "not a mechanism match — downstream compensation in this genotype has not been demonstrated (IP_002 is "
+            "unresolved), so it must not be assumed through the side door"],
         disallowed_mechanisms=[f"anything reducing functional {gene}/BUBR1 availability",
                                "anything weakening the spindle assembly checkpoint",
                                "anything increasing chromosome missegregation or aneuploidy"],
@@ -521,9 +577,10 @@ def _gate(points: list[InterventionPoint], specs: list[InterventionSearchSpec]) 
     if not specs:
         return Status.BLOCKED, "A point is supported but no search specification could be built from it."
     incomplete = [p for p in supported if p.desired_effect.direction is Direction.UNKNOWN
-                  or not p.validation_endpoints.cellular]
+                  or not p.validation_endpoints.cellular or not p.establishing_rescue_evidence]
     if incomplete:
-        return Status.BLOCKED, (f"{', '.join(p.id for p in incomplete)} lack a direction or a measurable endpoint. "
+        return Status.BLOCKED, (f"{', '.join(p.id for p in incomplete)} lack a direction, a measurable endpoint or "
+                                "establishing rescue evidence. "
                                 "A target without a direction is how a search finds something that pushes the "
                                 "wrong way.")
     return Status.READY, (

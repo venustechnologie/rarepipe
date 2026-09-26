@@ -1,0 +1,1158 @@
+{
+  "$defs": {
+    "ActionOutcome": {
+      "description": "What the research action actually bought us. The trace that will eventually teach us which to take.",
+      "properties": {
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "expected_gain": {
+          "enum": [
+            "high",
+            "moderate",
+            "low"
+          ],
+          "title": "Expected Gain",
+          "type": "string"
+        },
+        "actual_result": {
+          "title": "Actual Result",
+          "type": "string"
+        },
+        "information_gain": {
+          "enum": [
+            "high",
+            "moderate",
+            "low",
+            "none"
+          ],
+          "title": "Information Gain",
+          "type": "string"
+        },
+        "case_state_change": {
+          "default": "none",
+          "title": "Case State Change",
+          "type": "string"
+        },
+        "lesson": {
+          "default": "",
+          "title": "Lesson",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "expected_gain",
+        "actual_result",
+        "information_gain"
+      ],
+      "title": "ActionOutcome",
+      "type": "object"
+    },
+    "AxisState": {
+      "description": "Never a permanent exclusion on one model's weak prediction.",
+      "enum": [
+        "ACTIVE",
+        "DEPRIORITIZED",
+        "REJECTED",
+        "UNRESOLVED"
+      ],
+      "title": "AxisState",
+      "type": "string"
+    },
+    "AxisSupport": {
+      "description": "Support recorded per level, never collapsed \u2014 the precedence order is the point.",
+      "properties": {
+        "human_experimental": {
+          "default": false,
+          "title": "Human Experimental",
+          "type": "boolean"
+        },
+        "curated_human_evidence": {
+          "default": false,
+          "title": "Curated Human Evidence",
+          "type": "boolean"
+        },
+        "primary_literature": {
+          "default": false,
+          "title": "Primary Literature",
+          "type": "boolean"
+        },
+        "human_class_level": {
+          "default": false,
+          "title": "Human Class Level",
+          "type": "boolean"
+        },
+        "exact_variant_experimental": {
+          "default": false,
+          "title": "Exact Variant Experimental",
+          "type": "boolean"
+        },
+        "computational_exact_variant": {
+          "default": false,
+          "title": "Computational Exact Variant",
+          "type": "boolean"
+        },
+        "supporting_claims": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Claims",
+          "type": "array"
+        },
+        "supporting_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Evidence",
+          "type": "array"
+        }
+      },
+      "title": "AxisSupport",
+      "type": "object"
+    },
+    "CandidateAxis": {
+      "description": "An axis considered and set aside, with the conditions that would reopen it.",
+      "properties": {
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/AxisState"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence_type": {
+          "default": "none",
+          "enum": [
+            "human_experimental",
+            "primary_literature",
+            "computational",
+            "none"
+          ],
+          "title": "Evidence Type",
+          "type": "string"
+        },
+        "reopen_if": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reopen If",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "axis",
+        "state",
+        "reason"
+      ],
+      "title": "CandidateAxis",
+      "type": "object"
+    },
+    "DesiredEffect": {
+      "description": "A target with no direction is how a search finds a compound that pushes the wrong way.",
+      "properties": {
+        "target_state": {
+          "title": "Target State",
+          "type": "string"
+        },
+        "current_state": {
+          "title": "Current State",
+          "type": "string"
+        },
+        "desired_state": {
+          "title": "Desired State",
+          "type": "string"
+        },
+        "direction": {
+          "$ref": "#/$defs/Direction"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "confidence": {
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "title": "Confidence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target_state",
+        "current_state",
+        "desired_state",
+        "direction",
+        "confidence"
+      ],
+      "title": "DesiredEffect",
+      "type": "object"
+    },
+    "Direction": {
+      "enum": [
+        "restore_toward_normal",
+        "increase",
+        "decrease",
+        "stabilise",
+        "normalise",
+        "unknown"
+      ],
+      "title": "Direction",
+      "type": "string"
+    },
+    "Execution": {
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "title": "Started At",
+          "type": "string"
+        },
+        "finished_at": {
+          "title": "Finished At",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "mechanism_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "restricted": true,
+          "title": "Mechanism Path"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "restricted": true,
+          "title": "Argv",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "started_at",
+        "finished_at",
+        "duration_seconds"
+      ],
+      "title": "Execution",
+      "type": "object"
+    },
+    "ForbiddenEffect": {
+      "description": "Mechanistic contradiction detection, not clinical safety advice.\n\nDerived only from the mechanism graph and functional evidence. A computational prediction says\nwhat an allele may do; it never establishes which therapeutic direction is dangerous.",
+      "properties": {
+        "biological_state": {
+          "title": "Biological State",
+          "type": "string"
+        },
+        "prohibited_direction": {
+          "$ref": "#/$defs/Direction"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "derived_from": {
+          "default": "mechanism_graph",
+          "enum": [
+            "mechanism_graph",
+            "functional_evidence"
+          ],
+          "title": "Derived From",
+          "type": "string"
+        }
+      },
+      "required": [
+        "biological_state",
+        "prohibited_direction",
+        "reason"
+      ],
+      "title": "ForbiddenEffect",
+      "type": "object"
+    },
+    "InterventionPoint": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "biological_state": {
+          "title": "Biological State",
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "desired_effect": {
+          "$ref": "#/$defs/DesiredEffect"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        },
+        "mechanism_claims": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Mechanism Claims",
+          "type": "array"
+        },
+        "evidence_scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "axis": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axis"
+        },
+        "expected_downstream_effect": {
+          "default": "",
+          "title": "Expected Downstream Effect",
+          "type": "string"
+        },
+        "establishing_rescue_evidence": {
+          "description": "Rescue evidence that demonstrates THIS point: changing this state restored a phenotype in a system where this point's premise holds.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Establishing Rescue Evidence",
+          "type": "array"
+        },
+        "related_rescue_evidence": {
+          "description": "Rescue evidence on adjacent biology. Recorded because it is informative, kept separate because it does not establish this point.",
+          "items": {
+            "$ref": "#/$defs/RelatedRescue"
+          },
+          "title": "Related Rescue Evidence",
+          "type": "array"
+        },
+        "rescue_criterion": {
+          "default": "",
+          "description": "What a record must show to count as establishing for this point.",
+          "title": "Rescue Criterion",
+          "type": "string"
+        },
+        "validation_endpoints": {
+          "$ref": "#/$defs/ValidationEndpoints"
+        },
+        "reversibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReversibilityClaim"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "directness": {
+          "default": "intermediate",
+          "enum": [
+            "upstream",
+            "intermediate",
+            "downstream"
+          ],
+          "title": "Directness",
+          "type": "string"
+        },
+        "requires_exact_allele_mechanism": {
+          "default": false,
+          "title": "Requires Exact Allele Mechanism",
+          "type": "boolean"
+        },
+        "status": {
+          "$ref": "#/$defs/PointStatus",
+          "default": "UNRESOLVED"
+        },
+        "priority": {
+          "$ref": "#/$defs/Priority",
+          "default": "speculative"
+        },
+        "confidence": {
+          "default": "unresolved",
+          "enum": [
+            "low",
+            "moderate",
+            "high",
+            "unresolved"
+          ],
+          "title": "Confidence",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "contraindicated_direction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contraindicated Direction"
+        },
+        "what_would_change_our_mind": {
+          "$ref": "#/$defs/MindChanger"
+        },
+        "track2_relevance": {
+          "default": "moderate",
+          "enum": [
+            "high",
+            "moderate",
+            "low"
+          ],
+          "title": "Track2 Relevance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "biological_state",
+        "role",
+        "desired_effect",
+        "rationale",
+        "evidence_scope"
+      ],
+      "title": "InterventionPoint",
+      "type": "object"
+    },
+    "InterventionSearchSpec": {
+      "description": "What Stage 08 is allowed to search for. Not a gene name \u2014 a biological effect with a direction.",
+      "properties": {
+        "spec_id": {
+          "title": "Spec Id",
+          "type": "string"
+        },
+        "intervention_point": {
+          "title": "Intervention Point",
+          "type": "string"
+        },
+        "biological_target": {
+          "title": "Biological Target",
+          "type": "string"
+        },
+        "desired_effect": {
+          "$ref": "#/$defs/Direction"
+        },
+        "acceptable_mechanisms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Acceptable Mechanisms",
+          "type": "array"
+        },
+        "insufficient_for_match": {
+          "description": "Evidence that is interesting but does not constitute a mechanism match, named explicitly so it cannot be counted as one.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Insufficient For Match",
+          "type": "array"
+        },
+        "disallowed_mechanisms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disallowed Mechanisms",
+          "type": "array"
+        },
+        "expected_rescue_readout": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Expected Rescue Readout",
+          "type": "array"
+        },
+        "minimum_evidence": {
+          "default": "mechanistic",
+          "enum": [
+            "mechanistic",
+            "cellular",
+            "clinical"
+          ],
+          "title": "Minimum Evidence",
+          "type": "string"
+        },
+        "patient_specificity": {
+          "$ref": "#/$defs/Scope",
+          "default": "disease_level"
+        },
+        "exact_allele_dependency": {
+          "default": false,
+          "title": "Exact Allele Dependency",
+          "type": "boolean"
+        },
+        "constraints": {
+          "additionalProperties": true,
+          "title": "Constraints",
+          "type": "object"
+        },
+        "uncertainties": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Uncertainties",
+          "type": "array"
+        }
+      },
+      "required": [
+        "spec_id",
+        "intervention_point",
+        "biological_target",
+        "desired_effect"
+      ],
+      "title": "InterventionSearchSpec",
+      "type": "object"
+    },
+    "MechanisticAxis": {
+      "description": "A level at which the disease process could be engaged, and what actually supports it.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "biological_level": {
+          "enum": [
+            "transcript",
+            "protein",
+            "complex",
+            "cellular_process",
+            "cellular_state",
+            "clinical"
+          ],
+          "title": "Biological Level",
+          "type": "string"
+        },
+        "state": {
+          "title": "State",
+          "type": "string"
+        },
+        "support": {
+          "$ref": "#/$defs/AxisSupport"
+        },
+        "competing_axes": {
+          "items": {
+            "$ref": "#/$defs/CandidateAxis"
+          },
+          "title": "Competing Axes",
+          "type": "array"
+        },
+        "confidence": {
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "title": "Confidence",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "biological_level",
+        "state",
+        "support",
+        "confidence"
+      ],
+      "title": "MechanisticAxis",
+      "type": "object"
+    },
+    "MindChanger": {
+      "properties": {
+        "would_strengthen": {
+          "default": "",
+          "title": "Would Strengthen",
+          "type": "string"
+        },
+        "would_weaken": {
+          "default": "",
+          "title": "Would Weaken",
+          "type": "string"
+        },
+        "would_falsify": {
+          "default": "",
+          "title": "Would Falsify",
+          "type": "string"
+        }
+      },
+      "title": "MindChanger",
+      "type": "object"
+    },
+    "NegativePredictionEvidence": {
+      "description": "A model that did not light up. Recorded as a reason to deprioritize, never as a refutation.",
+      "properties": {
+        "hypothesis": {
+          "title": "Hypothesis",
+          "type": "string"
+        },
+        "result": {
+          "default": "no_material_positive_signal",
+          "enum": [
+            "no_material_positive_signal",
+            "weak_positive_signal"
+          ],
+          "title": "Result",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "strength": {
+          "const": "computational_only",
+          "default": "computational_only",
+          "title": "Strength",
+          "type": "string"
+        },
+        "consequence": {
+          "const": "deprioritize",
+          "default": "deprioritize",
+          "title": "Consequence",
+          "type": "string"
+        },
+        "does_not_establish": {
+          "default": "absence of the effect: no experiment was performed",
+          "title": "Does Not Establish",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "hypothesis",
+        "source",
+        "scope"
+      ],
+      "title": "NegativePredictionEvidence",
+      "type": "object"
+    },
+    "PointStatus": {
+      "enum": [
+        "SUPPORTED",
+        "UNRESOLVED",
+        "DEPRIORITIZED",
+        "NOT_JUSTIFIED"
+      ],
+      "title": "PointStatus",
+      "type": "string"
+    },
+    "Priority": {
+      "enum": [
+        "high",
+        "moderate",
+        "speculative"
+      ],
+      "title": "Priority",
+      "type": "string"
+    },
+    "Provenance": {
+      "properties": {
+        "software": {
+          "$ref": "#/$defs/SoftwareProvenance"
+        },
+        "mechanism_run_id": {
+          "title": "Mechanism Run Id",
+          "type": "string"
+        },
+        "mechanism_digest": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mechanism Digest"
+        },
+        "mechanism_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mechanism Status"
+        },
+        "validation_run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Run Id"
+        },
+        "alphagenome_used": {
+          "default": false,
+          "title": "Alphagenome Used",
+          "type": "boolean"
+        },
+        "research_sessions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Research Sessions",
+          "type": "array"
+        },
+        "evidence_precedence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Precedence",
+          "type": "array"
+        },
+        "disclosure_policy": {
+          "default": "No case-specific identity is transmitted. Intervention research queries are gene-, protein- and disease-level, and are additionally refused if they look like a search for a treatment.",
+          "title": "Disclosure Policy",
+          "type": "string"
+        },
+        "environment_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Environment Controls",
+          "type": "array"
+        }
+      },
+      "required": [
+        "software",
+        "mechanism_run_id"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "RelatedRescue": {
+      "description": "Rescue evidence that sits on this biology without demonstrating this point.\n\n\"Rescue exists somewhere on this biology\" is not \"the bypass has been demonstrated\", and the\ntwo must not share a field.",
+      "properties": {
+        "what_it_shows": {
+          "title": "What It Shows",
+          "type": "string"
+        },
+        "why_not_establishing": {
+          "title": "Why Not Establishing",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "what_it_shows",
+        "why_not_establishing"
+      ],
+      "title": "RelatedRescue",
+      "type": "object"
+    },
+    "ReversibilityClaim": {
+      "properties": {
+        "biological_state": {
+          "title": "Biological State",
+          "type": "string"
+        },
+        "timing": {
+          "default": "unknown",
+          "enum": [
+            "developmental",
+            "ongoing",
+            "both",
+            "unknown"
+          ],
+          "title": "Timing",
+          "type": "string"
+        },
+        "reversible": {
+          "default": "unknown",
+          "enum": [
+            "supported",
+            "partially_supported",
+            "unsupported",
+            "unknown"
+          ],
+          "title": "Reversible",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "biological_state"
+      ],
+      "title": "ReversibilityClaim",
+      "type": "object"
+    },
+    "Role": {
+      "description": "What kind of thing an intervention point is. Decisive once drug targets start arriving.",
+      "enum": [
+        "root_cause",
+        "proximal_mechanism",
+        "intermediate_mechanism",
+        "downstream_phenotype",
+        "biomarker"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "Scope": {
+      "enum": [
+        "exact_variant",
+        "variant_class",
+        "gene_level",
+        "pathway_level",
+        "cellular_process",
+        "disease_level"
+      ],
+      "title": "Scope",
+      "type": "string"
+    },
+    "SoftwareProvenance": {
+      "properties": {
+        "rarepipe": {
+          "title": "Rarepipe",
+          "type": "string"
+        },
+        "source_control": {
+          "$ref": "#/$defs/SourceControl"
+        },
+        "python": {
+          "title": "Python",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Implementation",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "machine": {
+          "title": "Machine",
+          "type": "string"
+        },
+        "libraries": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Libraries",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rarepipe",
+        "source_control",
+        "python",
+        "implementation",
+        "platform",
+        "machine",
+        "libraries"
+      ],
+      "title": "SoftwareProvenance",
+      "type": "object"
+    },
+    "SourceControl": {
+      "properties": {
+        "commit": {
+          "title": "Commit",
+          "type": "string"
+        },
+        "dirty": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Dirty"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty"
+      ],
+      "title": "SourceControl",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "INTERVENTION_LOGIC_READY_FOR_APPROVED_DRUG_SEARCH",
+        "INTERVENTION_LOGIC_BLOCKED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "ValidationEndpoints": {
+      "description": "Only endpoints the dossier's own assay inventory supports.",
+      "properties": {
+        "proximal": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Proximal",
+          "type": "array"
+        },
+        "cellular": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cellular",
+          "type": "array"
+        },
+        "disease_related": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disease Related",
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "title": "ValidationEndpoints",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema": {
+      "additionalProperties": true,
+      "title": "Schema",
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "title": "Pipeline",
+      "type": "object"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "sanitized"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "gene_symbol": {
+      "title": "Gene Symbol",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "status_basis": {
+      "title": "Status Basis",
+      "type": "string"
+    },
+    "interpretation_note": {
+      "default": "Intervention logic: what a treatment would have to accomplish. Not a treatment plan, not medical advice, and not a drug candidate list. No medication is named, ranked or recommended at this stage.",
+      "title": "Interpretation Note",
+      "type": "string"
+    },
+    "axes": {
+      "items": {
+        "$ref": "#/$defs/MechanisticAxis"
+      },
+      "title": "Axes",
+      "type": "array"
+    },
+    "intervention_points": {
+      "items": {
+        "$ref": "#/$defs/InterventionPoint"
+      },
+      "title": "Intervention Points",
+      "type": "array"
+    },
+    "forbidden_effects": {
+      "items": {
+        "$ref": "#/$defs/ForbiddenEffect"
+      },
+      "title": "Forbidden Effects",
+      "type": "array"
+    },
+    "negative_predictions": {
+      "items": {
+        "$ref": "#/$defs/NegativePredictionEvidence"
+      },
+      "title": "Negative Predictions",
+      "type": "array"
+    },
+    "deprioritized_axes": {
+      "items": {
+        "$ref": "#/$defs/CandidateAxis"
+      },
+      "title": "Deprioritized Axes",
+      "type": "array"
+    },
+    "not_currently_justified": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Not Currently Justified",
+      "type": "array"
+    },
+    "unresolved_points": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unresolved Points",
+      "type": "array"
+    },
+    "search_specs": {
+      "items": {
+        "$ref": "#/$defs/InterventionSearchSpec"
+      },
+      "title": "Search Specs",
+      "type": "array"
+    },
+    "action_outcomes": {
+      "items": {
+        "$ref": "#/$defs/ActionOutcome"
+      },
+      "title": "Action Outcomes",
+      "type": "array"
+    },
+    "knowledge_tasks": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Knowledge Tasks",
+      "type": "array"
+    },
+    "readiness": {
+      "additionalProperties": true,
+      "title": "Readiness",
+      "type": "object"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "semantic_digest": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Semantic Digest"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    }
+  },
+  "required": [
+    "visibility",
+    "case_id",
+    "gene_symbol",
+    "status",
+    "status_basis",
+    "provenance",
+    "execution"
+  ],
+  "title": "InterventionMap",
+  "type": "object"
+}

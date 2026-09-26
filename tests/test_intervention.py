@@ -16,8 +16,9 @@ from rarepipe.stages.intervention.stage import (
 )
 
 
-def _evidence(eid, source, assay, result, rescue=False, level="primary_literature", direction="supports"):
-    return {"evidence_id": eid, "source_id": source, "statement": f"{assay} {result}", "quote": "q",
+def _evidence(eid, source, assay, result, rescue=False, level="primary_literature", direction="supports",
+              quote="q"):
+    return {"evidence_id": eid, "source_id": source, "statement": f"{assay} {result}", "quote": quote,
             "epistemic_class": "external_evidence", "evidence_level": level, "experimental_level": "not_applicable",
             "scope": "gene_level", "applicability_to_case": "indirect", "direction": direction, "assay": assay,
             "result": result, "rescue_experiment": rescue, "limitations": [], "extracted_by": "test",
@@ -34,7 +35,11 @@ def _claim(cid, ctype, status, evidence=(), statement="s"):
 def dossier(tmp_path: Path) -> Path:
     evidence = [
         _evidence("EV_0001", "PMID:111", "rescue / complementation", "restored checkpoint", rescue=True,
-                  level="human_experimental"),
+                  level="human_experimental",
+                  quote="Ectopic expression of BUBR1 restored mitotic checkpoint activity in patient cells."),
+        _evidence("EV_0004", "PMID:333", "rescue / complementation", "restored checkpoint in ARF-null cells",
+                  rescue=True, level="animal_model",
+                  quote="Expression of ARF-YFP was sufficient to restore mitotic checkpoint activity in ARF-/- cells."),
         _evidence("EV_0002", "PMID:111", "mitotic checkpoint activity", "impaired", level="human_experimental"),
         _evidence("EV_0003", "PMID:222", "aneuploidy / karyotype", "mosaic aneuploidy"),
         _evidence("EV_AG_1", "ALPHAGENOME_ATLAS:BUB1B:1-2", "AlphaGenome Atlas AVI_SCORE_FEATURE_IMPORTANCE:ALPHAMISSENSE", "0.76"),
@@ -49,6 +54,10 @@ def dossier(tmp_path: Path) -> Path:
         (9, "segregation_effect", "PARTIALLY_SUPPORTED", ["EV_0002"]), (10, "aneuploidy", "PARTIALLY_SUPPORTED", ["EV_0003"]),
         (11, "disease_bridge", "SUPPORTED", ["EV_0003"]), (12, "protein_effect", "PARTIALLY_SUPPORTED", ["EV_0001"]),
         (13, "protein_effect", "PARTIALLY_SUPPORTED", [])]]
+    claims.append({"id": "MC_IMP_LLMRS_0001_01", "type": "checkpoint_effect",
+                   "statement": "A checkpoint defect can be rescued by restoring the missing regulator.",
+                   "status": "PARTIALLY_SUPPORTED", "scope": "gene_level", "epistemic_class": "derived_inference",
+                   "evidence": ["EV_0004"], "indirect_evidence": [], "contradicting_evidence": [], "limitations": []})
     payload = {
         "case_id": "CASE_X", "visibility": "private", "gene_symbol": "BUB1B",
         "status": "MECHANISM_READY_FOR_INTERVENTION_SEARCH", "semantic_digest": "sha256:m",
@@ -92,7 +101,7 @@ def test_every_intervention_point_has_an_explicit_direction(dossier, tmp_path):
         if point.status is PointStatus.SUPPORTED:
             assert point.desired_effect.direction is not Direction.UNKNOWN
             assert point.validation_endpoints.cellular, "a supported point needs a measurable endpoint"
-            assert point.rescue_evidence, "a supported point needs causal rescue evidence"
+            assert point.establishing_rescue_evidence, "a supported point needs establishing rescue evidence"
 
 
 def test_forbidden_directions_come_from_mechanism_not_from_a_predictor(dossier, tmp_path):
@@ -162,3 +171,49 @@ def test_action_outcomes_record_what_the_research_bought(dossier, tmp_path):
     outcomes = r.intervention_map.action_outcomes
     assert outcomes and all(o.lesson for o in outcomes)
     assert any(o.information_gain == "none" for o in outcomes), "a null result must be recorded as one"
+
+
+def test_adjacent_rescue_evidence_does_not_count_as_establishing(dossier, tmp_path):
+    """Rescue somewhere on this biology is not the bypass this point claims."""
+    r = make(dossier, tmp_path)
+    ip2 = next(p for p in r.intervention_map.intervention_points if p.id == "IP_002")
+    assert ip2.establishing_rescue_evidence == [], "restoring a different regulator is not downstream compensation"
+    assert ip2.related_rescue_evidence, "the adjacent evidence must still be recorded, not dropped"
+    assert all(rel.why_not_establishing for rel in ip2.related_rescue_evidence)
+    assert ip2.rescue_criterion and "WITHOUT restoring" in ip2.rescue_criterion
+    assert ip2.status is PointStatus.UNRESOLVED
+
+    ip1 = next(p for p in r.intervention_map.intervention_points if p.id == "IP_001")
+    assert ip1.establishing_rescue_evidence, "restoring BUBR1 itself does establish IP_001"
+
+    text = (r.run_dir / "intervention_logic.md").read_text()
+    assert "does not establish this point" in text
+    assert "counts as establishing only if" in text
+
+
+def test_the_rescue_classifier_reads_what_was_restored(dossier, tmp_path):
+    from rarepipe.stages.intervention.stage import classify_rescue
+
+    bubr1 = {"quote": "Ectopic expression of BUBR1 restored mitotic checkpoint activity.", "statement": ""}
+    other = {"quote": "Expression of ARF-YFP was sufficient to restore mitotic checkpoint activity in ARF-/- cells.",
+             "statement": ""}
+    bypass = {"quote": "Aneuploidy was reduced in BUB1B-deficient cells by an intervention acting downstream.",
+              "statement": ""}
+    assert classify_rescue(bubr1, "IP_001") == "establishing"
+    assert classify_rescue(other, "IP_001") == "related"
+    assert classify_rescue(other, "IP_002") == "related"
+    assert classify_rescue(bubr1, "IP_002") == "related", "restoring the gene is not downstream compensation"
+    assert classify_rescue(bypass, "IP_002") == "establishing"
+
+
+def test_the_search_spec_will_not_accept_generic_mitotic_improvement(dossier, tmp_path):
+    r = make(dossier, tmp_path)
+    spec = r.intervention_map.search_specs[0]
+    assert len(spec.acceptable_mechanisms) == 2
+    assert spec.acceptable_mechanisms[0].startswith("A.") and spec.acceptable_mechanisms[1].startswith("B.")
+    assert "BUB1B-deficient" in spec.acceptable_mechanisms[1]
+    assert spec.insufficient_for_match, "generic mitotic improvement must be named as insufficient"
+    assert "discovery evidence only" in spec.insufficient_for_match[0]
+    assert not any("improving mitotic fidelity in cells deficient for it" in m for m in spec.acceptable_mechanisms)
+    text = (r.run_dir / "intervention_logic.md").read_text()
+    assert "not sufficient for a mechanism match" in text

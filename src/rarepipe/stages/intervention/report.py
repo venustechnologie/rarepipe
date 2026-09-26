@@ -70,8 +70,15 @@ def render(m: InterventionMap) -> str:
           f"confidence {d.confidence}")
         w(f"- **why:** {point.rationale}")
         w(f"- **expected downstream effect:** {point.expected_downstream_effect}")
-        w(f"- **causal rescue evidence:** {len(point.rescue_evidence)} record(s)"
-          + (f" — {', '.join(point.rescue_evidence[:6])}" if point.rescue_evidence else " — none"))
+        w(f"- **establishing rescue evidence:** {len(point.establishing_rescue_evidence)} record(s)"
+          + (f" — {', '.join(point.establishing_rescue_evidence[:6])}"
+             if point.establishing_rescue_evidence else " — **none**"))
+        if point.rescue_criterion:
+            w(f"  - counts as establishing only if: {point.rescue_criterion}")
+        for related in point.related_rescue_evidence:
+            w(f"- **related rescue evidence** (does not establish this point): {related.what_it_shows}")
+            w(f"  - why not establishing: {related.why_not_establishing}")
+            w(f"  - records: {', '.join(related.evidence)}")
         w(f"- **mechanism claims:** {', '.join(point.mechanism_claims) or 'none'}")
         e = point.validation_endpoints
         if e.proximal or e.cellular or e.disease_related:
@@ -109,7 +116,11 @@ def render(m: InterventionMap) -> str:
         w(f"**{spec.spec_id}** (from {spec.intervention_point})  ")
         w(f"- target: {spec.biological_target}")
         w(f"- desired effect: `{spec.desired_effect.value}`")
-        w(f"- acceptable mechanisms: {'; '.join(spec.acceptable_mechanisms)}")
+        w("- acceptable mechanisms:")
+        for mechanism in spec.acceptable_mechanisms:
+            w(f"    - {mechanism}")
+        for item in spec.insufficient_for_match:
+            w(f"- **not sufficient for a mechanism match:** {item}")
         w(f"- **disallowed mechanisms:** {'; '.join(spec.disallowed_mechanisms)}")
         w(f"- expected rescue readout: {', '.join(spec.expected_rescue_readout) or '—'}")
         w(f"- minimum evidence: {spec.minimum_evidence}; specificity: {spec.patient_specificity.value}; "

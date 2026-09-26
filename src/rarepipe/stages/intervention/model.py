@@ -184,6 +184,18 @@ class MindChanger(BaseModel):
     would_falsify: str = ""
 
 
+class RelatedRescue(BaseModel):
+    """Rescue evidence that sits on this biology without demonstrating this point.
+
+    "Rescue exists somewhere on this biology" is not "the bypass has been demonstrated", and the
+    two must not share a field.
+    """
+
+    what_it_shows: str
+    why_not_establishing: str
+    evidence: list[str] = Field(default_factory=list)
+
+
 class InterventionPoint(BaseModel):
     id: str
     biological_state: str
@@ -194,8 +206,15 @@ class InterventionPoint(BaseModel):
     evidence_scope: Scope
     axis: str | None = None
     expected_downstream_effect: str = ""
-    rescue_evidence: list[str] = Field(default_factory=list, description="Evidence where changing this state "
-                                                                        "restored a phenotype, not merely correlated.")
+    establishing_rescue_evidence: list[str] = Field(
+        default_factory=list,
+        description="Rescue evidence that demonstrates THIS point: changing this state restored a phenotype in a "
+                    "system where this point's premise holds.")
+    related_rescue_evidence: list[RelatedRescue] = Field(
+        default_factory=list,
+        description="Rescue evidence on adjacent biology. Recorded because it is informative, kept separate "
+                    "because it does not establish this point.")
+    rescue_criterion: str = Field("", description="What a record must show to count as establishing for this point.")
     validation_endpoints: ValidationEndpoints = Field(default_factory=ValidationEndpoints)
     reversibility: ReversibilityClaim | None = None
     directness: Literal["upstream", "intermediate", "downstream"] = "intermediate"
@@ -217,6 +236,10 @@ class InterventionSearchSpec(BaseModel):
     biological_target: str
     desired_effect: Direction
     acceptable_mechanisms: list[str] = Field(default_factory=list)
+    insufficient_for_match: list[str] = Field(
+        default_factory=list,
+        description="Evidence that is interesting but does not constitute a mechanism match, named explicitly so "
+                    "it cannot be counted as one.")
     disallowed_mechanisms: list[str] = Field(default_factory=list)
     expected_rescue_readout: list[str] = Field(default_factory=list)
     minimum_evidence: Literal["mechanistic", "cellular", "clinical"] = "mechanistic"
