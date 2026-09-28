@@ -18,6 +18,7 @@ import argparse
 import json
 import math
 import sys
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +39,12 @@ from rarepipe.stages.prospective.model import (  # noqa: E402
 from sim import analysis, dgp, worlds  # noqa: E402
 
 FUNCTION_KEYS = ("checkpoint_activation", "checkpoint_silencing", "chromosome_alignment", "missegregation")
+
+
+def _seed(base: int, *parts: str) -> int:
+    """Deterministic across processes. `hash()` is randomized per process by PYTHONHASHSEED, so using
+    it here silently reseeded every run — two runs of the "same" study did not agree."""
+    return base + zlib.crc32("|".join(parts).encode()) % 1_000_000
 
 
 def endpoints_for(kind: ExperimentKind) -> list[EndpointSpec]:
@@ -130,6 +137,8 @@ def run_rate_world(world, rng, reps: int, margin: float, procedure: str, framing
             freq[br] = freq.get(br, 0) + 1
     p, lo, hi = _wilson(wrong, reps)
     return {"procedure": procedure, "framing": framing, "reps": reps,
+            "completed_replicates": len(branch_hits),
+            "wrong_count": wrong, "right_count": right,
             "branch_frequency": {k: round(v / reps, 3) for k, v in sorted(freq.items())},
             "wrong_branch_rate": round(p, 4), "wrong_ci": [round(lo, 4), round(hi, 4)],
             "right_branch_rate": round(right / reps, 4),
@@ -212,7 +221,7 @@ def main() -> int:
                           "says nobody has made."),
                "worlds": []}
     for world in worlds.worlds():
-        rng = np.random.default_rng(args.seed + abs(hash(world.key)) % 10_000)
+        rng = np.random.default_rng(_seed(args.seed, world.key))
         entry = {"key": world.key, "title": world.title, "trap": world.trap, "kind": world.kind,
                  "wrong_if": list(world.wrong_if), "right_if": list(world.right_if), "notes": world.notes,
                  "params": world.params, "arms": {}}
@@ -220,7 +229,7 @@ def main() -> int:
             for procedure in ("prep_summary", "glmm"):
                 for framing in ("margin", "difference"):
                     entry["arms"][f"{procedure}/{framing}"] = run_rate_world(
-                        world, np.random.default_rng(args.seed + abs(hash(world.key + procedure + framing)) % 10_000),
+                        world, np.random.default_rng(_seed(args.seed, world.key, procedure, framing)),
                         args.reps, worlds.MARGIN_RATE, procedure, framing)
         elif world.kind == "timing":
             entry["arms"]["prep_median_diff/two_sided"] = run_timing_world(world, rng, args.reps, worlds.MARGIN_MIN)
