@@ -73,10 +73,11 @@ def artifact_text(runs: list[Path]) -> str:
     parts = []
     for run in runs:
         for path in sorted(run.glob("*.json")):
-            if "private" not in path.name:
+            if "private" not in path.name and not path.name.startswith("._"):  # skip macOS resource forks
                 parts.append(json.dumps(json.loads(path.read_text())))
         for path in sorted(run.glob("*.md")):
-            parts.append(path.read_text())
+            if not path.name.startswith("._"):
+                parts.append(path.read_text())
     return "\n".join(parts)
 
 
