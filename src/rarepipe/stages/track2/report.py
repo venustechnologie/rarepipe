@@ -224,17 +224,18 @@ def pitch(s: Track2HypothesisSet, discovery: dict) -> str:
            "direction causal. And one link deliberately left unknown: what this child's missense allele does. "
            "Nobody has measured it, so the pipeline says so.\n",
            "## 1:30 — the honest drug result\n",
-           "No approved medication has ever been tested for rescue in BUB1B-deficient biology. Not failed — "
-           "untested. The search also found approved drugs that push this biology the wrong way, which is directly "
-           "useful for a clinician.\n"]
+           "Across the corpus we searched, no approved medication has been tested for rescue in BUB1B-deficient "
+           "biology — no attempt found in either direction. That is an absence in our corpus, not a proof about "
+           "the world, and saying which one you have is the whole discipline. The search did find approved drugs "
+           "that push this biology the wrong way, which is directly useful for a clinician.\n"]
     if lead:
         out += ["## 2:00 — one hypothesis worth testing\n",
                 f"{lead.active_ingredient}, approval verified against the regulator's approvals database. Every "
                 "arrow in that chain is either cited to a retrieved paper or marked as an inference — and the "
                 "pivotal arrow is unevidenced, with the closest related experiment we found coming back null. We "
                 "are showing you exactly where the chain stops being evidenced, because that is the experiment "
-                "worth running. It has never been tested in this disease, and we propose the experiment rather "
-                "than the treatment.\n"]
+                "worth running. No test of it in this disease was found in the corpus we searched, and we propose "
+                "the experiment rather than the treatment.\n"]
     else:
         out += ["## 2:00 — where the public literature ends\n",
                 "No approved medication met the evidence bar. That is the finding: we have mapped precisely where "

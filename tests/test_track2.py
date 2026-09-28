@@ -255,3 +255,44 @@ def test_a_mismatched_intervention_map_is_refused(discovery, workspace, tmp_path
         "execution": {"run_id": "RUN_OTHER"}, "provenance": {"mechanism_run_id": "RUN_MECH"}}))
     with pytest.raises(Track2UsageError):
         make(discovery, workspace, tmp_path, intervention_map_run=other)
+
+
+def test_an_absence_claim_is_scoped_to_the_corpus(discovery, workspace, tmp_path):
+    """A claim about our corpus is not a claim about the world.
+
+    An attempt reported only as unpublished data, in a methods aside, or in a full text we could
+    not reach would never appear in the corpus — so "nobody has tested this" is a claim the
+    pipeline is not entitled to make.
+    """
+    r = make(discovery, workspace, tmp_path)
+    blob = json.dumps(r.hypothesis_set.model_dump(mode="json")).lower()
+    for overclaim in ("never been tested", "has never been tried", "appears untested",
+                      "nobody has tested", "untested space"):
+        assert overclaim not in blob, f"unscoped absence claim: {overclaim!r}"
+    negatives = [o for o in r.hypothesis_set.search_outcomes
+                 if o.result.value in ("NO_EVIDENCE_FOUND", "EXHAUSTED_TO_THRESHOLD")]
+    assert negatives
+    for outcome in negatives:
+        assert "corpus searched" in outcome.interpretation.lower() or "corpus" in outcome.does_not_mean.lower()
+    claim = next(c for c in r.hypothesis_set.submission_claims if c.id == "SC_003")
+    assert "corpus searched" in claim.statement
+    assert "not proof that no attempt exists" in claim.statement
+
+
+def test_the_pitch_does_not_claim_more_than_the_corpus_supports(discovery, workspace, tmp_path):
+    save(workspace, import_hypotheses(workspace, _write(workspace, [_hypothesis()])))
+    r = make(discovery, workspace, tmp_path)
+    pitch = (r.run_dir / "track2_pitch_script.md").read_text().lower()
+    assert "never been tested" not in pitch
+    assert "corpus we searched" in pitch or "corpus we searched" in pitch
+    assert "not a proof about the world" in pitch
+
+
+def test_the_status_line_itself_is_corpus_scoped(discovery, workspace, tmp_path):
+    """The headline sentence is the one most likely to be quoted, so it must not overclaim either."""
+    save(workspace, import_hypotheses(workspace, _write(workspace, [_hypothesis()])))
+    r = make(discovery, workspace, tmp_path)
+    basis = r.hypothesis_set.status_basis.lower()
+    assert "corpus searched" in basis
+    for overclaim in ("none has been tested", "has never been tested", "nobody has tested"):
+        assert overclaim not in basis

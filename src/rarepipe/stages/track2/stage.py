@@ -36,6 +36,11 @@ from rarepipe.stages.track2.model import (
     Track2HypothesisSet,
 )
 
+# See the same constant in Stage 08: an absence in our corpus is not an absence in the world.
+CORPUS_CAVEAT = ("an absence in the corpus searched, which is not the same as an absence in the world: an attempt "
+                 "reported only as unpublished data, in a methods aside, or in a full text we could not reach "
+                 "would not necessarily appear in it")
+
 PRIVATE = "track2_hypothesis_set.private.json"
 SANITIZED = "track2_hypothesis_set.sanitized.json"
 ADJUDICATION = "candidate_adjudication.md"
@@ -307,8 +312,10 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
             question="Is there an approved medication with demonstrated rescue in BUB1B-deficient biology?",
             corpus="Europe PMC, lanes A-D (Stage 08) plus the Track 2 tasks",
             result=SearchResult.NO_EVIDENCE_FOUND,
-            interpretation="no pharmacological rescue in BUB1B-deficient or MVA biology was found, in either direction",
-            does_not_mean="that pharmacological rescue has been shown not to work: the space appears untested",
+            interpretation=("no pharmacological rescue in BUB1B-deficient or MVA biology was found in the corpus "
+                            "searched, in either direction"),
+            does_not_mean=("that pharmacological rescue has been shown not to work, and not that nobody has "
+                           "attempted it. This is " + CORPUS_CAVEAT),
             **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, lane_tasks), strict=True))),
         SearchOutcome(
             question="Which regulators control BUBR1 abundance, and is any pharmacologically addressable?",
@@ -357,8 +364,9 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
             question="Does any approved medication meet the Track 2 research-hypothesis gate?",
             corpus="all Stage 08 and Stage 09 tasks",
             result=SearchResult.EXHAUSTED_TO_THRESHOLD,
-            interpretation="no approved medication passed every promotion check",
-            does_not_mean="that none exists: it means public evidence does not currently support one",
+            interpretation=("no approved medication in the corpus searched passed every promotion check"),
+            does_not_mean=("that no such medication exists. It means the evidence in this corpus does not "
+                           "currently support one, which is " + CORPUS_CAVEAT),
             **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, lane_tasks), strict=True))))
     return outcomes
 
@@ -375,9 +383,12 @@ def _claims(promoted, discovery, outcomes) -> list[SubmissionClaim]:
                                   "BUBR1 in patient cells restores mitotic checkpoint activity.",
                         basis_note="Stage 06 MC_0001, MC_0012"),
         SubmissionClaim(id="SC_003", type="observation", scope="case",
-                        statement="No approved medication has demonstrated rescue in BUB1B-deficient biology in the "
-                                  "public literature searched; that space appears untested rather than failed.",
-                        basis_note="Stage 08 lanes A-D"),
+                        statement="No approved medication was found to have demonstrated rescue in BUB1B-deficient "
+                                  "biology in the corpus searched, and no attempt was found in either direction. "
+                                  "That is an absence of evidence in that corpus rather than a demonstrated "
+                                  "failure, and it is not proof that no attempt exists: an attempt reported only "
+                                  "as unpublished data or in a full text we could not reach would not appear.",
+                        basis_note="Stage 08 lanes A-D, corpus-scoped"),
         SubmissionClaim(id="SC_004", type="derived_inference", scope="exact_variant",
                         statement="The functional effect of this child's missense allele remains unmeasured, so every "
                                   "hypothesis here is deliberately independent of it.",
@@ -404,7 +415,8 @@ def _actions(promoted, discovery) -> list[Action]:
         Action(rank=len(actions) + 1,
                action="Send the node query specs to an authorised clinical contact once a private channel exists.",
                expected_information_gain="high", cost="very_low",
-               rationale="the untested space is exactly what a clinical node could answer",
+               rationale=("what our corpus cannot show — attempts reported only as unpublished data, or never "
+                          "reported at all — is exactly what a clinical node could answer"),
                blocked_by=["no approved private channel yet"]),
         Action(rank=len(actions) + 2,
                action="Obtain the inaccessible full texts and re-run the local residue search.",
@@ -417,8 +429,9 @@ def _actions(promoted, discovery) -> list[Action]:
 def _ready_basis(promoted) -> str:
     grades = ", ".join(f"{h.id} {h.evidence_grade.value}" for h in promoted)
     return (f"{len(promoted)} approved medication(s) passed every promotion check ({grades}). This means the "
-            "evidence justifies testing the hypothesis, not that the medication works: none has been tested in "
-            "BUB1B-deficient or MVA biology, and no dose, regimen or treatment recommendation is produced.")
+            "evidence justifies testing the hypothesis, not that the medication works: no test of any of them in "
+            "BUB1B-deficient or MVA biology was found in the corpus searched, and no dose, regimen or treatment "
+            "recommendation is produced.")
 
 
 def _blocked_basis(discovery) -> str:

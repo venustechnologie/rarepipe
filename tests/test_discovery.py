@@ -148,7 +148,8 @@ def test_a_search_that_found_nothing_produces_no_experience(imap, workspace, tmp
     r = make(imap, workspace, tmp_path)
     assert r.discovery.experiences == []
     assert r.discovery.status is Status.NONE_FOUND
-    assert "absence of published evidence" in r.discovery.status_basis
+    assert "absence of evidence in the corpus searched" in r.discovery.status_basis
+    assert "not the same as an absence in the world" in r.discovery.status_basis
     text = (r.run_dir / "intervention_discovery.md").read_text()
     assert "untested, not failed" in text or "untested" in text
 

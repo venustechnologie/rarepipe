@@ -38,6 +38,12 @@ from rarepipe.stages.discovery.model import (
     Status,
 )
 
+# Said once, then reused wherever the pipeline reports finding nothing. A claim about our corpus is
+# not a claim about the world, and the difference is exactly where a clinical node becomes useful.
+CORPUS_CAVEAT = ("an absence in the corpus searched, which is not the same as an absence in the world: an attempt "
+                 "reported only as unpublished data, in a methods aside, or in a full text we could not reach "
+                 "would not necessarily appear in it")
+
 PRIVATE = "intervention_discovery.private.json"
 SANITIZED = "intervention_discovery.sanitized.json"
 REPORT = "intervention_discovery.md"
@@ -304,8 +310,8 @@ def _gaps(experiences, candidates, gene) -> tuple[list[str], list[NodeQuerySpec]
             useful_negative_result=True, patient_identity_required=False,
             arises_from="no mechanism-matching approved candidate found in public literature"))
     if not any(e.lane is Lane.B_DEFICIENT_RESCUE and e.outcome is Outcome.IMPROVED for e in experiences):
-        needs.append("No pharmacological rescue of any endpoint in BUB1B-deficient cells was found. This is an "
-                     "untested space, not a failed one: no experience was found either way.")
+        needs.append("No pharmacological rescue of any endpoint in BUB1B-deficient cells was found in the corpus "
+                     "searched — no experience was found in either direction. That is " + CORPUS_CAVEAT + ".")
         specs.append(NodeQuerySpec(
             id="NQS_002",
             question=("Has any laboratory tested an approved medication against a mitotic-checkpoint or "
@@ -359,5 +365,6 @@ def _gate(candidates) -> tuple[Status, str]:
     return Status.NONE_FOUND, (
         "No approved intervention has direction-concordant evidence for the specification. " + wrong_way +
         ", which is a useful result for this child even though it is not a candidate. The absence of positive "
-        "candidates is an absence of published evidence, not a demonstration that nothing works: lane B found no "
-        "pharmacological attempt in this biology at all, in either direction.")
+        "candidates is an absence of evidence in the corpus searched, not a demonstration that nothing works: "
+        "lane B surfaced no pharmacological attempt in this biology, in either direction. That is " +
+        CORPUS_CAVEAT + ".")
