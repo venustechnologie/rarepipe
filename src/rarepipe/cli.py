@@ -709,6 +709,10 @@ def _max_session(folder: Path) -> int:
 export_app = typer.Typer(no_args_is_help=True, help="Generate external submission packages. Nothing is uploaded — a person submits.")
 app.add_typer(export_app, name="export")
 
+from rarepipe.stages.prospective.cli import app as prospective_app  # noqa: E402
+
+app.add_typer(prospective_app, name="prospective")
+
 
 @track2_app.command("check-pitch")
 def track2_check_pitch(
