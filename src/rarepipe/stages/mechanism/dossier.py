@@ -156,6 +156,18 @@ def render(d: MechanismDossier) -> str:
         w(f"  - why: {m.why}")
         w(f"  - would change: {m.would_change}")
     w("")
+    if d.residual_function:
+        out.extend(residual_section(d))
+    if d.corpus_refresh:
+        out.extend(refresh_section(d))
+    if d.direction_corrections:
+        w("## Extractor directions corrected on semantic review\n")
+        w("| source | passage | corrected to | reason | reviewed by | records |")
+        w("|---|---|---|---|---|---|")
+        for c in d.direction_corrections:
+            w(f"| {c.source_id} | {c.quote_contains[:90]}… | {c.direction.value} | {c.reason} | {c.reviewed_by} | "
+              f"{c.applied_to} |")
+        w("")
     w(f"## Highest-value unresolved question\n\n{d.highest_value_unresolved_question}\n")
 
     w("## Next actions\n")
@@ -210,4 +222,78 @@ def render(d: MechanismDossier) -> str:
     w("- No gene-therapy or editing speculation; rescue experiments are recorded as mechanistic evidence only.")
     w("- No claim that class-level evidence describes this child's allele.")
     w("- No numeric mechanism score: we have nothing calibrated to produce one.\n")
+    return "\n".join(out)
+
+
+RESULT_MARK = {"restored": "restored", "not_restored": "not restored", "normal": "normal", "reduced": "reduced",
+               "increased": "increased", "not_reported": "not reported"}
+
+
+def residual_section(d: MechanismDossier) -> list[str]:
+    rf = d.residual_function
+    out = ["## Residual function — does the altered protein work when abundance is restored?\n",
+           f"**Decision: `{rf.decision}`** — {rf.decision_meaning}.\n",
+           "| level | finding | basis |", "|---|---|---|",
+           f"| class (same region, other substitutions) | {rf.class_level} | {rf.class_level_basis} |",
+           f"| this child's allele | {rf.exact_allele} | {rf.exact_allele_basis} |", "",
+           f"Numbering: {rf.numbering_check}. How directly each experiment applies to this child was graded "
+           "locally (exact / same position / nearby / same region / different region) and is kept in the private "
+           "artifact only: a nearby published variant would localise the child's residue.\n",
+           "| id | variant | protein tested | abundance | readouts | function at restored abundance | source |",
+           "|---|---|---|---|---|---|---|"]
+    for e in d.variant_experiments:
+        readouts = "; ".join(f"{r.kind.replace('_', ' ')}: {RESULT_MARK[r.result]}" for r in e.readouts)
+        out.append(f"| {e.experiment_id} | {e.variant_label} | {e.protein_tested.replace('_', ' ')} | "
+                   f"{e.abundance_condition.replace('_', ' ')} | {readouts} | "
+                   f"{e.function_at_restored_abundance.replace('_', ' ')} | {e.source_id} "
+                   f"{', '.join(sorted({r.figure for r in e.readouts if r.figure}))} |")
+    out.append("")
+    out.append("Normal-protein replacement (WT rows) shows the assays respond to BUBR1; it is not evidence that any "
+               "altered protein works.\n")
+    if rf.supporting_observations:
+        out.append("Bearing on the strategy, not on the decision:\n")
+        out += [f"- {x}" for x in rf.supporting_observations]
+        out.append("")
+    out.append(f"**Distinguishing experiment.** {rf.distinguishing_experiment}\n")
+    if rf.what_remains_open:
+        out.append("Still open:\n")
+        out += [f"- {x}" for x in rf.what_remains_open]
+        out.append("")
+    return out
+
+
+def refresh_section(d: MechanismDossier) -> list[str]:
+    out = ["## Corpus refresh — what became available\n",
+           "| document | before | after | why | retrieved | supplements |", "|---|---|---|---|---|---|"]
+    for r in d.corpus_refresh:
+        supps = ", ".join(f"{s['href']}: {s['state'].replace('_', ' ')}" for s in r.get("supplements", [])) or "—"
+        out.append(f"| {r['source_id']} {r.get('pmcid') or ''} | {r['before'].replace('_', ' ')} | "
+                   f"{r['after'].replace('_', ' ')} | {r['reason']} | {r['retrieved_at'][:10]} | {supps} |")
+    out.append("")
+    if any(s["state"] == "inaccessible_bot_challenge" for r in d.corpus_refresh for s in r.get("supplements", [])):
+        out.append("Supplements behind a bot-detection challenge were not solved or bypassed. A person can download "
+                   "them and pass them to `rarepipe mechanism refresh-corpus --supplement SOURCE_ID=file.pdf`, which builds a new corpus run.\n")
+    return out
+
+
+def render_comparison(d: MechanismDossier) -> str:
+    """The short note the reviewer asked for: what moved relative to the frozen result."""
+    c = d.baseline_comparison
+    out = [f"# Stage 06 reopened — comparison with {c.baseline_label or c.baseline_mechanism_run}\n",
+           f"Frozen mechanism run `{c.baseline_mechanism_run}` ({c.baseline_mechanism_digest})"
+           + (f"; frozen Track 2 run `{c.baseline_track2_run}` ({c.baseline_track2_digest})" if c.baseline_track2_run else "")
+           + f". New run `{d.execution.run_id}` ({d.semantic_digest}).\n",
+           "| | frozen | now | changed |", "|---|---|---|---|"]
+    out += [f"| {r.topic} | {r.frozen} | {r.now} | {'**yes**' if r.changed else 'no'} |" for r in c.rows]
+    out.append("")
+    if d.residual_function:
+        rf = d.residual_function
+        out.append(f"**Decision: `{rf.decision}`.** {rf.decision_meaning[0].upper()}{rf.decision_meaning[1:]}.\n")
+        out.append(f"**Distinguishing experiment.** {rf.distinguishing_experiment}\n")
+    if c.regenerate:
+        out.append("**Regenerated because of this:**\n")
+        out += [f"- {x}" for x in c.regenerate]
+        out.append("")
+    out.append("Evidence for every row is in the run's sanitized dossier; quotes were re-found verbatim in the "
+               "stored sources.\n")
     return "\n".join(out)

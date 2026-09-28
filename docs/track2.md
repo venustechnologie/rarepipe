@@ -53,3 +53,13 @@ establish the "before" state.
 `TRACK2_RESEARCH_HYPOTHESIS_READY` or `TRACK2_SUBMISSION_BLOCKED_NO_DEFENSIBLE_HYPOTHESIS`. The
 second is a real result: it marks where the public medical literature ends. The stage uploads
 nothing either way.
+
+## Packaging for a reviewer
+
+`rarepipe export track2-package --track2-run <run> --submitter <name> --output-zip <zip>
+[--mechanism-run <stage06 run>] [--extra verification/x.txt=file]` writes one folder with
+`upload/`, `records/` and `verification/`, and a root `MANIFEST.sha256` over the paths as they
+appear in the archive. Before returning, the command unpacks the package and runs the documented
+`shasum -a 256 -c MANIFEST.sha256`; if that fails, no package is produced. The run's own
+`SHA256SUMS` is shipped as `verification/run_SHA256SUMS.txt` for cross-checking only. It names
+private files that are never exported, so `shasum -c` against it cannot pass inside a package.

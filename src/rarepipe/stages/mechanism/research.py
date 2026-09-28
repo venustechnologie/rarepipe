@@ -24,6 +24,7 @@ from rarepipe.stages.mechanism.model import (
     Applicability,
     Confidence,
     Direction,
+    DirectionCorrection,
     EpistemicClass,
     EvidenceBundle,
     EvidenceLevel,
@@ -396,3 +397,16 @@ def bundle_from_corpus(corpus_run: Path, task: KnowledgeTask, root: Path) -> Evi
     (target / "bundle.json").write_text(json.dumps(
         {"bundle": bundle.model_dump(mode="json"), "documents": documents}, indent=2, ensure_ascii=False) + "\n")
     return bundle
+
+
+def load_corrections(root: Path) -> list[DirectionCorrection]:
+    """Reviewed overrides of the extractor's direction, from ``corrections/*.yaml`` in the workspace."""
+    folder = root / "corrections"
+    out: list[DirectionCorrection] = []
+    for path in sorted(p for p in folder.glob("*.yaml") if not p.name.startswith("._")) if folder.exists() else []:
+        for item in (yaml.safe_load(path.read_text()) or {}).get("corrections", []):
+            correction = DirectionCorrection(**item)
+            if not correction.reason.strip():
+                raise ResearchError(f"{path.name}: a direction correction needs a reason")
+            out.append(correction)
+    return out

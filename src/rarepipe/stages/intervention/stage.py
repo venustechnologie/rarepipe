@@ -494,6 +494,27 @@ def _points(gene: str, claims: dict, rescue: list[dict], endpoints: ValidationEn
             would_falsify="a measurement showing this allele's protein is stable and functional"),
         track2_relevance="moderate")
 
+    residual = dossier.get("residual_function")
+    if residual:
+        # Stage 06F: restored-abundance experiments on altered proteins. Normal-protein rescue says which
+        # direction helps; this says whether the protein a stabiliser would preserve can do the job.
+        ip1.limitations.append(
+            "the rescue evidence replaces the protein with normal BUBR1; whether an altered protein works once its "
+            f"abundance is restored is a separate question — class level: {residual['class_level']}, this "
+            f"child's allele: {residual['exact_allele']} ({residual['decision']})")
+        ip4.rationale = (
+            "The class-level literature attributes low abundance to high turnover of misfolding-prone missense "
+            "mutants in the kinase domain, and the computational attribution for this allele is protein-dominated. "
+            f"Restored-abundance experiments now bear on the premise: {residual['class_level_basis']}. That makes "
+            "stabilisation a better-supported working axis at class level. It does not establish that this "
+            "child's protein is unstable or that it works when stabilised: no experiment has measured this allele.")
+        ip4.limitations.append(f"residual function for this allele: {residual['exact_allele']}; "
+                               f"{residual['decision_meaning']}")
+        ip4.what_would_change_our_mind.would_strengthen = (
+            "this substitution expressed at wild-type-comparable levels restoring checkpoint response and "
+            "segregation (the Stage 06F distinguishing experiment)")
+        ip4.what_would_change_our_mind.would_weaken = (
+            "this substitution impaired at matched abundance, or not expressible at matched levels")
     if beyond_protein:
         ip1.limitations.append("allelic effects beyond protein level contribute to disease heterogeneity, so "
                                "restoring availability may not address everything the genotype does")

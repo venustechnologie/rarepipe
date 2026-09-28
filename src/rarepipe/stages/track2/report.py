@@ -214,7 +214,7 @@ def _drug_result(discovery: dict) -> str:
         names = ", ".join(a["intervention_ingredient"] for a in attempts)
         return ("Across the corpus we searched, no approved medication showed rescue in BUB1B-deficient biology. "
                 f"One attempt was reported — {names}, in BubR1-deficient mice — with no improvement in age-related "
-                "phenotypes. It is a preliminary author report, without data, and it never measured the checkpoint. "
+                "phenotypes. It is a preliminary author report, without data, and no checkpoint measurement was reported. "
                 "We found it because a reviewer pointed us to a sentence in a Discussion section our searches had "
                 "missed, which is exactly why we scope every absence to the corpus we searched. The search also "
                 "found approved drugs that push this biology the wrong way, which is directly useful for a "

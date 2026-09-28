@@ -24,11 +24,13 @@ from pydantic import BaseModel, Field
 
 from rarepipe.core.provenance import SoftwareProvenance
 from rarepipe.core.redaction import restricted
+from rarepipe.stages.mechanism.compare import BaselineComparison
+from rarepipe.stages.mechanism.experiments import ResidualFunctionAssessment, VariantExperiment
 
 SCHEMA_NAME = "MechanismDossier"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"
 STAGE_NAME = "mechanism_resolution"
-STAGE_VERSION = "0.1.0"
+STAGE_VERSION = "0.3.0"
 
 
 class Status(StrEnum):
@@ -231,6 +233,22 @@ class KnowledgeTask(BaseModel):
 
 
 # ── evidence ────────────────────────────────────────────────────────────────
+
+class DirectionCorrection(BaseModel):
+    """A semantic reviewer overruling the deterministic extractor's direction for one passage.
+
+    The extractor reads cue words ("no significant effect", "unchanged"). A sentence introducing a
+    different variant class can trip them without contradicting anything. The correction is keyed by
+    source and passage, not by evidence id, because ids are renumbered whenever the corpus grows.
+    """
+
+    source_id: str
+    quote_contains: str
+    direction: Direction
+    reason: str
+    reviewed_by: str = Field(description="Who reviewed it, e.g. a research session id or a person.")
+    applied_to: int = Field(0, description="How many evidence records it matched in this run.")
+
 
 class EvidenceRecord(BaseModel):
     """One extracted finding, anchored to text that provably exists in a stored source."""
@@ -500,6 +518,12 @@ class MechanismDossier(BaseModel):
     what_would_change_our_mind: list[MindChanger] = Field(default_factory=list)
     next_actions: list[NextAction] = Field(default_factory=list)
     highest_value_unresolved_question: str = ""
+    direction_corrections: list[DirectionCorrection] = Field(default_factory=list)
+    corpus_refresh: list[dict] = Field(default_factory=list,
+                                       description="Per-document outcome of reopening the corpus, if it was reopened.")
+    variant_experiments: list[VariantExperiment] = Field(default_factory=list)
+    residual_function: ResidualFunctionAssessment | None = None
+    baseline_comparison: BaselineComparison | None = None
     provenance: Provenance
     semantic_digest: str | None = None
     execution: Execution

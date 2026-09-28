@@ -86,3 +86,44 @@ so the research process itself becomes pipeline data.
 
 No drug, treatment or repurposing reasoning happens here, and rescue experiments are recorded as
 mechanistic evidence, not as proposed treatments.
+
+## Stage 06F — reopening a frozen run
+
+A frozen corpus and dossier are never edited. Reopening builds new runs beside them and a
+computed comparison.
+
+1. **Refresh the corpus.** `rarepipe mechanism refresh-corpus --corpus-run <frozen> --output <dir>`
+   copies the frozen corpus into a new sealed run, then retries licensed full text for every
+   abstract-only document and tries each listed supplement. Every document gets a record: what it
+   was before, what it is now, why, and when it was retrieved. If the repository answers with a
+   bot-detection challenge, the supplement is recorded as `inaccessible_bot_challenge` and left
+   alone. Nothing solves or bypasses the challenge. A person can download it and pass it back with
+   `--supplement SOURCE_ID=file.pdf`.
+2. **Extract experiments, not sentences.** `research/experiments/*.yaml` holds `VariantExperiment`
+   records: the construct, what protein was tested, the abundance condition and each readout
+   (abundance, mRNA, turnover, chaperone dependence, checkpoint, segregation, alignment). Each
+   readout's quote, and any `authors_interpretation`, must be re-found verbatim in the stored
+   source. Notation is matched across forms (I909T / Ile909Thr / p.(Ile909Thr) / LAP-I909T; 731X /
+   \*731). Normal-protein replacement is kept separate from the altered protein, and it can never
+   answer the residual-function question.
+3. **Grade directness locally.** Each experiment is graded exact / same position / nearby (≤10
+   residues) / same region / different region against the child's missense allele. Positions use
+   the canonical isoform (UniProt O60566-1 = ENST00000287598), and the transcript is checked first.
+   If the transcript is not canonical, grades are withheld. Grades live only in restricted fields,
+   because a nearby published variant would localise the child's residue.
+4. **Decide at two levels.** `ResidualFunctionAssessment` answers one question: when abundance is
+   restored, does the altered protein work? It answers once at class level and once for this
+   child's allele, and keeps the two separate. The decision follows the exact-allele level:
+   `STRENGTHENS_STABILIZATION`, `WEAKENS_ABUNDANCE_ONLY` or `INSUFFICIENT`. When the decision is
+   insufficient, the assessment names the distinguishing experiment.
+5. **Correct extractor directions on review.** The extractor reads cue words, and new full text
+   brings new false contradictions. Examples are "comparable to wild-type" in a rescue legend and
+   "not required" about the kinase domain. `research/corrections/*.yaml` records a reviewed
+   direction for a passage, keyed by source and passage text rather than evidence id. The dossier
+   lists each correction and how many records it matched. A correction that matches nothing is
+   reported as stale.
+6. **Compare.** `mechanism resolve ... --compare-mechanism-run <frozen> --compare-track2-run <frozen>`
+   writes `comparison_with_baseline.md`, a table computed from the two sanitized artifacts. It
+   also lists the dependent stages that must be regenerated. Stage 07 then cites the assessment
+   in IP_001 and IP_004 without changing their gates. Stage 09 (`track2 adjudicate --mechanism-run`)
+   re-derives every hypothesis's residual-function efficacy dependency and SC_004 from it.

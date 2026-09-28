@@ -217,3 +217,20 @@ def test_the_search_spec_will_not_accept_generic_mitotic_improvement(dossier, tm
     assert not any("improving mitotic fidelity in cells deficient for it" in m for m in spec.acceptable_mechanisms)
     text = (r.run_dir / "intervention_logic.md").read_text()
     assert "not sufficient for a mechanism match" in text
+
+
+def test_residual_function_reaches_the_stabilisation_point_without_changing_its_gate(dossier, tmp_path):
+    before = {p.id: p for p in make(dossier, tmp_path).intervention_map.intervention_points}
+    path = dossier / "mechanism_dossier.private.json"
+    payload = json.loads(path.read_text())
+    payload["residual_function"] = {
+        "class_level": "function_persists", "exact_allele": "insufficient", "decision": "INSUFFICIENT",
+        "class_level_basis": "2 altered protein(s) in the protein kinase domain (I909T, L1012P) were restored",
+        "decision_meaning": "the residual-function dependency stays unresolved for this child"}
+    path.write_text(json.dumps(payload))
+    after = {p.id: p for p in make(dossier, tmp_path / "b").intervention_map.intervention_points}
+    ip4 = after["IP_004"]
+    assert "I909T, L1012P" in ip4.rationale and "no experiment has measured this allele" in ip4.rationale
+    assert "no experiment has measured it" in before["IP_004"].rationale
+    assert ip4.status == before["IP_004"].status, "class evidence must not open a gate held by the exact allele"
+    assert any("replaces the protein with normal BUBR1" in x for x in after["IP_001"].limitations)

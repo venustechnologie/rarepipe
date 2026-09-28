@@ -122,6 +122,7 @@ class EfficacyDependency(BaseModel):
     status: Literal["unresolved", "supported", "contradicted"] = "unresolved"
     why_it_matters: str = ""
     what_would_resolve_it: str = ""
+    basis: str | None = Field(None, description="Where the current status comes from, when a stage derived it.")
 
 
 class GateCheck(BaseModel):

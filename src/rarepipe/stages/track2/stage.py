@@ -8,6 +8,7 @@ because proving where public evidence ends is itself the result.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 from dataclasses import dataclass, field
@@ -60,6 +61,7 @@ class BuildRequest:
     research_dir: Path
     output: Path
     intervention_map_run: Path | None = None
+    mechanism_run: Path | None = None
     approval_cache: Path | None = None
     offline: bool = False
     argv: list[str] = field(default_factory=list)
@@ -168,11 +170,12 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
 
     # The chain must not break here. Stage 08 records which map it consumed but not which mechanism
     # run produced that map, so the link is resolved by reading the map itself.
-    mechanism_run_id = mechanism_digest = None
+    mechanism_run_id = mechanism_digest = validation_run_id = None
     if req.intervention_map_run:
         imap = _load(req.intervention_map_run / "intervention_map.private.json")
         mechanism_run_id = imap["provenance"].get("mechanism_run_id")
         mechanism_digest = imap["provenance"].get("mechanism_digest")
+        validation_run_id = imap["provenance"].get("validation_run_id")
         if imap["execution"]["run_id"] != discovery["provenance"].get("intervention_map_run_id"):
             raise Track2UsageError(
                 f"the intervention map supplied is run {imap['execution']['run_id']}, but the pinned discovery "
@@ -181,11 +184,24 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
                      f"{imap['execution']['run_id']} → discovery {discovery['execution']['run_id']}")
     else:
         console.warn("no --intervention-map-run given: the mechanism link in the baseline will be unresolved")
+    residual = None
+    if req.mechanism_run:
+        mechanism = _load(req.mechanism_run / "mechanism_dossier.sanitized.json")
+        if mechanism_run_id and mechanism["execution"]["run_id"] != mechanism_run_id:
+            raise Track2UsageError(f"the mechanism run supplied is {mechanism['execution']['run_id']}, but the "
+                                   f"intervention map was built from {mechanism_run_id}")
+        residual = mechanism.get("residual_function")
+        if residual:
+            console.info(f"residual function (Stage 06F): class level {residual['class_level']}, this allele "
+                         f"{residual['exact_allele']} → {residual['decision']}")
 
     console.step(2, 5, "Loading proposed hypotheses...")
     sessions, hypotheses, evidence, rejected_imports = ingest.load_all(req.research_dir)
     console.info(f"{len(hypotheses)} proposed hypothesis(es) from {len(sessions)} session(s); "
                  f"{len(rejected_imports)} rejected on import")
+    if residual:
+        derived = apply_residual_function(hypotheses, residual, req.mechanism_run.name)
+        console.info(f"{derived} residual-function dependency(ies) re-derived from the mechanism dossier")
 
     console.step(3, 5, "Verifying approval and running the promotion gate...")
     rejected: list[RejectedHypothesis] = []
@@ -229,14 +245,14 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
                      else (Status.BLOCKED, _blocked_basis(discovery)))
     baseline = BaselineSnapshot(
         created_at=started.isoformat(),
-        validation_run_id=discovery["provenance"].get("intervention_map_run_id"),
+        validation_run_id=validation_run_id,
         discovery_run_id=discovery["execution"]["run_id"], discovery_digest=discovery.get("semantic_digest"),
         intervention_map_run_id=discovery["provenance"].get("intervention_map_run_id"),
         intervention_map_digest=discovery["provenance"].get("intervention_map_digest"),
         mechanism_run_id=mechanism_run_id, mechanism_digest=mechanism_digest,
         git_commit=_git(["rev-parse", "HEAD"]), git_describe=_git(["describe", "--tags", "--always"]),
         hypotheses_found=len(promoted))
-    claims = _claims(promoted, discovery, outcomes)
+    claims = _claims(promoted, discovery, outcomes, residual)
 
     hypothesis_set = Track2HypothesisSet(
         visibility="private", case_id=discovery["case_id"], gene_symbol=discovery["gene_symbol"],
@@ -410,7 +426,7 @@ def _lane_b_outcome(discovery: dict, stats: tuple[list[str], int]) -> SearchOutc
         queries=queries, documents_examined=documents, evidence=[a["id"] for a in attempts])
 
 
-def _claims(promoted, discovery, outcomes) -> list[SubmissionClaim]:
+def _claims(promoted, discovery, outcomes, residual: dict | None = None) -> list[SubmissionClaim]:
     """Every substantive sentence the report may use, tied to what it rests on."""
     claims = [
         SubmissionClaim(id="SC_001", type="observation", scope="case",
@@ -422,13 +438,7 @@ def _claims(promoted, discovery, outcomes) -> list[SubmissionClaim]:
                                   "BUBR1 in patient cells restores mitotic checkpoint activity.",
                         basis_note="Stage 06 MC_0001, MC_0012"),
         _sc003(discovery),
-        SubmissionClaim(id="SC_004", type="derived_inference", scope="exact_variant",
-                        statement="No measurement of this child's missense allele's functional effect was found in "
-                                  "the corpus searched. The hypotheses here were generated without depending on it, "
-                                  "but whether any of them would work does depend on it: a strategy that raises "
-                                  "BUBR1 abundance helps only if the protein that accumulates retains useful "
-                                  "function, and that remains unresolved.",
-                        basis_note="Stage 06 MC_0006 unresolved"),
+        _sc004(residual),
     ]
     for h in promoted:
         claims.append(SubmissionClaim(
@@ -437,6 +447,56 @@ def _claims(promoted, discovery, outcomes) -> list[SubmissionClaim]:
             basis_note=f"evidence grade {h.evidence_grade.value if h.evidence_grade else 'ungraded'}; "
                        f"untested in BUB1B/MVA"))
     return claims
+
+
+RESIDUAL_DEPENDENCY = re.compile(r"\bresidual\b.*\bfunction", re.I)
+STATUS_FROM_DECISION = {"STRENGTHENS_STABILIZATION": "supported", "WEAKENS_ABUNDANCE_ONLY": "contradicted",
+                        "INSUFFICIENT": "unresolved"}
+
+
+def apply_residual_function(hypotheses: list, residual: dict, mechanism_run: str) -> int:
+    """Replace the hand-written residual-function dependency with what Stage 06F computed.
+
+    The dependency is named by the hypothesis author; its status and context come from the evidence.
+    """
+    n = 0
+    for h in hypotheses:
+        for dep in h.efficacy_dependencies:
+            if not RESIDUAL_DEPENDENCY.search(dep.dependency):
+                continue
+            dep.status = STATUS_FROM_DECISION[residual["decision"]]
+            dep.why_it_matters = (
+                "A strategy that raises BUBR1 abundance helps only if the protein that accumulates works. "
+                f"Class level: {residual['class_level_basis']}. This child's allele: {residual['exact_allele_basis']}.")
+            dep.what_would_resolve_it = residual["distinguishing_experiment"]
+            dep.basis = f"Stage 06F residual-function assessment ({residual['decision']}), mechanism run {mechanism_run}"
+            n += 1
+    return n
+
+
+def _sc004(residual: dict | None) -> SubmissionClaim:
+    if not residual:
+        return SubmissionClaim(
+            id="SC_004", type="derived_inference", scope="exact_variant",
+            statement="No measurement of this child's missense allele's functional effect was found in "
+                      "the corpus searched. The hypotheses here were generated without depending on it, "
+                      "but whether any of them would work does depend on it: a strategy that raises "
+                      "BUBR1 abundance helps only if the protein that accumulates retains useful "
+                      "function, and that remains unresolved.",
+            basis_note="Stage 06 MC_0006 unresolved")
+    lean = {"function_persists": "at class level the protein that accumulates tends to work",
+            "function_impaired": "at class level the protein that accumulates tends not to work",
+            "mixed": "at class level the evidence is mixed",
+            "insufficient": "no class-level restored-abundance test was found"}[residual["class_level"]]
+    unresolved = residual["exact_allele"] == "insufficient"
+    return SubmissionClaim(
+        id="SC_004", type="derived_inference", scope="exact_variant",
+        statement=(f"No experiment in the corpus searched measured this child's missense allele. {lean[0].upper()}"
+                   f"{lean[1:]}: {residual['class_level_basis']}. "
+                   + ("This allele's residual function remains unresolved, and whether an abundance-raising "
+                      "hypothesis would work still depends on it." if unresolved else
+                      f"For this allele: {residual['exact_allele']}.")),
+        basis_note=f"Stage 06F residual function {residual['decision']}; MC_0006")
 
 
 def _sc003(discovery: dict) -> SubmissionClaim:

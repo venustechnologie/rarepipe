@@ -24,6 +24,8 @@ from rarepipe.stages.mechanism import claims as C
 from rarepipe.stages.mechanism import dossier as report
 from rarepipe.stages.mechanism import extract, questions
 from rarepipe.stages.mechanism import research
+from rarepipe.stages.mechanism.compare import compare
+from rarepipe.stages.mechanism.experiments import ExperimentError, assess, child_missense, load_experiments
 from rarepipe.stages.mechanism.model import (
     AlleleMechanism,
     AutomationStatus,
@@ -97,6 +99,9 @@ class ResolveRequest:
     validation: Path | None = None
     research_dir: Path | None = None
     alphagenome: Path | None = None
+    compare_mechanism_run: Path | None = None
+    compare_track2_run: Path | None = None
+    compare_label: str = ""
     argv: list[str] = field(default_factory=list)
 
 
@@ -314,6 +319,23 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
     invalid += failed
     console.info(f"{len(verified)} evidence record(s) with a quote verified in the stored source; "
                  f"{len(failed)} rejected as unverifiable")
+    corrections = research.load_corrections(req.research_dir) if req.research_dir else []
+    for correction in corrections:
+        needle = research._normalise(correction.quote_contains)
+        for record in verified:
+            if record.source_id == correction.source_id and needle in research._normalise(record.quote) \
+                    and record.direction is not correction.direction:
+                record.limitations.append(f"direction corrected on semantic review from {record.direction.value} "
+                                          f"to {correction.direction.value} ({correction.reviewed_by}): "
+                                          f"{correction.reason}")
+                record.direction = correction.direction
+                correction.applied_to += 1
+        if not correction.applied_to:
+            console.warn(f"direction correction for {correction.source_id} matched nothing: the passage may no "
+                         "longer be extracted, so the correction is stale")
+    if corrections:
+        console.info(f"{sum(c.applied_to for c in corrections)} evidence record(s) re-directed by "
+                     f"{len(corrections)} reviewed correction(s)")
 
     console.step(3, 6, "Searching the corpus locally for this case's exact allele...")
     needles, residue = residue_needles(adjudication)
@@ -405,6 +427,18 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
         reason="first discover the research workflow before automating it",
         pipeline_depends_on_an_llm=False)
     contradictions = sorted({f"{e.source_id}: {e.quote[:160]}" for e in verified if e.direction is Direction.CONTRADICTS})[:20]
+    experiments_dir = req.research_dir / "experiments" if req.research_dir else None
+    variant_experiments = []
+    for path in sorted(p for p in experiments_dir.glob("*.yaml") if not p.name.startswith("._")) \
+            if experiments_dir and experiments_dir.exists() else []:
+        try:
+            variant_experiments += load_experiments(path, req.corpus_run)
+        except ExperimentError as exc:
+            raise MechanismUsageError(f"{path.name}: {exc}") from exc
+    residual = assess(variant_experiments, child_missense(adjudication)) if variant_experiments else None
+    if residual:
+        console.info(f"{len(variant_experiments)} variant experiment(s), every quote re-found; residual function: "
+                     f"class level {residual.class_level}, this allele {residual.exact_allele} → {residual.decision}")
     status, basis = _gate(state, mech_claims)
     readiness = Readiness(
         disease_mechanism_ready_for_intervention_search=status is Status.READY_FOR_INTERVENTION_SEARCH,
@@ -425,6 +459,9 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
         evidence_weakest_at=_weakest(mech_claims), what_would_change_our_mind=_mind_changers(state, bool(exact_hits)),
         next_actions=_next_actions(state, bool(exact_hits), documents),
         highest_value_unresolved_question=_highest_value_question(state),
+        direction_corrections=corrections,
+        corpus_refresh=corpus_index.get("refresh") or [],
+        variant_experiments=variant_experiments, residual_function=residual,
         provenance=Provenance(
             software=software_provenance(), adjudication_run_id=adjudication["execution"]["run_id"],
             validation_run_id=(validation or {}).get("submission_package_run_id"),
@@ -444,6 +481,14 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
     clear_restricted(sanitized)
     sanitized.visibility = "sanitized"
     sanitized.semantic_digest = semantic_digest(sanitized, exclude={"execution"})
+    if req.compare_mechanism_run:
+        comparison = compare(req.compare_mechanism_run, json.loads(canonical_json(sanitized)),
+                             req.compare_track2_run, req.compare_label)
+        dossier.baseline_comparison = sanitized.baseline_comparison = comparison
+        dossier.semantic_digest = semantic_digest(dossier, exclude={"execution"})
+        sanitized.semantic_digest = semantic_digest(sanitized, exclude={"execution"})
+        console.info(f"compared with {comparison.baseline_mechanism_run}: {len(comparison.conclusions_changed)} "
+                     f"row(s) changed, {len(comparison.regenerate)} dependent stage(s) to regenerate")
 
     console.step(6, 6, "Writing artifacts...")
     run = RunDirectory(req.output, run_id).open()
@@ -451,6 +496,8 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
     run.write_text(DOSSIER_SANITIZED, canonical_json(sanitized))
     run.write_text(GRAPH, canonical_json(sanitized.graph))
     run.write_text(REPORT, report.render(sanitized))
+    if sanitized.baseline_comparison:
+        run.write_text("comparison_with_baseline.md", report.render_comparison(sanitized))
     console.ok(f"run {run_id}: {len(mech_claims)} claim(s), {len(verified)} evidence record(s), "
                f"{len(graph.unknown_edges)} unknown edge(s)")
     console.line()

@@ -243,9 +243,11 @@ def test_the_baseline_resolves_the_whole_provenance_chain(discovery, workspace, 
     imap_run.mkdir(parents=True)
     (imap_run / "intervention_map.private.json").write_text(json.dumps({
         "execution": {"run_id": "RUN_MAP"},
-        "provenance": {"mechanism_run_id": "RUN_MECH", "mechanism_digest": "sha256:mech"}}))
+        "provenance": {"mechanism_run_id": "RUN_MECH", "mechanism_digest": "sha256:mech",
+                       "validation_run_id": "RUN_VAL"}}))
     r = make(discovery, workspace, tmp_path, intervention_map_run=imap_run)
     b = r.hypothesis_set.baseline
+    assert b.validation_run_id == "RUN_VAL", "the validation link must not be filled with another run's id"
     assert b.mechanism_run_id == "RUN_MECH" and b.mechanism_digest == "sha256:mech"
     assert b.intervention_map_run_id == "RUN_MAP" and b.discovery_run_id == "RUN_DISC"
 
@@ -344,3 +346,39 @@ def test_the_lane_b_outcome_is_derived_from_the_evidence(discovery, workspace, t
     assert "not a demonstrated null" in outcome.does_not_mean
     claim = next(c for c in r.hypothesis_set.submission_claims if c.id == "SC_003")
     assert "One reported attempt was found" in claim.statement and claim.evidence_ids == ["IX_1"]
+
+
+def _mechanism(tmp_path, run_id="RUN_MECH", decision="INSUFFICIENT"):
+    run = tmp_path / "mech" / run_id
+    run.mkdir(parents=True)
+    (run / "mechanism_dossier.sanitized.json").write_text(json.dumps({
+        "execution": {"run_id": run_id},
+        "residual_function": {"class_level": "function_persists", "exact_allele": "insufficient", "decision": decision,
+                              "class_level_basis": "2 altered protein(s) in the protein kinase domain (I909T, L1012P) "
+                                                   "were restored",
+                              "exact_allele_basis": "no experiment expressed this child's exact substitution",
+                              "distinguishing_experiment": "express the exact substitution at matched abundance"}}))
+    imap = tmp_path / "map" / "RUN_MAP"
+    imap.mkdir(parents=True, exist_ok=True)
+    (imap / "intervention_map.private.json").write_text(json.dumps({
+        "execution": {"run_id": "RUN_MAP"}, "provenance": {"mechanism_run_id": "RUN_MECH"}}))
+    return run, imap
+
+
+def test_the_residual_function_dependency_is_derived_from_stage06(discovery, workspace, tmp_path):
+    save(workspace, import_hypotheses(workspace, _write(workspace, [_hypothesis()])))
+    mech, imap = _mechanism(tmp_path)
+    r = make(discovery, workspace, tmp_path, intervention_map_run=imap, mechanism_run=mech)
+    [dep] = [d for h in r.hypothesis_set.hypotheses for d in h.efficacy_dependencies if "residual" in d.dependency]
+    assert dep.status == "unresolved" and "I909T, L1012P" in dep.why_it_matters
+    assert dep.what_would_resolve_it == "express the exact substitution at matched abundance"
+    assert "RUN_MECH" in dep.basis
+    sc004 = next(c for c in r.hypothesis_set.submission_claims if c.id == "SC_004")
+    assert "tends to work" in sc004.statement and "remains unresolved" in sc004.statement
+
+
+def test_a_mechanism_run_from_another_chain_is_refused(discovery, workspace, tmp_path):
+    _, imap = _mechanism(tmp_path)
+    other, _ = _mechanism(tmp_path / "x", run_id="RUN_OTHER")
+    with pytest.raises(Track2UsageError, match="built from RUN_MECH"):
+        make(discovery, workspace, tmp_path, intervention_map_run=imap, mechanism_run=other)

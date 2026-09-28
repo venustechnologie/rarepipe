@@ -257,6 +257,7 @@ def track2_adjudicate(
     research: Annotated[Path, typer.Option(help="Research workspace with bundles and imported hypotheses.")],
     output: Annotated[Path, typer.Option(help="Directory under which a new immutable run directory is created.")],
     intervention_map_run: Annotated[Path | None, typer.Option(help="The Stage 07 run the pinned discovery consumed, to resolve the mechanism link.")] = None,
+    mechanism_run: Annotated[Path | None, typer.Option(help="The Stage 06 run that map was built from; its residual-function assessment feeds the efficacy dependencies.")] = None,
     approval_cache: Annotated[Path | None, typer.Option(help="Cache directory for verified approval records.")] = None,
     offline: Annotated[bool, typer.Option(help="Skip approval verification (records it as unverified).")] = False,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
@@ -267,7 +268,7 @@ def track2_adjudicate(
 
     try:
         result = build(BuildRequest(discovery_run=discovery_run, research_dir=research, output=output,
-                                    intervention_map_run=intervention_map_run,
+                                    intervention_map_run=intervention_map_run, mechanism_run=mechanism_run,
                                     approval_cache=approval_cache, offline=offline, argv=sys.argv[:]),
                        Console(quiet=quiet))
     except Track2UsageError as exc:
@@ -640,6 +641,26 @@ def research_import_analysis(
         raise typer.Exit(EXIT_BLOCKED)
 
 
+@mechanism_app.command("refresh-corpus")
+def mechanism_refresh_corpus(
+    corpus_run: Annotated[Path, typer.Option(help="The frozen corpus run to reopen. It is never modified.")],
+    output: Annotated[Path, typer.Option(help="Directory under which the new corpus run is created.")],
+    supplement: Annotated[list[str] | None, typer.Option(help="SOURCE_ID=path.pdf — a supplement a person downloaded by hand. Repeatable.")] = None,
+    quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
+) -> None:
+    """Reopen a frozen corpus as a new run: re-attempt licensed full text and supplements, record every outcome."""
+    from rarepipe.stages.mechanism.refresh import refresh
+
+    supplied: dict[str, list[Path]] = {}
+    for item in supplement or []:
+        source_id, _, path = item.partition("=")
+        if not path or not Path(path).exists():
+            typer.echo(f"error: --supplement expects SOURCE_ID=existing.pdf, got {item!r}", err=True)
+            raise typer.Exit(EXIT_USAGE)
+        supplied.setdefault(source_id, []).append(Path(path))
+    typer.echo(str(refresh(corpus_run, output, Console(quiet=quiet), supplied)))
+
+
 @mechanism_app.command("resolve")
 def mechanism_resolve(
     corpus_run: Annotated[Path, typer.Option(help="A sealed corpus run directory from `mechanism fetch-corpus`.")],
@@ -648,6 +669,9 @@ def mechanism_resolve(
     validation: Annotated[Path | None, typer.Option(help="Stage 05 external_validation_result.json, if the causal pair was validated.")] = None,
     research: Annotated[Path | None, typer.Option(help="Research workspace whose validated imported analyses to include.")] = None,
     alphagenome: Annotated[Path | None, typer.Option(help="Directory or file holding AlphaGenome evidence from `alphagenome match`.")] = None,
+    compare_mechanism_run: Annotated[Path | None, typer.Option(help="A frozen mechanism run to compare this one against.")] = None,
+    compare_track2_run: Annotated[Path | None, typer.Option(help="The frozen Track 2 run whose residual-function dependency is the baseline.")] = None,
+    compare_label: Annotated[str, typer.Option(help="Name of the baseline, e.g. a release tag.")] = "",
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
 ) -> None:
     """Resolve the molecular mechanism from the local corpus. Offline; no intervention reasoning."""
@@ -655,7 +679,9 @@ def mechanism_resolve(
     from rarepipe.stages.mechanism.stage import MechanismUsageError, ResolveRequest, run_resolve
 
     req = ResolveRequest(corpus_run=corpus_run, adjudication=adjudication_run, output=output,
-                         validation=validation, research_dir=research, alphagenome=alphagenome, argv=sys.argv[:])
+                         validation=validation, research_dir=research, alphagenome=alphagenome,
+                         compare_mechanism_run=compare_mechanism_run, compare_track2_run=compare_track2_run,
+                         compare_label=compare_label, argv=sys.argv[:])
     try:
         result = run_resolve(req, Console(quiet=quiet))
     except MechanismUsageError as exc:
@@ -668,6 +694,78 @@ def mechanism_resolve(
 
 export_app = typer.Typer(no_args_is_help=True, help="Generate external submission packages. Nothing is uploaded — a person submits.")
 app.add_typer(export_app, name="export")
+
+
+@export_app.command("track2-package")
+def export_track2_package(
+    track2_run: Annotated[Path, typer.Option(help="A sealed Stage 09 run directory.")],
+    output_zip: Annotated[Path, typer.Option(help="Where to write the package.")],
+    submitter: Annotated[str, typer.Option(help="Prefix for the upload filenames.")],
+    mechanism_run: Annotated[Path | None, typer.Option(help="Stage 06 run whose comparison and dossier report to include.")] = None,
+    extra: Annotated[list[str] | None, typer.Option(help="ARCHIVE/PATH=local_file to add, e.g. verification/pytest.txt=out.txt. Repeatable.")] = None,
+    note: Annotated[str, typer.Option(help="Free text for the README (what changed, for the reviewer).")] = "",
+) -> None:
+    """Assemble a Track 2 package whose MANIFEST.sha256 verifies with `shasum -a 256 -c` as documented."""
+    import json as _j
+
+    from rarepipe.core.package import MANIFEST, VERIFY_COMMAND, PackageError, build
+
+    t2 = _j.loads((track2_run / "track2_hypothesis_set.sanitized.json").read_text())
+    baseline = t2.get("baseline") or {}
+    report = next(track2_run.glob("*_track2_report.md"), None)
+    files: dict[str, Path | str] = {
+        f"upload/{submitter}_track2_report.md": report,
+        f"upload/{submitter}_track2_pitch_script.md": track2_run / "track2_pitch_script.md",
+        "verification/run_SHA256SUMS.txt": track2_run / "SHA256SUMS",
+    }
+    for name in ("track2_hypothesis_set.sanitized.json", "track2_baseline_snapshot.json",
+                 "candidate_adjudication.md", "track2_submission_manifest.json"):
+        files[f"records/{name}"] = track2_run / name
+    if mechanism_run:
+        for name in ("comparison_with_baseline.md", "mechanism_dossier.md"):
+            if (mechanism_run / name).exists():
+                files[f"records/stage06/{name}"] = mechanism_run / name
+        files["verification/stage06_run_SHA256SUMS.txt"] = mechanism_run / "SHA256SUMS"
+    for item in extra or []:
+        arcname, _, path = item.partition("=")
+        if not path or not Path(path).exists():
+            typer.echo(f"error: --extra expects ARCHIVE/PATH=existing_file, got {item!r}", err=True)
+            raise typer.Exit(EXIT_USAGE)
+        files[arcname] = Path(path)
+    missing = [a for a, p in files.items() if isinstance(p, Path | None) and (p is None or not p.exists())]
+    if missing:
+        typer.echo(f"error: missing from the run: {', '.join(missing)}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    root = output_zip.stem
+    files["README.txt"] = "\n".join([
+        f"TRACK 2 PACKAGE — {t2.get('case_id')} · {t2.get('status')}",
+        f"Stage 09 run {track2_run.name} · digest {t2.get('semantic_digest')}",
+        f"Built on commit {baseline.get('git_commit')} ({baseline.get('git_describe')}). "
+        f"public_evidence_only: {baseline.get('public_evidence_only')} · "
+        f"created_before_network_search: {baseline.get('created_before_network_search')}",
+        f"Provenance: mechanism {baseline.get('mechanism_run_id')} → map {baseline.get('intervention_map_run_id')} "
+        f"→ discovery {baseline.get('discovery_run_id')} → this run",
+        "", *( [note, ""] if note else [] ),
+        "upload/        the files a person submits",
+        "records/       the sanitized artifacts the upload was generated from",
+        "verification/  the sealed runs' own checksum lists, and anything else supplied",
+        "",
+        "VERIFY THE PACKAGE",
+        f"  cd {root} && {VERIFY_COMMAND}",
+        f"  {MANIFEST} lists every file in this folder by its path here, so every line should say OK.",
+        "",
+        "CROSS-CHECK AGAINST THE SEALED RUN",
+        "  verification/run_SHA256SUMS.txt is the run directory's own list on the controlled drive. It also",
+        "  names private files that are never exported, so do not run `shasum -c` against it here. Instead,",
+        "  each records/ file's hash in MANIFEST.sha256 equals its line in run_SHA256SUMS.txt, and the two",
+        "  upload files equal the run's *_track2_report.md and track2_pitch_script.md lines.",
+        ""])
+    try:
+        build(output_zip, files, root)
+    except PackageError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_BLOCKED)
+    typer.echo(str(output_zip))
 
 
 @export_app.command("track1")
