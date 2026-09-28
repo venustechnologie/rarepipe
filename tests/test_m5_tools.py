@@ -106,3 +106,35 @@ def test_a_gap_no_proposal_claims_is_unmapped(tmp_path):
 def test_an_undeclared_field_is_discussion_only_not_ready(tmp_path):
     report = accounting.build(_packet(tmp_path))
     assert report["counts"]["DISCUSSION_ONLY"] == 2 and report["counts"]["APPLY_READY"] == 0
+
+
+def test_a_stale_proposal_value_beside_corrected_fields_is_caught(tmp_path):
+    """The successor-review defect: two active specifications in one document."""
+    packet = _packet(tmp_path, field_values={
+        "E01_ACT.method": {"value": "MPM-2 flow cytometry", "status": "CONDITIONAL"},
+        "EXP01.analysis.meaningful_effect": {"value": None, "status": "BLOCKED_HUMAN"}})
+    proposals = json.loads((packet / "proposals.json").read_text())
+    item = proposals["items"][0]
+    item["status"] = "NEEDS_EXTERNAL_EVIDENCE"
+    item["proposal"] = {"value": {"E01_ACT.method": "a 30% cutoff the fields already rejected",
+                                 "EXP01.analysis.meaningful_effect": None}}
+    (packet / "proposals.json").write_text(json.dumps(proposals))
+    problems = consistency.check(packet, None, None)
+    assert any("disagrees with field_values" in p for p in problems)
+
+    item["proposal"]["value"]["E01_ACT.method"] = "MPM-2 flow cytometry"
+    (packet / "proposals.json").write_text(json.dumps(proposals))
+    assert not [p for p in consistency.check(packet, None, None) if "field_values" in p]
+
+
+def test_an_undeclared_superseded_reason_is_caught(tmp_path):
+    packet = _packet(tmp_path, field_values={"E01_ACT.method": {"value": "x", "status": "CONDITIONAL"},
+                                             "EXP01.analysis.meaningful_effect": {"value": None,
+                                                                                  "status": "BLOCKED_HUMAN"}})
+    proposals = json.loads((packet / "proposals.json").read_text())
+    item = proposals["items"][0]
+    item["status"] = "NEEDS_EXTERNAL_EVIDENCE"
+    item["proposal"] = {"value": {"E01_ACT.method": "x", "EXP01.analysis.meaningful_effect": None}}
+    item["superseded_proposal"] = {"object": {"old": True}}
+    (packet / "proposals.json").write_text(json.dumps(proposals))
+    assert any("must say why it was superseded" in p for p in consistency.check(packet, None, None))

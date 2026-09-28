@@ -213,7 +213,16 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
 
+    import platform
+    import subprocess
+    try:
+        rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
+                             cwd=Path(__file__).resolve().parents[3]).stdout.strip() or "unknown"
+    except Exception:
+        rev = "unknown"
     results = {"generated_by": "tools/m5/sim/run.py", "reps": args.reps, "seed": args.seed,
+               "code_revision": rev, "python": platform.python_version(), "numpy": np.__version__,
+               "seed_derivation": "base seed + zlib.crc32('world|procedure|framing') % 1_000_000",
                "margin_rate": worlds.MARGIN_RATE, "margin_minutes": worlds.MARGIN_MIN,
                "caveat": ("Every value is conditional on the assumptions in worlds.py. None is a measurement, an "
                           "MVA parameter, or a probability about any patient. Margins are placeholders supplied "
@@ -238,6 +247,19 @@ def main() -> int:
         results["worlds"].append(entry)
         print(f"{world.key:28} {world.kind:10} done", file=sys.stderr)
 
+    # A stable identifier can still collide; check rather than assume.
+    streams: dict[int, list[str]] = {}
+    for world in worlds.worlds():
+        for procedure in ("prep_summary", "glmm"):
+            for framing in ("margin", "difference"):
+                streams.setdefault(_seed(args.seed, world.key, procedure, framing), []).append(
+                    f"{world.key}|{procedure}|{framing}")
+        streams.setdefault(_seed(args.seed, world.key), []).append(world.key)
+    collisions = {k: v for k, v in streams.items() if len(v) > 1}
+    results["stream_collisions"] = ("none: " + f"{len(streams)} distinct streams"
+                                    if not collisions else f"COLLISIONS: {collisions}")
+    text = json.dumps(results, indent=2)
+    results["results_digest"] = "sha256:" + __import__("hashlib").sha256(text.encode()).hexdigest()[:24]
     text = json.dumps(results, indent=2)
     if args.out:
         args.out.write_text(text + "\n")

@@ -106,6 +106,24 @@ def check(packet: Path, plan_store: Path | None, plan_id: str | None) -> list[st
         if declared is not None and declared != ready_fields and "field_readiness" in json.dumps(proposals):
             problems.append(f"gap_register.progress.ready_for_human_review is {declared} but the proposals mark "
                             f"{ready_fields} field(s) apply-ready")
+        # The reviewer-facing value must be exactly what the fields say, or two specifications are
+        # active at once — the defect that let a stale 30% threshold survive beside its own repeal.
+        for item in proposals["items"]:
+            fv = item.get("field_values") or {}
+            pv = (item.get("proposal") or {}).get("value")
+            if fv and isinstance(pv, dict):
+                drifted = [g for g, spec in fv.items() if g not in pv or pv[g] != spec.get("value")]
+                extra = [g for g in pv if g not in fv]
+                if drifted:
+                    problems.append(f"{item['id']}: proposal.value disagrees with field_values for "
+                                    f"{len(drifted)} field(s): {drifted[:3]}")
+                if extra:
+                    problems.append(f"{item['id']}: proposal.value carries {len(extra)} key(s) with no field "
+                                    f"record: {extra[:3]}")
+            elif fv and pv is not None and not isinstance(pv, dict):
+                problems.append(f"{item['id']}: has field_values but proposal.value is not generated from them")
+            if item.get("superseded_proposal") and not item["superseded_proposal"].get("reason"):
+                problems.append(f"{item['id']}: superseded_proposal must say why it was superseded")
         for item in proposals["items"]:
             if item.get("status") == "READY_FOR_HUMAN_REVIEW":
                 fields = item.get("field_values")
@@ -131,7 +149,8 @@ def main() -> int:
         "checked": ["plan identity against the validator artifact",
                     "digest recomputed from the plan store where reachable",
                     "digests cited in prose", "gap coverage: invented, missing, double-claimed",
-                    "advertised ready fields actually carry values"],
+                    "advertised ready fields actually carry values",
+                    "reviewer-facing proposal.value matches field_values exactly"],
         "not_checked": ["whether the science is right", "whether a cited source says what is claimed",
                         "human identity", "native Rarepipe plan validation"],
     }, indent=2))

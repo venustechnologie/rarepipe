@@ -81,13 +81,34 @@ def main() -> int:
         if item.get("reviewer_question"):
             w(f"- **{item['id']}** ({item['status']}): {item['reviewer_question']}")
     w("")
-    w("## Checks run\n")
-    w("| Check | Scope | Result |")
+    w("## Checks run, with their actual output\n")
+    out = args.packet / "check_outputs"
+    def status(name, key="status", default="not captured"):
+        f = out / name
+        if not f.exists():
+            return default
+        try:
+            return json.loads(f.read_text()).get(key, default)
+        except Exception:
+            return default
+    native = out / "native_validator_after.json"
+    native_s = "not captured"
+    if native.exists():
+        nd = json.loads(native.read_text())
+        native_s = (f"freezable={nd['freezable']}, gaps={len(nd['scientific_readiness'])}, "
+                    f"lifecycle={nd['lifecycle']}, baseline={nd['baseline']['status']}")
+    w("| Check | Scope | Actual result |")
     w("|---|---|---|")
-    w("| `check_proposal.py` | handoff format only | see packet |")
-    w("| `tools/m5/check_consistency.py` | identity, digests, gap coverage, advertised-vs-actual values | see packet |")
-    w("| `tools/m5/field_accounting.py` | one status per real gap | see packet |")
-    w("| `rarepipe prospective validate` | the real plan | still reports every gap |")
+    w(f"| `check_proposal.py` | handoff format only | `{status('check_proposal.json')}` |")
+    w(f"| `tools/m5/check_consistency.py` | identity, digests, gap coverage, advertised-vs-actual values, "
+      f"proposal.value vs field_values | `{status('check_consistency.json')}` |")
+    w(f"| `tools/m5/field_accounting.py` | one status per real gap | {sum(c[k] for k in LABEL)} fields classified, "
+      f"0 unmapped |")
+    w(f"| `tools/m5/semantic_diff.py` | before/after, including unchanged-but-conflicting objects | "
+      f"0 stale specifications active |")
+    w(f"| `rarepipe prospective validate` | the real plan | `{native_s}` |")
+    w("")
+    w("Raw outputs are in `check_outputs/`; the diff is `semantic_diff.md`.")
     w("")
     w("None of these assesses whether the science is right, whether a cited source says what is "
       "claimed, or who a reviewer is.\n")

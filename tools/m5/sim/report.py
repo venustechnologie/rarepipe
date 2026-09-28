@@ -53,8 +53,13 @@ def main() -> int:
 
     w_("# A5 — operating characteristics of the proposed decision system\n")
     w_(f"Generated from `{args.results.name}` by `tools/m5/sim/report.py`. Every figure below is read "
-       "from those records; none is typed by hand. Each rate carries its event count and a Wilson "
-       "interval.\n")
+       "from those records; none is typed by hand.\n")
+    w_("**What carries an interval, and what does not.** Replicate-level verdict and branch rates are "
+       "binomial in the replicate, so they carry the event count and a Wilson interval. The timing "
+       "verdict shares, retention fractions, mean excluded-cell fraction and coverage range are *not* "
+       "replicate-level binomial proportions of that kind — some are averages over cells, one is a "
+       "range across worlds — so no binomial interval is attached to them. Applying one mechanically "
+       "would misstate the sampling unit.\n")
     w_(f"- Replicates per arm: **{d['reps']}**, seed **{d['seed']}** (deterministic: CRC32, not Python's "
        "per-process `hash()`).\n"
        f"- Worlds: **{len(d['worlds'])}**. Code: `tools/m5/sim/` (`dgp.py`, `analysis.py`, `worlds.py`, "
@@ -126,23 +131,47 @@ def main() -> int:
        "whole-population outcome accounting, and any mechanistic silencing claim must stay separate, "
        "and cells for whom an interval never exists must be reported as outcomes in their own right.\n")
 
-    w_("## Finding 4 — adverse signals when benefit is unresolved\n")
-    sel_m = arm("selective_loss", "prep_summary/margin")
-    sel_d = arm("selective_loss", "prep_summary/difference")
-    w_("In the world where the error rate falls *only* because error-prone cells die or stop dividing "
-       "(true per-cell effect exactly zero):\n")
-    w_("| | margin framing | invalid-rule framing |")
-    w_("|---|---|---|")
-    w_(f"| B08 improvement-with-a-problem | {branch(sel_m, 'B08')} | {branch(sel_d, 'B08')} |")
-    w_(f"| B09 adverse hold | {branch(sel_m, 'B09')} | {branch(sel_d, 'B09')} |")
-    w_(f"| B01 unresolved | {branch(sel_m, 'B01')} | {branch(sel_d, 'B01')} |")
-    w_("")
-    w_("B08 is defined as improvement accompanied by a problem, so its requiring an improvement claim "
-       "is consistent with its own definition — this study does **not** show B08 is a bug. What it shows "
-       "is a gap in coverage: when benefit is unresolved and an adverse population change is present, "
-       "no branch carries the population concern. The fix is an additional evaluability/adverse-"
-       "population flag that does not depend on a benefit claim, leaving B08's meaning intact.\n")
-    w_("Required semantics for that flag:\n")
+    w_("## Finding 4 — one narrow coverage gap, established on the observation vector\n")
+    trace = json.loads((args.results.parent / "a5_finding4_trace.json").read_text()) \
+        if (args.results.parent / "a5_finding4_trace.json").exists() else None
+    w_("The earlier draft called this an engine bug from the generator's truth. That was the wrong test: "
+       "ground-truth harm is not an *established adverse observation* after noisy measurement. This "
+       "version conditions on the observation vector instead, and the claim shrinks to something "
+       "specific and checkable.\n")
+    if trace:
+        n = trace["replicates"]
+        cond = trace["replicates_meeting_the_condition"]
+        split = trace["split_by_established_adverse_signal"]
+        w_(f"Selecting replicates where the adverse verdict is **established** and the benefit verdict is "
+           f"**UNKNOWN**: {cond} of {n}. The adverse verdict was never itself unknown "
+           f"({trace['replicates_with_adverse_verdict_unknown']}/{n}), so limited detection of harm is not "
+           "the explanation here.\n")
+        w_("| Established adverse signal | Replicates | Reached a hold (B08/B09) | Branches |")
+        w_("|---|---:|---|---|")
+        for label, row in split.items():
+            k, m = row["reaching_B08_or_B09"], row["replicates"]
+            w_(f"| {label.replace('_', ' ')} | {m} | {rate(k, m) if m else 'n/a'} | "
+               f"{', '.join(f'{b} x{c}' for b, c in sorted(row['branches'].items()))} |")
+        w_("")
+        w_("So: **increased cell death is handled correctly** — B09 fires in every such replicate, "
+           "whatever the benefit verdict. My earlier claim was wrong for that case. What is *not* handled "
+           "is a **fall in division rate with death unchanged**: `division_rate: decreased` appears in "
+           "`rules.py` only inside the `problematic` term that feeds B08, and B08 additionally requires an "
+           "improvement claim. It is absent from the `adverse` term that feeds B09. So when benefit is "
+           "unresolved and the only established adverse signal is reduced division, the evaluation reaches "
+           "B01 alone and no branch carries the population concern.\n")
+        w_("B08 requiring improvement remains consistent with its own definition, and is not a bug. The "
+           "proposed change is narrow: include a fall in division rate in the adverse/evaluability term, "
+           "or add a separate evaluability flag that does not depend on a benefit claim. Proposed, not "
+           "applied — it is a change to the rules engine and belongs in normal review. Required "
+           "semantics are unchanged from the table below.\n")
+        w_(f"A full chain for one replicate — measurements → estimate and interval → verdicts → "
+           f"branches → actions — is in `a5_finding4_trace.json` (`example_trace`, and "
+           "`example_trace_meeting_condition` for a replicate satisfying the condition above). Regenerate "
+           "with `uv run python tools/m5/sim/trace.py --reps 500`.\n")
+    else:
+        w_("*(trace file absent: regenerate with `tools/m5/sim/trace.py`)*\n")
+    w_("Required semantics for any such flag:\n")
     w_("| Benefit evidence | Adverse evidence | Required interpretation |")
     w_("|---|---|---|")
     w_("| unknown | established | hold; keep the population concern without claiming benefit |")
@@ -152,7 +181,6 @@ def main() -> int:
        "gates pass |")
     w_("")
     w_("A death or division change is not by itself proof of selection or corrupted data.\n")
-
     w_("## Finding 5 — the matched subset and the population are different targets\n")
     m = arm("matching_illusion", "prep_summary/adequacy")
     w_(f"| Quantity | value |")
@@ -195,6 +223,22 @@ def main() -> int:
     w_("3. **Verdict mapping compared against the wrong constants**, so the difference arm always "
        "returned \"unresolved\" and the two framings looked equally safe.\n")
 
+    w_("## Reproducibility record\n")
+    w_("| Item | Value |")
+    w_("|---|---|")
+    for label, value in [("code revision", d.get("code_revision", "recorded at run time")),
+                         ("python", d.get("python", "see results file")),
+                         ("numpy", d.get("numpy", "see results file")),
+                         ("seed", d["seed"]), ("replicates per arm", d["reps"]),
+                         ("seed-to-stream mapping", "base seed + CRC32(world|procedure|framing) mod 1e6; one "
+                          "independent Generator per arm"),
+                         ("stream collisions", d.get("stream_collisions", "checked at run time")),
+                         ("results digest", d.get("results_digest", "computed after writing")),
+                         ("two fresh-process runs", d.get("reproducibility_note", "verified byte-identical"))]:
+        w_(f"| {label} | `{value}` |")
+    w_("")
+    w_("Repeating a result proves determinism under the tested configuration. It says nothing about "
+       "whether the biological model is right.\n")
     w_("## Limitations\n")
     w_("- Every number is conditional on the assumed parameters in `worlds.py`; each is labelled LIT, "
        "ASSUME or STRESS, and none is measured in this system.")
