@@ -265,13 +265,14 @@
         "description": "Offline demo script for §19.1: import candidate, explain why the real plan cannot freeze, preview branches, freeze a labelled synthetic fixture, ingest a synthetic outcome, review and successor, sanitized export, deterministic replay. Operator guide and architecture decision record (§23).",
         "details": "Demo must not mark the actual MVA plan as experimentally validated.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "16",
           "17"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:22:22.029Z"
       },
       {
         "id": "19",
@@ -279,12 +280,13 @@
         "description": "Scientific review of the real MVA plan, lab feasibility and predeclared evaluation (§21 M5, §22).",
         "details": "Requires human owners: assay methods and thresholds, meaningful effects, model availability, exposure plausibility, patient-relevant goals. Engineering prepares the named-blocker list; it cannot supply these answers.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "blocked",
         "dependencies": [
           "18"
         ],
         "priority": "low",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:22:23.747Z"
       },
       {
         "id": "20",
@@ -292,19 +294,20 @@
         "description": "Reviewed simulation adapter and one permissioned evidence-node pilot (P1, §11.2, §12, §21 M6).",
         "details": "Requires validated models, parameters and verified dataset rights; out of scope for P0.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "deferred",
         "dependencies": [
           "18"
         ],
         "priority": "low",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:22:25.485Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-09-28T15:19:20.668Z",
+      "lastModified": "2026-09-28T15:22:25.486Z",
       "taskCount": 20,
-      "completedCount": 17,
+      "completedCount": 18,
       "tags": [
         "stage10-prospective"
       ]
