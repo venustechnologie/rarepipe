@@ -225,6 +225,16 @@ def _drug_result(discovery: dict) -> str:
             "useful for a clinician.\n")
 
 
+def _residual_line(s: Track2HypothesisSet) -> str:
+    rf = s.residual_function
+    if not rf or rf.get("class_level") != "function_persists" or not rf.get("class_level_variants"):
+        return ""
+    names = " and ".join(rf["class_level_variants"])
+    return (f" What we did find: when other substitutions in the same domain ({names}) were brought back to normal "
+            "protein levels, the checkpoint response came back. That makes raising BUBR1 levels plausible for "
+            "this class of mutation, not proven for this child, and it names the one experiment that would settle it.")
+
+
 def pitch(s: Track2HypothesisSet, discovery: dict) -> str:
     eligible = [h for h in s.hypotheses if h.state.value.startswith("TRACK2_ELIGIBLE")]
     lead = eligible[0] if eligible else None
@@ -240,7 +250,7 @@ def pitch(s: Track2HypothesisSet, discovery: dict) -> str:
            "Biallelic BUB1B disruption, impaired checkpoint, mosaic aneuploidy — with rescue evidence making the "
            "direction causal. And one link deliberately left unknown: what this child's missense allele does. "
            "No measurement of it was found in the corpus we searched, so the pipeline leaves it unknown rather "
-           "than filling it in.\n",
+           "than filling it in." + _residual_line(s) + "\n",
            "## 1:30 — the honest drug result\n",
            _drug_result(discovery)]
     if lead:

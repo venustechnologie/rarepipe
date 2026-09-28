@@ -225,7 +225,7 @@ def test_residual_function_reaches_the_stabilisation_point_without_changing_its_
     payload = json.loads(path.read_text())
     payload["residual_function"] = {
         "class_level": "function_persists", "exact_allele": "insufficient", "decision": "INSUFFICIENT",
-        "class_level_basis": "2 altered protein(s) in the protein kinase domain (I909T, L1012P) were restored",
+        "class_level_basis": "2 altered proteins in the protein kinase domain (I909T, L1012P) were restored",
         "decision_meaning": "the residual-function dependency stays unresolved for this child"}
     path.write_text(json.dumps(payload))
     after = {p.id: p for p in make(dossier, tmp_path / "b").intervention_map.intervention_points}

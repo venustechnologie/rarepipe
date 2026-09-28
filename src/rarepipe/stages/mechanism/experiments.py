@@ -106,6 +106,8 @@ class ResidualFunctionAssessment(BaseModel):
                      "(Decides whether an abundance-raising strategy is coherent.)")
     class_level: Literal["function_persists", "function_impaired", "mixed", "insufficient"]
     class_level_basis: str
+    class_level_variants: list[str] = Field(default_factory=list,
+                                            description="Published variants tested at restored abundance.")
     exact_allele: Literal["function_persists", "function_impaired", "insufficient"]
     exact_allele_basis: str
     decision: Literal["STRENGTHENS_STABILIZATION", "WEAKENS_ABUNDANCE_ONLY", "INSUFFICIENT"]
@@ -249,8 +251,10 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
     elif outcomes == {"restored"}:
         class_level = "function_persists"
         names = ", ".join(e.variant_label for e in restored_tests)
-        class_basis = (f"{len(restored_tests)} altered protein(s) in the {region_name} ({names}) were expressed at "
-                       "wild-type-comparable levels and the measured function was restored")
+        n = len(restored_tests)
+        class_basis = (f"{n} altered protein{'s' if n > 1 else ''} in the {region_name} ({names}) "
+                       f"{'were' if n > 1 else 'was'} expressed at wild-type-comparable levels and the measured "
+                       "function was restored")
     elif outcomes <= {"impaired"}:
         class_level, class_basis = "function_impaired", (
             f"altered proteins in the {region_name} remained impaired at restored abundance")
@@ -321,7 +325,8 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
     open_items.append("whether a medication raises BUBR1 abundance in this child's cells — the biochemical link "
                       "is a separate dependency and is not addressed by these experiments")
     return ResidualFunctionAssessment(
-        class_level=class_level, class_level_basis=class_basis, exact_allele=exact_level, exact_allele_basis=exact_basis,
+        class_level=class_level, class_level_basis=class_basis,
+        class_level_variants=[e.variant_label for e in restored_tests], exact_allele=exact_level, exact_allele_basis=exact_basis,
         decision=decision, decision_meaning=meaning, readouts_not_reported_at_restored_abundance=not_reported,
         distinguishing_experiment=(
             "Deplete endogenous BUBR1 (shRNA in U2OS or HeLa, as in PMID:20516114 Fig. 4) and express an "

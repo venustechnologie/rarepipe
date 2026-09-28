@@ -264,6 +264,7 @@ class Track2HypothesisSet(BaseModel):
     rejected: list[RejectedHypothesis] = Field(default_factory=list)
     search_outcomes: list[SearchOutcome] = Field(default_factory=list)
     submission_claims: list[SubmissionClaim] = Field(default_factory=list)
+    residual_function: dict | None = Field(None, description="Stage 06F assessment, as the mechanism run stated it.")
     node_query_specs: list[dict] = Field(default_factory=list)
     baseline: BaselineSnapshot
     next_actions: list[Action] = Field(default_factory=list)

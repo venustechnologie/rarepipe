@@ -354,7 +354,7 @@ def _mechanism(tmp_path, run_id="RUN_MECH", decision="INSUFFICIENT"):
     (run / "mechanism_dossier.sanitized.json").write_text(json.dumps({
         "execution": {"run_id": run_id},
         "residual_function": {"class_level": "function_persists", "exact_allele": "insufficient", "decision": decision,
-                              "class_level_basis": "2 altered protein(s) in the protein kinase domain (I909T, L1012P) "
+                              "class_level_basis": "2 altered proteins in the protein kinase domain (I909T, L1012P) "
                                                    "were restored",
                               "exact_allele_basis": "no experiment expressed this child's exact substitution",
                               "distinguishing_experiment": "express the exact substitution at matched abundance"}}))
@@ -374,7 +374,11 @@ def test_the_residual_function_dependency_is_derived_from_stage06(discovery, wor
     assert dep.what_would_resolve_it == "express the exact substitution at matched abundance"
     assert "RUN_MECH" in dep.basis
     sc004 = next(c for c in r.hypothesis_set.submission_claims if c.id == "SC_004")
-    assert "tends to work" in sc004.statement and "remains unresolved" in sc004.statement
+    assert "leans toward the protein working" in sc004.statement and "remains unresolved" in sc004.statement
+    from rarepipe.stages.track2.report import pitch
+    r.sanitized.residual_function["class_level_variants"] = ["I909T", "L1012P"]
+    text = pitch(r.sanitized, {"experiences": []})
+    assert "I909T and L1012P" in text and "not proven for this child" in text
 
 
 def test_a_mechanism_run_from_another_chain_is_refused(discovery, workspace, tmp_path):

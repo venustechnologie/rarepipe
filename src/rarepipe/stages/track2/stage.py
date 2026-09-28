@@ -258,7 +258,7 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
         visibility="private", case_id=discovery["case_id"], gene_symbol=discovery["gene_symbol"],
         status=status, status_basis=basis, hypotheses=hypotheses, rejected=rejected,
         search_outcomes=outcomes, submission_claims=claims,
-        node_query_specs=discovery.get("node_query_specs", []), baseline=baseline,
+        node_query_specs=discovery.get("node_query_specs", []), baseline=baseline, residual_function=residual,
         next_actions=_actions(promoted, discovery),
         provenance=Provenance(
             software=software_provenance(), discovery_run_id=discovery["execution"]["run_id"],
@@ -484,8 +484,10 @@ def _sc004(residual: dict | None) -> SubmissionClaim:
                       "BUBR1 abundance helps only if the protein that accumulates retains useful "
                       "function, and that remains unresolved.",
             basis_note="Stage 06 MC_0006 unresolved")
-    lean = {"function_persists": "at class level the protein that accumulates tends to work",
-            "function_impaired": "at class level the protein that accumulates tends not to work",
+    lean = {"function_persists": "at class level, the evidence leans toward the protein working once its abundance "
+                                 "is restored",
+            "function_impaired": "at class level, the evidence leans toward the protein staying impaired even at "
+                                 "restored abundance",
             "mixed": "at class level the evidence is mixed",
             "insufficient": "no class-level restored-abundance test was found"}[residual["class_level"]]
     unresolved = residual["exact_allele"] == "insufficient"
