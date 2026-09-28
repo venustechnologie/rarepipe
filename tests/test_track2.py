@@ -44,7 +44,9 @@ def discovery(tmp_path: Path) -> Path:
 
 def _hypothesis(**kw):
     base = {
-        "active_ingredient": "niacin", "statement": "worth testing", "observed_direction": "concordant",
+        "active_ingredient": "niacin", "statement": "worth testing", "predicted_direction": "concordant",
+        "observed_direction": "unknown", "observed_upstream_effects": ["blood NAD+ rises"],
+        "efficacy_dependencies": [{"dependency": "residual BUBR1 function", "status": "unresolved"}],
         "tested_in_bub1b_deficiency": False, "tested_in_mva": False, "not_tested_note": "never tested in MVA",
         "exact_allele_dependency": False,
         "proposed_chain": [
@@ -138,7 +140,7 @@ def test_a_discordant_direction_cannot_be_promoted(discovery, workspace, tmp_pat
     save(workspace, import_hypotheses(workspace, _write(workspace, [
         _hypothesis(observed_direction="discordant")])))
     r = make(discovery, workspace, tmp_path)
-    assert any("direction" in c for c in
+    assert any("wrong way" in c for c in
                [x.check for x in r.hypothesis_set.hypotheses[0].gate if not x.passed])
     assert r.hypothesis_set.status is Status.BLOCKED
 
@@ -296,3 +298,49 @@ def test_the_status_line_itself_is_corpus_scoped(discovery, workspace, tmp_path)
     assert "corpus searched" in basis
     for overclaim in ("none has been tested", "has never been tested", "nobody has tested"):
         assert overclaim not in basis
+
+
+
+# ── predicted is not observed; generating is not depending ──────────────────
+
+def test_an_upstream_effect_cannot_stand_in_for_an_observed_rescue(discovery, workspace, tmp_path):
+    """A measured rise in blood NAD+ is not an observed effect on BUBR1 or the checkpoint."""
+    save(workspace, import_hypotheses(workspace, _write(workspace, [_hypothesis()])))
+    h = make(discovery, workspace, tmp_path).hypothesis_set.hypotheses[0]
+    assert h.predicted_direction == "concordant" and h.observed_direction == "unknown"
+    assert h.observed_upstream_effects
+    assert h.state.value.startswith("TRACK2_ELIGIBLE"), "an unobserved rescue is fine for a research hypothesis"
+
+
+def test_a_hypothesis_whose_prediction_is_unknown_cannot_be_promoted(discovery, workspace, tmp_path):
+    save(workspace, import_hypotheses(workspace, _write(workspace, [_hypothesis(predicted_direction="unknown")])))
+    h = make(discovery, workspace, tmp_path).hypothesis_set.hypotheses[0]
+    assert any("predicted direction" in c.check and not c.passed for c in h.gate)
+
+
+def test_efficacy_dependencies_must_be_named(discovery, workspace, tmp_path):
+    """Generating a hypothesis without the exact allele is not expecting it to work regardless of the allele."""
+    save(workspace, import_hypotheses(workspace, _write(workspace, [_hypothesis(efficacy_dependencies=[])])))
+    h = make(discovery, workspace, tmp_path).hypothesis_set.hypotheses[0]
+    assert any("efficacy dependencies" in c.check and not c.passed for c in h.gate)
+
+
+def test_the_lane_b_outcome_is_derived_from_the_evidence(discovery, workspace, tmp_path):
+    """The sentence used to be a constant, and a reviewer's single citation made it false."""
+    r = make(discovery, workspace, tmp_path)
+    assert r.hypothesis_set.search_outcomes[0].result.value == "NO_EVIDENCE_FOUND"
+
+    payload = json.loads((discovery / "intervention_discovery.private.json").read_text())
+    payload["experiences"] = [{
+        "id": "IX_1", "intervention_ingredient": "sirolimus (rapamycin)", "lane": "B_rescue_in_deficient_biology",
+        "model": "BubR1-deficient mice", "subject_scope": "animal", "outcome": "no_effect",
+        "measured_endpoints": [{"endpoint": "age-related phenotypes", "direction": "unchanged"}],
+        "evidence_source": {"source_id": "PMID:23602569", "quote": "similar rates"}}]
+    (discovery / "intervention_discovery.private.json").write_text(json.dumps(payload))
+    r = make(discovery, workspace, tmp_path / "second")
+    outcome = r.hypothesis_set.search_outcomes[0]
+    assert outcome.result.value == "NEGATIVE_EXPERIENCE_FOUND"
+    assert "sirolimus" in outcome.interpretation and "IX_1" in outcome.evidence
+    assert "not a demonstrated null" in outcome.does_not_mean
+    claim = next(c for c in r.hypothesis_set.submission_claims if c.id == "SC_003")
+    assert "One reported attempt was found" in claim.statement and claim.evidence_ids == ["IX_1"]

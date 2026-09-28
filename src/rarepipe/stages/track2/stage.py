@@ -100,8 +100,16 @@ def gate(hypothesis, approval, discovery) -> list[GateCheck]:
                   detail=f"{approval.authority_source or 'unverified'}; {', '.join(approval.jurisdictions) or 'none'}"),
         GateCheck(check="an explicit proposed mechanism chain is present", passed=len(hypothesis.proposed_chain) >= 2,
                   detail=f"{len(hypothesis.proposed_chain)} link(s)"),
-        GateCheck(check="direction matches the specification", passed=hypothesis.observed_direction == "concordant",
-                  detail=hypothesis.observed_direction),
+        GateCheck(check="the predicted direction matches the specification",
+                  passed=hypothesis.predicted_direction == "concordant",
+                  detail=f"predicted {hypothesis.predicted_direction}"),
+        GateCheck(check="no observation on the required state points the wrong way",
+                  passed=hypothesis.observed_direction != "discordant",
+                  detail=f"observed on the required state: {hypothesis.observed_direction}"),
+        GateCheck(check="efficacy dependencies are named, with their status",
+                  passed=bool(hypothesis.efficacy_dependencies),
+                  detail=f"{len(hypothesis.efficacy_dependencies)} named; "
+                         f"{sum(1 for d in hypothesis.efficacy_dependencies if d.status == 'unresolved')} unresolved"),
         GateCheck(check="at least one primary experimental source demonstrates the medication's own molecular effect",
                   passed=bool(evidenced) and bool(evidenced[0].evidence),
                   detail=f"{len(evidenced)} evidenced link(s), first carries {len(evidenced[0].evidence) if evidenced else 0} citation(s)"),
@@ -284,6 +292,19 @@ def _unverified(ingredient: str):
     return ApprovalRecord(ingredient=ingredient, verified=False, note="approval not checked: offline run")
 
 
+def lane_b_attempts(discovery: dict) -> list[dict]:
+    """Pharmacological attempts in BUB1B-deficient biology, as the pinned Stage 08 artifact records them."""
+    return [e for e in discovery.get("experiences", []) if e.get("lane") == "B_rescue_in_deficient_biology"]
+
+
+def describe_attempts(attempts: list[dict]) -> str:
+    return "; ".join(
+        f"{a['intervention_ingredient']} in {a.get('model') or a.get('subject_scope')} "
+        f"({', '.join(m['endpoint'] + ' ' + m['direction'] for m in a.get('measured_endpoints', [])) or a['outcome']}, "
+        f"source {a['evidence_source']['source_id']})"
+        for a in attempts)
+
+
 def _task_stats(research_dir: Path, task_ids: list[str]) -> tuple[list[str], int]:
     """What a search outcome actually rests on.
 
@@ -308,15 +329,8 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
                   (json.loads(p.read_text()) for p in sorted((research_dir / "tasks").glob("KT_*.json")))
                   if task.get("reason", "").startswith("[")]
     outcomes = [
-        SearchOutcome(
-            question="Is there an approved medication with demonstrated rescue in BUB1B-deficient biology?",
-            corpus="Europe PMC, lanes A-D (Stage 08) plus the Track 2 tasks",
-            result=SearchResult.NO_EVIDENCE_FOUND,
-            interpretation=("no pharmacological rescue in BUB1B-deficient or MVA biology was found in the corpus "
-                            "searched, in either direction"),
-            does_not_mean=("that pharmacological rescue has been shown not to work, and not that nobody has "
-                           "attempted it. This is " + CORPUS_CAVEAT),
-            **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, lane_tasks), strict=True))),
+        _lane_b_outcome(discovery,
+            _task_stats(research_dir, lane_tasks + ["KT_0027"])),
         SearchOutcome(
             question="Which regulators control BUBR1 abundance, and is any pharmacologically addressable?",
             corpus="Europe PMC, KT_T2_01/03/04",
@@ -371,6 +385,31 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
     return outcomes
 
 
+def _lane_b_outcome(discovery: dict, stats: tuple[list[str], int]) -> SearchOutcome:
+    queries, documents = stats
+    attempts = lane_b_attempts(discovery)
+    question = "Is there an approved medication with demonstrated rescue in BUB1B-deficient biology?"
+    corpus = "Europe PMC and NCBI PMC, lanes A-D (Stage 08) plus the Track 2 tasks"
+    if not attempts:
+        return SearchOutcome(
+            question=question, corpus=corpus, result=SearchResult.NO_EVIDENCE_FOUND,
+            interpretation=("no pharmacological rescue in BUB1B-deficient or MVA biology was found in the corpus "
+                            "searched, and no attempt in either direction"),
+            does_not_mean=("that pharmacological rescue has been shown not to work, and not that nobody has "
+                           "attempted it. This is " + CORPUS_CAVEAT),
+            queries=queries, documents_examined=documents)
+    return SearchOutcome(
+        question=question, corpus=corpus, result=SearchResult.NEGATIVE_EXPERIENCE_FOUND,
+        interpretation=(f"no rescue was found, and {len(attempts)} attempt(s) were: {describe_attempts(attempts)}. "
+                        "None reported improvement"),
+        does_not_mean=("that these medications fail at checkpoint or segregation rescue, or in human MVA: the "
+                       "attempt found measured age-related phenotypes, in mice, reported as preliminary unpublished "
+                       "data without dose, duration, sample size or statistics. 'Similar rates' is an absence of "
+                       "reported improvement, not a demonstrated null. It bears on neither niacin nor the NAD+/SIRT2 "
+                       "route"),
+        queries=queries, documents_examined=documents, evidence=[a["id"] for a in attempts])
+
+
 def _claims(promoted, discovery, outcomes) -> list[SubmissionClaim]:
     """Every substantive sentence the report may use, tied to what it rests on."""
     claims = [
@@ -382,16 +421,13 @@ def _claims(promoted, discovery, outcomes) -> list[SubmissionClaim]:
                         statement="Biallelic BUB1B disruption causes mosaic variegated aneuploidy, and restoring "
                                   "BUBR1 in patient cells restores mitotic checkpoint activity.",
                         basis_note="Stage 06 MC_0001, MC_0012"),
-        SubmissionClaim(id="SC_003", type="observation", scope="case",
-                        statement="No approved medication was found to have demonstrated rescue in BUB1B-deficient "
-                                  "biology in the corpus searched, and no attempt was found in either direction. "
-                                  "That is an absence of evidence in that corpus rather than a demonstrated "
-                                  "failure, and it is not proof that no attempt exists: an attempt reported only "
-                                  "as unpublished data or in a full text we could not reach would not appear.",
-                        basis_note="Stage 08 lanes A-D, corpus-scoped"),
+        _sc003(discovery),
         SubmissionClaim(id="SC_004", type="derived_inference", scope="exact_variant",
-                        statement="The functional effect of this child's missense allele remains unmeasured, so every "
-                                  "hypothesis here is deliberately independent of it.",
+                        statement="No measurement of this child's missense allele's functional effect was found in "
+                                  "the corpus searched. The hypotheses here were generated without depending on it, "
+                                  "but whether any of them would work does depend on it: a strategy that raises "
+                                  "BUBR1 abundance helps only if the protein that accumulates retains useful "
+                                  "function, and that remains unresolved.",
                         basis_note="Stage 06 MC_0006 unresolved"),
     ]
     for h in promoted:
@@ -401,6 +437,23 @@ def _claims(promoted, discovery, outcomes) -> list[SubmissionClaim]:
             basis_note=f"evidence grade {h.evidence_grade.value if h.evidence_grade else 'ungraded'}; "
                        f"untested in BUB1B/MVA"))
     return claims
+
+
+def _sc003(discovery: dict) -> SubmissionClaim:
+    attempts = lane_b_attempts(discovery)
+    if attempts:
+        statement = ("No approved medication was found to have demonstrated rescue in BUB1B-deficient biology in the "
+                     f"corpus searched. One reported attempt was found — {describe_attempts(attempts)} — reporting no "
+                     "improvement, as a preliminary author report without underlying data. It measured neither "
+                     "checkpoint nor segregation, and does not establish failure in human MVA.")
+        evidence = [a["id"] for a in attempts]
+    else:
+        statement = ("No approved medication was found to have demonstrated rescue in BUB1B-deficient biology in the "
+                     "corpus searched, and no attempt was found in either direction. That is an absence of evidence "
+                     "in that corpus, not proof that no attempt exists.")
+        evidence = []
+    return SubmissionClaim(id="SC_003", type="observation", scope="case", statement=statement,
+                           evidence_ids=evidence, basis_note="Stage 08 lanes A-D and KT_T2_09, corpus-scoped")
 
 
 def _actions(promoted, discovery) -> list[Action]:

@@ -485,3 +485,29 @@ def test_task_ids_never_collide_with_an_existing_task(tmp_path, corpus):
     clash = new.model_copy(update={"id": "KT_0008", "question": "something else entirely"})
     with pytest.raises(research.ResearchError):
         research.save_task(root, clash, allow_overwrite=False)
+
+
+
+def test_full_text_is_stored_only_under_a_licence_that_permits_it(monkeypatch):
+    """NCBI PMC serves some articles Europe PMC flags as closed. Only a stated text-mining licence lets us keep them."""
+    from rarepipe.stages.mechanism import retrieve as mod
+
+    def closed(url, timeout=90):
+        if "europepmc" in url:
+            raise OSError("not open access")
+        return b"<article><license><license-p>All rights reserved.</license-p></license><body>text</body></article>"
+
+    monkeypatch.setattr(mod, "_get", closed)
+    body, note = mod.fetch_full_text("PMC1")
+    assert body is None and "licence does not state text-mining permission" in note
+
+    def licensed(url, timeout=90):
+        if "europepmc" in url:
+            raise OSError("not open access")
+        return (b"<article><license><license-p>This file is available for text mining.</license-p></license>"
+                b"<body><p>In preliminary studies, mice developed phenotypes at similar rates.</p></body></article>")
+
+    monkeypatch.setattr(mod, "_get", licensed)
+    body, note = mod.fetch_full_text("PMC1")
+    assert body and "similar rates" in body
+    assert "under its stated licence" in note and "text mining" in note

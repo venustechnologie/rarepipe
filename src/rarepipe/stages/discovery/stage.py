@@ -119,7 +119,7 @@ def build(req: BuildRequest, console: Console | None = None) -> BuildResult:
     needs, node_specs = _gaps(experiences, candidates, gene)
     searches = _searches(req.research_dir)
 
-    status, basis = _gate(candidates)
+    status, basis = _gate(candidates, experiences)
     discovery = InterventionDiscovery(
         visibility="private", case_id=imap["case_id"], gene_symbol=gene, status=status, status_basis=basis,
         candidates=candidates, experiences=experiences, reference_compounds=references, rejected=rejected,
@@ -293,6 +293,25 @@ def _directness(experiences) -> Directness:
     return best
 
 
+def lane_b_statement(lane_b) -> str:
+    """What lane B found, derived from its experiences rather than written as a constant.
+
+    The sentence used to read "no experience was found in either direction" — true until a reviewer
+    pointed at a rapamycin report buried in a Discussion section, at which point it was false. A
+    sentence that describes the evidence has to be computed from the evidence.
+    """
+    if not lane_b:
+        return ("No pharmacological rescue of any endpoint in BUB1B-deficient biology was found in the corpus "
+                "searched, and no attempt was found in either direction. That is " + CORPUS_CAVEAT + ".")
+    attempts = "; ".join(
+        f"{e.intervention_ingredient} ({e.model or e.subject_scope.value}): "
+        f"{', '.join(f'{m.endpoint} {m.direction}' for m in e.measured_endpoints) or e.outcome.value}"
+        for e in lane_b)
+    return (f"No pharmacological rescue of any endpoint in BUB1B-deficient biology was found in the corpus searched. "
+            f"{len(lane_b)} attempt(s) were found, none reporting improvement — {attempts}. Each carries its own "
+            "reporting limits; none measured chromosome segregation, checkpoint function or aneuploidy.")
+
+
 def _gaps(experiences, candidates, gene) -> tuple[list[str], list[NodeQuerySpec]]:
     """What we could not answer from public literature becomes a question for a future node."""
     needs = []
@@ -309,9 +328,9 @@ def _gaps(experiences, candidates, gene) -> tuple[list[str], list[NodeQuerySpec]
             desired_evidence=["intervention", "outcome", "endpoint", "timeframe"],
             useful_negative_result=True, patient_identity_required=False,
             arises_from="no mechanism-matching approved candidate found in public literature"))
-    if not any(e.lane is Lane.B_DEFICIENT_RESCUE and e.outcome is Outcome.IMPROVED for e in experiences):
-        needs.append("No pharmacological rescue of any endpoint in BUB1B-deficient cells was found in the corpus "
-                     "searched — no experience was found in either direction. That is " + CORPUS_CAVEAT + ".")
+    lane_b = [e for e in experiences if e.lane is Lane.B_DEFICIENT_RESCUE]
+    if not any(e.outcome is Outcome.IMPROVED for e in lane_b):
+        needs.append(lane_b_statement(lane_b))
         specs.append(NodeQuerySpec(
             id="NQS_002",
             question=("Has any laboratory tested an approved medication against a mitotic-checkpoint or "
@@ -344,7 +363,7 @@ def _searches(research_dir: Path) -> list[SearchRecord]:
     return records
 
 
-def _gate(candidates) -> tuple[Status, str]:
+def _gate(candidates, experiences=()) -> tuple[Status, str]:
     matched = [c for c in candidates if c.state is CandidateState.MECHANISM_MATCH]
     possible = [c for c in candidates if c.state is CandidateState.INSUFFICIENT_EVIDENCE
                 and c.mechanism_match and c.mechanism_match.status is MatchStatus.POSSIBLE]
@@ -365,6 +384,5 @@ def _gate(candidates) -> tuple[Status, str]:
     return Status.NONE_FOUND, (
         "No approved intervention has direction-concordant evidence for the specification. " + wrong_way +
         ", which is a useful result for this child even though it is not a candidate. The absence of positive "
-        "candidates is an absence of evidence in the corpus searched, not a demonstration that nothing works: "
-        "lane B surfaced no pharmacological attempt in this biology, in either direction. That is " +
-        CORPUS_CAVEAT + ".")
+        "candidates is an absence of evidence in the corpus searched, not a demonstration that nothing works. " +
+        lane_b_statement([e for e in experiences if e.lane is Lane.B_DEFICIENT_RESCUE]))

@@ -23,6 +23,9 @@ from rarepipe.stages.mechanism.model import QueryRecord, RetrievedDocument
 
 SEARCH_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 FULLTEXT_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/{pmcid}/fullTextXML"
+PMC_EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id={pmc_number}&retmode=xml"
+# Licence language under which PMC permits machine reading. Anything else is not stored.
+TEXT_MINING_LICENCES = re.compile(r"text mining|creativecommons|CC BY|open access|open-access", re.I)
 UA = {"User-Agent": "rarepipe-mechanism-retrieval"}
 
 # PRD 006 §38-39: agents must not drift into intervention search.
@@ -93,14 +96,29 @@ def strip_xml(xml: str) -> str:
 
 
 def fetch_full_text(pmcid: str) -> tuple[str | None, str]:
-    """Open-access full text only. No scraping, no paywall circumvention (PRD 006 §19)."""
+    """Licensed full text only. No scraping, no paywall circumvention (PRD 006 §19).
+
+    Europe PMC's open-access endpoint first; then NCBI PMC, which serves some articles Europe PMC
+    flags as not open access — but only when the article's own licence permits text mining, and the
+    licence is recorded in the access note so the permission travels with the text.
+    """
     try:
         raw = _get(FULLTEXT_URL.format(pmcid=pmcid)).decode("utf-8", "replace")
-    except Exception as exc:  # 403/404/500 all mean the same thing here: we may not have it
-        return None, f"full text not available through the open-access API ({type(exc).__name__})"
+        if "<body" in raw:
+            return strip_xml(raw), "open-access full text retrieved from Europe PMC"
+    except Exception:
+        pass
+    try:
+        raw = _get(PMC_EFETCH_URL.format(pmc_number=pmcid.removeprefix("PMC"))).decode("utf-8", "replace")
+    except Exception as exc:
+        return None, f"full text not available from Europe PMC or NCBI PMC ({type(exc).__name__})"
     if "<body" not in raw:
-        return None, "full text response carried no body"
-    return strip_xml(raw), "open-access full text retrieved from Europe PMC"
+        return None, "NCBI PMC returned no article body: full text is not available under a permitting licence"
+    licence = re.search(r"<license[^>]*>(.*?)</license>", raw, re.S)
+    licence_text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", licence.group(1))).strip() if licence else ""
+    if not TEXT_MINING_LICENCES.search(licence_text):
+        return None, "NCBI PMC full text exists but its licence does not state text-mining permission; not stored"
+    return strip_xml(raw), f"full text retrieved from NCBI PMC under its stated licence: {licence_text[:180]}"
 
 
 @dataclass
@@ -123,13 +141,11 @@ class Corpus:
         text = (record.get("abstractText") or "").strip()
         access = "abstract and metadata only"
         full = False
-        if want_full_text and pmcid and record.get("isOpenAccess") == "Y":
+        if want_full_text and pmcid:
             body, access = fetch_full_text(pmcid)
             if body:
                 text = f"{record.get('title', '')}\n\n{text}\n\n{body}"
                 full = True
-        elif pmcid:
-            access = "in Europe PMC but not open access; full text not retrieved"
         payload = text or (record.get("title") or "")
         path = self.doc_dir() / f"{source_id.replace(':', '_')}.txt"
         path.write_text(payload)

@@ -208,6 +208,23 @@ def submission(s: Track2HypothesisSet, evidence: dict, discovery: dict) -> str:
     return "\n".join(out)
 
 
+def _drug_result(discovery: dict) -> str:
+    attempts = [e for e in discovery.get("experiences", []) if e.get("lane") == "B_rescue_in_deficient_biology"]
+    if attempts:
+        names = ", ".join(a["intervention_ingredient"] for a in attempts)
+        return ("Across the corpus we searched, no approved medication showed rescue in BUB1B-deficient biology. "
+                f"One attempt was reported — {names}, in BubR1-deficient mice — with no improvement in age-related "
+                "phenotypes. It is a preliminary author report, without data, and it never measured the checkpoint. "
+                "We found it because a reviewer pointed us to a sentence in a Discussion section our searches had "
+                "missed, which is exactly why we scope every absence to the corpus we searched. The search also "
+                "found approved drugs that push this biology the wrong way, which is directly useful for a "
+                "clinician.\n")
+    return ("Across the corpus we searched, no approved medication has been tested for rescue in BUB1B-deficient "
+            "biology — no attempt found in either direction. That is an absence in our corpus, not a proof about "
+            "the world. The search did find approved drugs that push this biology the wrong way, which is directly "
+            "useful for a clinician.\n")
+
+
 def pitch(s: Track2HypothesisSet, discovery: dict) -> str:
     eligible = [h for h in s.hypotheses if h.state.value.startswith("TRACK2_ELIGIBLE")]
     lead = eligible[0] if eligible else None
@@ -222,12 +239,10 @@ def pitch(s: Track2HypothesisSet, discovery: dict) -> str:
            "## 1:00 — what the mechanism actually supports\n",
            "Biallelic BUB1B disruption, impaired checkpoint, mosaic aneuploidy — with rescue evidence making the "
            "direction causal. And one link deliberately left unknown: what this child's missense allele does. "
-           "Nobody has measured it, so the pipeline says so.\n",
+           "No measurement of it was found in the corpus we searched, so the pipeline leaves it unknown rather "
+           "than filling it in.\n",
            "## 1:30 — the honest drug result\n",
-           "Across the corpus we searched, no approved medication has been tested for rescue in BUB1B-deficient "
-           "biology — no attempt found in either direction. That is an absence in our corpus, not a proof about "
-           "the world, and saying which one you have is the whole discipline. The search did find approved drugs "
-           "that push this biology the wrong way, which is directly useful for a clinician.\n"]
+           _drug_result(discovery)]
     if lead:
         out += ["## 2:00 — one hypothesis worth testing\n",
                 f"{lead.active_ingredient}, approval verified against the regulator's approvals database. Every "

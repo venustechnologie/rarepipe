@@ -110,6 +110,20 @@ class MindChanger(BaseModel):
     would_falsify: list[str] = Field(default_factory=list)
 
 
+class EfficacyDependency(BaseModel):
+    """Something the hypothesis needs to be true in order to work, stated so it cannot be forgotten.
+
+    Generating a hypothesis without knowing the exact allele is not the same as expecting it to work
+    regardless of the allele. A strategy that raises protein abundance helps only if the protein that
+    accumulates can do its job.
+    """
+
+    dependency: str
+    status: Literal["unresolved", "supported", "contradicted"] = "unresolved"
+    why_it_matters: str = ""
+    what_would_resolve_it: str = ""
+
+
 class GateCheck(BaseModel):
     check: str
     passed: bool
@@ -128,7 +142,13 @@ class ResearchRepurposingHypothesis(BaseModel):
     statement: str
     proposed_chain: list[ChainLink] = Field(default_factory=list)
     required_direction: str = "restore_toward_normal"
-    observed_direction: Literal["concordant", "discordant", "unknown"] = "unknown"
+    predicted_direction: Literal["concordant", "discordant", "unknown"] = Field(
+        "unknown", description="The direction the mechanism predicts the medication would move the required state.")
+    observed_direction: Literal["concordant", "discordant", "unknown"] = Field(
+        "unknown", description="The direction actually observed on the REQUIRED state (BUBR1 function, checkpoint, "
+                               "segregation). Upstream effects such as a rise in blood NAD+ do not count here.")
+    observed_upstream_effects: list[str] = Field(
+        default_factory=list, description="Effects of the medication that were observed, short of the required state.")
     evidence_grade: EvidenceGrade | None = None
     establishing_evidence: list[str] = Field(default_factory=list)
     supporting_evidence: list[str] = Field(default_factory=list)
@@ -137,7 +157,11 @@ class ResearchRepurposingHypothesis(BaseModel):
     unknown_experiences: list[str] = Field(default_factory=list)
     not_tested_note: str = ""
     independence_groups: list[str] = Field(default_factory=list)
-    exact_allele_dependency: bool = False
+    exact_allele_dependency: bool = Field(
+        False, description="Whether GENERATING the hypothesis required the exact allele's mechanism. It says "
+                           "nothing about whether the medication would work regardless of the allele — see "
+                           "efficacy_dependencies for that.")
+    efficacy_dependencies: list[EfficacyDependency] = Field(default_factory=list)
     tested_in_bub1b_deficiency: bool = False
     tested_in_mva: bool = False
     pediatric_context: PediatricContext = Field(default_factory=PediatricContext)

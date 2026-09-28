@@ -229,6 +229,40 @@
       "title": "ChainLink",
       "type": "object"
     },
+    "EfficacyDependency": {
+      "description": "Something the hypothesis needs to be true in order to work, stated so it cannot be forgotten.\n\nGenerating a hypothesis without knowing the exact allele is not the same as expecting it to work\nregardless of the allele. A strategy that raises protein abundance helps only if the protein that\naccumulates can do its job.",
+      "properties": {
+        "dependency": {
+          "title": "Dependency",
+          "type": "string"
+        },
+        "status": {
+          "default": "unresolved",
+          "enum": [
+            "unresolved",
+            "supported",
+            "contradicted"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "why_it_matters": {
+          "default": "",
+          "title": "Why It Matters",
+          "type": "string"
+        },
+        "what_would_resolve_it": {
+          "default": "",
+          "title": "What Would Resolve It",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dependency"
+      ],
+      "title": "EfficacyDependency",
+      "type": "object"
+    },
     "EvidenceGrade": {
       "description": "How far the evidence actually reaches. Never a probability of working.",
       "enum": [
@@ -576,8 +610,20 @@
           "title": "Required Direction",
           "type": "string"
         },
+        "predicted_direction": {
+          "default": "unknown",
+          "description": "The direction the mechanism predicts the medication would move the required state.",
+          "enum": [
+            "concordant",
+            "discordant",
+            "unknown"
+          ],
+          "title": "Predicted Direction",
+          "type": "string"
+        },
         "observed_direction": {
           "default": "unknown",
+          "description": "The direction actually observed on the REQUIRED state (BUBR1 function, checkpoint, segregation). Upstream effects such as a rise in blood NAD+ do not count here.",
           "enum": [
             "concordant",
             "discordant",
@@ -585,6 +631,14 @@
           ],
           "title": "Observed Direction",
           "type": "string"
+        },
+        "observed_upstream_effects": {
+          "description": "Effects of the medication that were observed, short of the required state.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Observed Upstream Effects",
+          "type": "array"
         },
         "evidence_grade": {
           "anyOf": [
@@ -646,8 +700,16 @@
         },
         "exact_allele_dependency": {
           "default": false,
+          "description": "Whether GENERATING the hypothesis required the exact allele's mechanism. It says nothing about whether the medication would work regardless of the allele \u2014 see efficacy_dependencies for that.",
           "title": "Exact Allele Dependency",
           "type": "boolean"
+        },
+        "efficacy_dependencies": {
+          "items": {
+            "$ref": "#/$defs/EfficacyDependency"
+          },
+          "title": "Efficacy Dependencies",
+          "type": "array"
         },
         "tested_in_bub1b_deficiency": {
           "default": false,

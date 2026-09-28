@@ -19,6 +19,7 @@ from rarepipe.stages.mechanism.model import InvalidInference, LLMResearchSession
 from rarepipe.stages.mechanism.research import BUNDLES, _normalise
 from rarepipe.stages.track2.model import (
     ChainLink,
+    EfficacyDependency,
     HypothesisState,
     MindChanger,
     ResearchRepurposingHypothesis,
@@ -143,6 +144,9 @@ def import_hypotheses(root: Path, analysis_path: Path, *, session_index: int = 1
         hypotheses.append(ResearchRepurposingHypothesis(
             id=hid, active_ingredient=ingredient, statement=str(item.get("statement", "")),
             proposed_chain=links, observed_direction=str(item.get("observed_direction", "unknown")),
+            predicted_direction=str(item.get("predicted_direction", "unknown")),
+            observed_upstream_effects=list(item.get("observed_upstream_effects") or []),
+            efficacy_dependencies=[EfficacyDependency(**d) for d in item.get("efficacy_dependencies") or []],
             establishing_evidence=[e for link in links if link.kind == "evidenced" for e in link.evidence],
             supporting_evidence=list(item.get("supporting_evidence") or []),
             contradicting_evidence=contradicting,
