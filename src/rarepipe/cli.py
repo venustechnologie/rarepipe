@@ -759,6 +759,8 @@ def export_track2_package(
         "  names private files that are never exported, so do not run `shasum -c` against it here. Instead,",
         "  each records/ file's hash in MANIFEST.sha256 equals its line in run_SHA256SUMS.txt, and the two",
         "  upload files equal the run's *_track2_report.md and track2_pitch_script.md lines.",
+        *(["  records/stage06/ files likewise equal their lines in verification/stage06_run_SHA256SUMS.txt."]
+          if mechanism_run else []),
         ""])
     try:
         build(output_zip, files, root)
