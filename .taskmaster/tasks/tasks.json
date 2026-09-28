@@ -12,7 +12,7 @@
       {
         "id": "1",
         "title": "M0 Baseline closure: verified supplement, RH_001 v3, revised pitch, build/test lineage",
-        "description": "Close PRD §2: import publisher-verified supplement bytes, supersede RH_001 with genotype-verification and viability/death/division requirements, revise pitch sentence 15, rebuild Stages 06-09, pass the pitch check, record build/test commits.",
+        "description": "Close PRD \u00a72: import publisher-verified supplement bytes, supersede RH_001 with genotype-verification and viability/death/division requirements, revise pitch sentence 15, rebuild Stages 06-09, pass the pitch check, record build/test commits.",
         "details": "Record original, received (INTEGRITY_MISMATCH) and derived artifacts separately (FR-044). Package candidate with manifest. Existing frozen runs and superseded records stay immutable.",
         "testStrategy": "",
         "status": "done",
@@ -24,8 +24,8 @@
       {
         "id": "2",
         "title": "Stage 10 domain schemas",
-        "description": "Pydantic contracts for ProspectivePlan, BaselineRef, Hypothesis, ExperimentSpec, EndpointSpec, Forecast, Observation, DecisionRule, DecisionRecord, SimulationRun, ResearchTask, ReviewRecord (PRD §13).",
-        "details": "Typed statements (FR-001), scope fields (FR-002), distinct uncertainty states and null-with-reason numerics (FR-003), endpoint-specific results (FR-004), independence groups (FR-006), forecast modes and null probability with reason (FR-011/012), temporal status and evaluation modes (FR-014/015), lifecycle and execution states (§14). Immutable IDs plus version IDs with parent and change reason (§13.1).",
+        "description": "Pydantic contracts for ProspectivePlan, BaselineRef, Hypothesis, ExperimentSpec, EndpointSpec, Forecast, Observation, DecisionRule, DecisionRecord, SimulationRun, ResearchTask, ReviewRecord (PRD \u00a713).",
+        "details": "Typed statements (FR-001), scope fields (FR-002), distinct uncertainty states and null-with-reason numerics (FR-003), endpoint-specific results (FR-004), independence groups (FR-006), forecast modes and null probability with reason (FR-011/012), temporal status and evaluation modes (FR-014/015), lifecycle and execution states (\u00a714). Immutable IDs plus version IDs with parent and change reason (\u00a713.1).",
         "testStrategy": "",
         "status": "done",
         "dependencies": [
@@ -38,7 +38,7 @@
       {
         "id": "3",
         "title": "Canonicalization, content digests and immutable version store",
-        "description": "Documented canonical JSON algorithm; raw-byte hashes separate from semantic digests; atomic writes; idempotent re-import; version preconditions and conflict-with-diff (§13.1, §17).",
+        "description": "Documented canonical JSON algorithm; raw-byte hashes separate from semantic digests; atomic writes; idempotent re-import; version preconditions and conflict-with-diff (\u00a713.1, \u00a717).",
         "details": "Frozen payloads immutable; a change creates a successor with parent version and machine-readable reason. Competing edits on the same version return a conflict (AT23). Identical evidence imported twice keeps one identity (AT15).",
         "testStrategy": "",
         "status": "done",
@@ -52,7 +52,7 @@
       {
         "id": "4",
         "title": "Baseline import and verification",
-        "description": "rarepipe prospective init --baseline PATH: verify package manifest, schema versions, run IDs and visibility; pin BaselineRef; show candidate/frozen status and limitations (§6.1).",
+        "description": "rarepipe prospective init --baseline PATH: verify package manifest, schema versions, run IDs and visibility; pin BaselineRef; show candidate/frozen status and limitations (\u00a76.1).",
         "details": "AT01 (23 entries verify for r2/r3), AT02 (a changed byte or digest blocks verified import and freeze). Reads only sanitized artifacts.",
         "testStrategy": "",
         "status": "done",
@@ -66,7 +66,7 @@
       {
         "id": "5",
         "title": "Policy adapter and permissions",
-        "description": "Actor types and roles (§3), separate read/draft/review/freeze/private-export/external-send permissions enforced in the domain layer; external send and remote execution disabled (FR-050..053).",
+        "description": "Actor types and roles (\u00a73), separate read/draft/review/freeze/private-export/external-send permissions enforced in the domain layer; external send and remote execution disabled (FR-050..053).",
         "details": "An agent cannot sign as a human reviewer. Untrusted document text cannot change policy (AT22). Policy decisions go to an audit log without sensitive payloads.",
         "testStrategy": "",
         "status": "done",
@@ -80,7 +80,7 @@
       {
         "id": "6",
         "title": "MVA seed plan: H01-H07, EXP01-EXP03, endpoints, forecasts",
-        "description": "Seed the MVA_001/RH_001 plan from the corrected baseline with the hypothesis set (§7), experiment specifications (§8) and qualitative conditional forecasts (§9).",
+        "description": "Seed the MVA_001/RH_001 plan from the corrected baseline with the hypothesis set (\u00a77), experiment specifications (\u00a78) and qualitative conditional forecasts (\u00a79).",
         "details": "Unresolved assay thresholds, model availability and reviews are named with owner and reason; probabilities null with reason (AT24); model applicability labels distinct (exact allele / complete genotype / generic deficient). Plan stays DRAFT/REVIEW_REQUIRED.",
         "testStrategy": "",
         "status": "done",
@@ -95,7 +95,7 @@
       {
         "id": "7",
         "title": "Three-valued predicate engine and branch evaluator B00-B15",
-        "description": "Evaluate observation vectors with TRUE/FALSE/UNKNOWN predicates; missing required data yields UNKNOWN; all matches preserved; precedence and conflicts per §10.1; DecisionRecord per §10.2.",
+        "description": "Evaluate observation vectors with TRUE/FALSE/UNKNOWN predicates; missing required data yields UNKNOWN; all matches preserved; precedence and conflicts per \u00a710.1; DecisionRecord per \u00a710.2.",
         "details": "Adverse flag always creates hold-and-review even if unverified; quality gates decide admissibility; contradictory actions produce DECISION_REVIEW_REQUIRED; unmodelled results create a model-revision task. AT04-AT13, AT26, AT27. Deterministic replay.",
         "testStrategy": "",
         "status": "done",
@@ -109,7 +109,7 @@
       {
         "id": "8",
         "title": "Observation intake",
-        "description": "rarepipe prospective ingest: store the immutable original result, verify identity/provenance, unit and denominator checks, classify the observation vector, produce a review proposal (§6.7, §13.2).",
+        "description": "rarepipe prospective ingest: store the immutable original result, verify identity/provenance, unit and denominator checks, classify the observation vector, produce a review proposal (\u00a76.7, \u00a713.2).",
         "details": "Reject incompatible units and missing denominators, never impute zero (AT14); synthetic fixtures cannot be promoted to real evidence (AT19); re-ingesting identical evidence does not duplicate or add independence (AT15).",
         "testStrategy": "",
         "status": "done",
@@ -169,7 +169,7 @@
       {
         "id": "12",
         "title": "Diff and dependency impact report",
-        "description": "rarepipe prospective diff OLD NEW: scientific vs editorial vs operational changes; baseline changes produce an impact report and review invalidation for the successor (FR-043, §16.5).",
+        "description": "rarepipe prospective diff OLD NEW: scientific vs editorial vs operational changes; baseline changes produce an impact report and review invalidation for the successor (FR-043, \u00a716.5).",
         "details": "A changed sentence that changes scope is a scientific change. AT17.",
         "testStrategy": "",
         "status": "done",
@@ -199,7 +199,7 @@
       {
         "id": "14",
         "title": "Export with output policy",
-        "description": "rarepipe prospective export PLAN --visibility public|private: allowlist plus leakage review over structured and free text, complete manifest, atomic write (FR-053, §13.1).",
+        "description": "rarepipe prospective export PLAN --visibility public|private: allowlist plus leakage review over structured and free text, complete manifest, atomic write (FR-053, \u00a713.1).",
         "details": "A synthetic private marker in free text is rejected or removed with a logged reason (AT21). No raw variant, reversible encoding, low-entropy genotype hash or nearest-known-variant clue in public output.",
         "testStrategy": "",
         "status": "done",
@@ -214,7 +214,7 @@
       {
         "id": "15",
         "title": "CLI and internal service interface",
-        "description": "Wire init/validate/preview/freeze/ingest/review/diff/export as rarepipe prospective commands, and the same operations as an internal service interface with idempotency keys and version preconditions (§17).",
+        "description": "Wire init/validate/preview/freeze/ingest/review/diff/export as rarepipe prospective commands, and the same operations as an internal service interface with idempotency keys and version preconditions (\u00a717).",
         "details": "Mutations atomic; failed builds do not advance the active plan pointer.",
         "testStrategy": "",
         "status": "done",
@@ -234,7 +234,7 @@
       {
         "id": "16",
         "title": "Frontend views",
-        "description": "Offline HTML views generated from the same records: doctor view, operator plan editor/readiness, scenario explorer, result review, change and audit view (§16).",
+        "description": "Offline HTML views generated from the same records: doctor view, operator plan editor/readiness, scenario explorer, result review, change and audit view (\u00a716).",
         "details": "Doctor view hides run IDs by default; hypothetical label persists in print/export; missing fields name field, reason and owner; conflicting evidence stays visible.",
         "testStrategy": "",
         "status": "done",
@@ -248,7 +248,7 @@
       {
         "id": "17",
         "title": "Synthetic fixtures and acceptance tests AT01-AT28",
-        "description": "Synthetic scenario fixtures (never biological evidence) and an end-to-end test suite exercising the real importer, evaluator and export path for AT01-AT28 (§19).",
+        "description": "Synthetic scenario fixtures (never biological evidence) and an end-to-end test suite exercising the real importer, evaluator and export path for AT01-AT28 (\u00a719).",
         "details": "Includes AT20 (731X frameshift identity) and AT28 (pitch check traces viability to RH_001 v3). Offline, deterministic.",
         "testStrategy": "",
         "status": "done",
@@ -262,7 +262,7 @@
       {
         "id": "18",
         "title": "Completion demonstration and operator guide",
-        "description": "Offline demo script for §19.1: import candidate, explain why the real plan cannot freeze, preview branches, freeze a labelled synthetic fixture, ingest a synthetic outcome, review and successor, sanitized export, deterministic replay. Operator guide and architecture decision record (§23).",
+        "description": "Offline demo script for \u00a719.1: import candidate, explain why the real plan cannot freeze, preview branches, freeze a labelled synthetic fixture, ingest a synthetic outcome, review and successor, sanitized export, deterministic replay. Operator guide and architecture decision record (\u00a723).",
         "details": "Demo must not mark the actual MVA plan as experimentally validated.",
         "testStrategy": "",
         "status": "done",
@@ -277,21 +277,21 @@
       {
         "id": "19",
         "title": "M5 pilot readiness: scientific review of the real plan",
-        "description": "Scientific review of the real MVA plan, lab feasibility and predeclared evaluation (§21 M5, §22).",
-        "details": "Requires human owners: assay methods and thresholds, meaningful effects, model availability, exposure plausibility, patient-relevant goals. Engineering prepares the named-blocker list; it cannot supply these answers.",
+        "description": "Scientific review of the real MVA plan, lab feasibility and predeclared evaluation (\u00a721 M5, \u00a722).",
+        "details": "Requires human owners: assay methods and thresholds, meaningful effects, model availability, exposure plausibility, patient-relevant goals. Engineering prepares the named-blocker list; it cannot supply these answers.\n\nM5 PREPARATION COMPLETE (2026-09-28, rarepipe-prospective-research-team skill). All 112 real validator gaps mapped in m5_packet/gap_register.json: 7 work packages, none invented, none unassigned. m5_packet/proposals.json holds 3 proposals READY_FOR_HUMAN_REVIEW covering 71 gaps (EXP01 endpoint methods, EXP02 endpoint methods, the \u00a78.4 analysis specification) and 4 NEEDS_EXTERNAL_EVIDENCE covering 41 gaps (threshold pilot, model availability, timing attestation, the three human reviews). The critique applied 5 findings, including reframing EXP01 from a difference test to non-inferiority against a pilot-derived margin. REMAINING WORK NEEDS PEOPLE: assay scientist and statistician answer the 4 questions in m5_packet/review_packet.md; a variance pilot supplies the 32 threshold gaps; a named owner confirms model availability and permitted use; the operator attests result timing; the three named reviewers approve the successor version through the project's own workflow. The real validator still reports 112 gaps until a human accepts edits.",
         "testStrategy": "",
-        "status": "blocked",
+        "status": "in-progress",
         "dependencies": [
           "18"
         ],
         "priority": "low",
         "subtasks": [],
-        "updatedAt": "2026-09-28T15:22:23.747Z"
+        "updatedAt": "2026-09-28T16:26:52.126Z"
       },
       {
         "id": "20",
         "title": "M6 numerical adapters and permissioned node pilot",
-        "description": "Reviewed simulation adapter and one permissioned evidence-node pilot (P1, §11.2, §12, §21 M6).",
+        "description": "Reviewed simulation adapter and one permissioned evidence-node pilot (P1, \u00a711.2, \u00a712, \u00a721 M6).",
         "details": "Requires validated models, parameters and verified dataset rights; out of scope for P0.",
         "testStrategy": "",
         "status": "deferred",
@@ -305,7 +305,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-09-28T15:22:25.486Z",
+      "lastModified": "2026-09-28T16:26:52.131Z",
       "taskCount": 20,
       "completedCount": 18,
       "tags": [
