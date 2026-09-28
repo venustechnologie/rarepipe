@@ -309,7 +309,7 @@ def lane_b_statement(lane_b) -> str:
         for e in lane_b)
     return (f"No pharmacological rescue of any endpoint in BUB1B-deficient biology was found in the corpus searched. "
             f"{len(lane_b)} attempt(s) were found, none reporting improvement — {attempts}. Each carries its own "
-            "reporting limits; none measured chromosome segregation, checkpoint function or aneuploidy.")
+            "reporting limits; none reported a measurement of chromosome segregation, checkpoint function or aneuploidy.")
 
 
 def _gaps(experiences, candidates, gene) -> tuple[list[str], list[NodeQuerySpec]]:
