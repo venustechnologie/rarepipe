@@ -27,6 +27,7 @@ from rarepipe.stages.mechanism import research
 from rarepipe.stages.mechanism.compare import compare
 from rarepipe.stages.mechanism.experiments import ExperimentError, assess, child_missense, load_experiments
 from rarepipe.stages.mechanism.model import (
+    ClaimDirection,
     AlleleMechanism,
     AutomationStatus,
     Applicability,
@@ -320,16 +321,24 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
     console.info(f"{len(verified)} evidence record(s) with a quote verified in the stored source; "
                  f"{len(failed)} rejected as unverifiable")
     corrections = research.load_corrections(req.research_dir) if req.research_dir else []
-    for correction in corrections:
+    corrected_ids: dict[int, list[str]] = {}
+    for n, correction in enumerate(corrections):
         needle = research._normalise(correction.quote_contains)
         for record in verified:
-            if record.source_id == correction.source_id and needle in research._normalise(record.quote) \
-                    and record.direction is not correction.direction:
+            if record.source_id != correction.source_id or needle not in research._normalise(record.quote):
+                continue
+            corrected_ids.setdefault(n, []).append(record.evidence_id)
+            correction.applied_to += 1
+            if correction.direction and record.direction is not correction.direction:
                 record.limitations.append(f"direction corrected on semantic review from {record.direction.value} "
                                           f"to {correction.direction.value} ({correction.reviewed_by}): "
                                           f"{correction.reason}")
+                correction.applied.append({"evidence_id": record.evidence_id, "claim_id": "(all)",
+                                           "old": record.direction.value, "new": correction.direction.value})
                 record.direction = correction.direction
-                correction.applied_to += 1
+            for claim_id, direction in correction.claims.items():
+                record.claim_directions[claim_id] = ClaimDirection(
+                    direction=direction, reason=correction.reason, reviewed_by=correction.reviewed_by)
         if not correction.applied_to:
             console.warn(f"direction correction for {correction.source_id} matched nothing: the passage may no "
                          "longer be extracted, so the correction is stale")
@@ -406,6 +415,19 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
                                 if c.evidence and c.id.startswith("MC_IMP")
                                 and any(e.direction is Direction.CONTRADICTS for e in imported_evidence
                                         if e.evidence_id in c.evidence)]
+    for n, correction in enumerate(corrections):
+        ids = set(corrected_ids.get(n, []))
+        hit_claims = set()
+        for claim in mech_claims:
+            for o in claim.direction_overrides:
+                if o.evidence_id in ids and claim.id in correction.claims:
+                    correction.applied.append({"evidence_id": o.evidence_id, "claim_id": claim.id,
+                                               "old": o.extractor_direction, "new": o.direction_for_this_claim})
+                    hit_claims.add(claim.id)
+        correction.unused_claims = sorted(set(correction.claims) - hit_claims)
+        if correction.unused_claims:
+            console.warn(f"correction for {correction.source_id} names {', '.join(correction.unused_claims)}, "
+                         "but none of its passages landed in those claims")
     reviewed = {session.knowledge_task for session in sessions}
     for task in tasks:
         if task.id in reviewed:
@@ -429,10 +451,13 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
     contradictions = sorted({f"{e.source_id}: {e.quote[:160]}" for e in verified if e.direction is Direction.CONTRADICTS})[:20]
     experiments_dir = req.research_dir / "experiments" if req.research_dir else None
     variant_experiments = []
-    for path in sorted(p for p in experiments_dir.glob("*.yaml") if not p.name.startswith("._")) \
-            if experiments_dir and experiments_dir.exists() else []:
+    experiment_inputs = (sorted(p for p in experiments_dir.glob("*.yaml") if not p.name.startswith("._"))
+                         if experiments_dir and experiments_dir.exists() else [])
+    bundle_roots = (sorted(p for p in (req.research_dir / "bundles").iterdir() if p.is_dir())
+                    if req.research_dir and (req.research_dir / "bundles").exists() else [])
+    for path in experiment_inputs:
         try:
-            variant_experiments += load_experiments(path, req.corpus_run)
+            variant_experiments += load_experiments(path, req.corpus_run, bundle_roots)
         except ExperimentError as exc:
             raise MechanismUsageError(f"{path.name}: {exc}") from exc
     residual = assess(variant_experiments, child_missense(adjudication)) if variant_experiments else None
@@ -496,6 +521,16 @@ def run_resolve(req: ResolveRequest, console: Console | None = None) -> ResolveR
     run.write_text(DOSSIER_SANITIZED, canonical_json(sanitized))
     run.write_text(GRAPH, canonical_json(sanitized.graph))
     run.write_text(REPORT, report.render(sanitized))
+    # The reviewed inputs travel with the run, so a reviewer sees the records, not only their effect.
+    for path in experiment_inputs:
+        run.write_text(f"input_experiments_{path.name}", path.read_text())
+    for path in research.correction_files(req.research_dir) if req.research_dir else []:
+        run.write_text(f"input_corrections_{path.name}", path.read_text())
+    if sanitized.direction_corrections:
+        run.write_text("direction_corrections.json", canonical_json(
+            {"corrections": [c.model_dump(mode="json") for c in sanitized.direction_corrections],
+             "claims": {c.id: [o.model_dump(mode="json") for o in c.direction_overrides]
+                        for c in sanitized.claims if c.direction_overrides}}))
     if sanitized.baseline_comparison:
         run.write_text("comparison_with_baseline.md", report.render_comparison(sanitized))
     console.ok(f"run {run_id}: {len(mech_claims)} claim(s), {len(verified)} evidence record(s), "

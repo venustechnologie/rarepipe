@@ -234,6 +234,27 @@ class KnowledgeTask(BaseModel):
 
 # ── evidence ────────────────────────────────────────────────────────────────
 
+CLAIM_DIRECTIONS = ("supports", "contradicts", "uncertain", "not_applicable")
+
+
+class ClaimDirection(BaseModel):
+    """How one passage bears on one claim, as a reviewer judged it."""
+
+    direction: Literal[CLAIM_DIRECTIONS]  # type: ignore[valid-type]
+    reason: str
+    reviewed_by: str
+
+
+class DirectionOverride(BaseModel):
+    """Recorded on the claim it changed, so the export shows exactly what moved and why."""
+
+    evidence_id: str
+    extractor_direction: str
+    direction_for_this_claim: str
+    reason: str
+    reviewed_by: str
+
+
 class DirectionCorrection(BaseModel):
     """A semantic reviewer overruling the deterministic extractor's direction for one passage.
 
@@ -244,10 +265,17 @@ class DirectionCorrection(BaseModel):
 
     source_id: str
     quote_contains: str
-    direction: Direction
+    direction: Direction | None = Field(None, description="Record-level override for every claim; prefer `claims`.")
+    claims: dict[str, Literal[CLAIM_DIRECTIONS]] = Field(  # type: ignore[valid-type]
+        default_factory=dict, description="Per-claim relationship: a sentence's polarity is not its relationship "
+                                          "to every claim it lands in. not_applicable removes it from that claim.")
     reason: str
     reviewed_by: str = Field(description="Who reviewed it, e.g. a research session id or a person.")
     applied_to: int = Field(0, description="How many evidence records it matched in this run.")
+    applied: list[dict] = Field(default_factory=list,
+                                description="Per evidence record and claim: extractor direction → reviewed direction.")
+    unused_claims: list[str] = Field(default_factory=list,
+                                     description="Claims named here that none of the matched records landed in.")
 
 
 class EvidenceRecord(BaseModel):
@@ -280,6 +308,8 @@ class EvidenceRecord(BaseModel):
     verified_from_source: bool = Field(False, description="The quote was found verbatim in the stored document.")
     pub_year: int | None = None
     case_specific_detail: str | None = restricted(None)
+    claim_directions: dict[str, ClaimDirection] = Field(
+        default_factory=dict, description="Reviewed per-claim relationships that replace `direction` for that claim.")
 
 
 class InvalidInference(BaseModel):
@@ -315,6 +345,7 @@ class MechanismClaim(BaseModel):
     limitations: list[str] = Field(default_factory=list)
     confidence: Confidence | None = None
     unknown_reason: str | None = None
+    direction_overrides: list[DirectionOverride] = Field(default_factory=list)
 
 
 class MechanismNode(BaseModel):
@@ -443,6 +474,8 @@ class LLMResearchSession(BaseModel):
     human_reviewed: bool = False
     performed_at: str | None = None
     note: str = ""
+    supersedes: str | None = Field(None, description="An earlier session this one replaces. The earlier record "
+                                                     "stays on disk; it is no longer loaded.")
 
 
 class Readiness(BaseModel):

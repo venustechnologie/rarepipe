@@ -399,14 +399,20 @@ def bundle_from_corpus(corpus_run: Path, task: KnowledgeTask, root: Path) -> Evi
     return bundle
 
 
+def correction_files(root: Path) -> list[Path]:
+    folder = root / "corrections"
+    return sorted(p for p in folder.glob("*.yaml") if not p.name.startswith("._")) if folder.exists() else []
+
+
 def load_corrections(root: Path) -> list[DirectionCorrection]:
     """Reviewed overrides of the extractor's direction, from ``corrections/*.yaml`` in the workspace."""
-    folder = root / "corrections"
     out: list[DirectionCorrection] = []
-    for path in sorted(p for p in folder.glob("*.yaml") if not p.name.startswith("._")) if folder.exists() else []:
+    for path in correction_files(root):
         for item in (yaml.safe_load(path.read_text()) or {}).get("corrections", []):
             correction = DirectionCorrection(**item)
             if not correction.reason.strip():
                 raise ResearchError(f"{path.name}: a direction correction needs a reason")
+            if correction.direction is None and not correction.claims:
+                raise ResearchError(f"{path.name}: a correction must name the claims it applies to (or a direction)")
             out.append(correction)
     return out

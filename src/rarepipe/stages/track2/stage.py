@@ -385,8 +385,8 @@ def _outcomes(research_dir: Path, discovery: dict, promoted) -> list[SearchOutco
                             "in the retrieved corpus was null: nicotinic acid at 20-100 uM for two days did not "
                             "change global protein acetylation in differentiated adipocytes"),
             does_not_mean=("that the arrow was tested and failed. No measurement of intracellular NAD+, SIRT2 "
-                           "activity, BUBR1 abundance or BUBR1 K668 acetylation was reported for that experiment, "
-                           "so it weakens the proposed bridge without directly testing it"),
+                           "activity, BUBR1 abundance or BUBR1 K668 acetylation was reported for that nicotinic-acid "
+                           "experiment, so it weakens the proposed bridge without directly testing it"),
             **dict(zip(("queries", "documents_examined"), _task_stats(research_dir, ["KT_0026"]), strict=True))),
     ]
     if not promoted:

@@ -386,3 +386,18 @@ def test_a_mechanism_run_from_another_chain_is_refused(discovery, workspace, tmp
     other, _ = _mechanism(tmp_path / "x", run_id="RUN_OTHER")
     with pytest.raises(Track2UsageError, match="built from RUN_MECH"):
         make(discovery, workspace, tmp_path, intervention_map_run=imap, mechanism_run=other)
+
+
+def test_a_superseding_session_replaces_the_earlier_record(discovery, workspace, tmp_path):
+    from rarepipe.stages.track2.ingest import load_all
+
+    save(workspace, import_hypotheses(workspace, _write(workspace, [_hypothesis()]), session_index=1))
+    path = _write(workspace, [_hypothesis(statement="revised wording")], name="h2.yaml")
+    payload = yaml.safe_load(path.read_text())
+    payload["session"]["supersedes"] = "LLMRS_0001"
+    path.write_text(yaml.safe_dump(payload, sort_keys=False))
+    save(workspace, import_hypotheses(workspace, path, session_index=2))
+    sessions, hypotheses, _, _ = load_all(workspace)
+    assert [s.session_id for s in sessions] == ["LLMRS_0002"] and sessions[0].supersedes == "LLMRS_0001"
+    assert [h.statement for h in hypotheses] == ["revised wording"]
+    assert (workspace / "hypotheses" / "LLMRS_0001.json").exists(), "the superseded record is kept, not deleted"

@@ -61,8 +61,15 @@ class Directness(StrEnum):
 
 
 READOUT_KINDS = ("protein_abundance", "mrna_level", "protein_turnover", "chaperone_dependence",
-                 "checkpoint_activity", "chromosome_segregation", "chromosome_alignment",
-                 "kinetochore_localization")
+                 "checkpoint_activity", "checkpoint_silencing", "chromosome_segregation", "chromosome_alignment",
+                 "kinetochore_localization", "pp2a_b56_recruitment")
+# The functions residual-function must cover. Checkpoint activation (arrest when spindles are
+# disrupted) and checkpoint silencing (timely exit once chromosomes attach) are different functions:
+# a protein can do the first and fail the second.
+FUNCTION_ENDPOINTS = ("checkpoint_activity", "checkpoint_silencing", "chromosome_segregation", "chromosome_alignment")
+ENDPOINT_NAMES = {"checkpoint_activity": "checkpoint activation (nocodazole response)",
+                  "checkpoint_silencing": "checkpoint silencing", "chromosome_segregation": "chromosome segregation",
+                  "chromosome_alignment": "chromosome alignment"}
 RESULTS = ("normal", "reduced", "increased", "restored", "not_restored", "not_reported")
 
 
@@ -80,6 +87,9 @@ class VariantExperiment(BaseModel):
     experiment_id: str
     source_id: str
     variant_label: str = Field(description="As published, e.g. I909T, 731X, WT.")
+    published_identity: str | None = Field(
+        None, description="The full published identity when the label abbreviates it, e.g. S714fsX731 for 731X. "
+                          "A frameshift is never collapsed into a simple stop at the same position.")
     notation_aliases: list[str] = Field(default_factory=list)
     position: int | None = Field(None, description="Published residue, canonical isoform numbering.")
     ref_residue: str | None = None
@@ -124,17 +134,18 @@ class ResidualFunctionAssessment(BaseModel):
 
 
 def notation_aliases(label: str) -> list[str]:
-    """I909T → Ile909Thr, p.I909T, p.(Ile909Thr), LAP-I909T … ; 731X → *731, Ter731, LAP-731X."""
+    """Notation forms that name the same published construct: I909T → Ile909Thr, p.(Ile909Thr), LAP-I909T.
+
+    Truncation labels get construct-name forms only. An author's "731X" can abbreviate a frameshift
+    (S714fsX731), so it is never expanded to *731 / Ter731, which would equate it with every simple
+    nonsense variant ending there.
+    """
     out = [label, f"LAP-{label}", f"LAP-BUBR1 {label}"]
     missense = re.fullmatch(r"([A-Z])(\d+)([A-Z])", label)
-    truncation = re.fullmatch(r"(\d+)X", label)
     if missense:
         ref, pos, alt = missense.groups()
         three = f"{THREE.get(ref, ref)}{pos}{THREE.get(alt, alt)}"
         out += [three, f"p.{label}", f"p.{three}", f"p.({three})"]
-    elif truncation:
-        pos = truncation.group(1)
-        out += [f"*{pos}", f"Ter{pos}", f"{pos}*", f"p.*{pos}"]
     return list(dict.fromkeys(out))
 
 
@@ -144,8 +155,11 @@ def _normalise(text: str) -> str:
 
 
 def _join(kinds: list[str]) -> str:
-    words = [k.replace("_", " ") for k in kinds]
+    words = [ENDPOINT_NAMES.get(k, k.replace("_", " ")) for k in kinds]
     return words[0] if len(words) == 1 else ", ".join(words[:-1]) + " and " + words[-1]
+
+
+RESULT_WORDS = {"reduced": "was impaired", "not_restored": "was not restored"}
 
 
 def _region(position: int | None) -> str | None:
@@ -154,7 +168,18 @@ def _region(position: int | None) -> str | None:
     return next((name for name, lo, hi in REGIONS if lo <= position <= hi), None)
 
 
-def load_experiments(path: Path, corpus_run: Path) -> list[VariantExperiment]:
+def _source_text(source_id: str, roots: list[Path]) -> str | None:
+    """The stored article plus any stored supplements, from the corpus first, then research bundles."""
+    stem = source_id.replace(":", "_")
+    for root in roots:
+        main = root / "docs" / f"{stem}.txt"
+        if main.exists():
+            parts = [main.read_text()] + [p.read_text() for p in sorted((root / "docs").glob(f"{stem}__supp*.txt"))]
+            return "\n".join(parts)
+    return None
+
+
+def load_experiments(path: Path, corpus_run: Path, extra_roots: list[Path] | None = None) -> list[VariantExperiment]:
     """Parse, then verify every quote against the stored document. One failure rejects the file."""
     raw = yaml.safe_load(path.read_text()) or {}
     experiments = [VariantExperiment(**item) for item in raw.get("experiments", [])]
@@ -164,11 +189,11 @@ def load_experiments(path: Path, corpus_run: Path) -> list[VariantExperiment]:
         if exp.experiment_id in seen:
             problems.append(f"{exp.experiment_id}: duplicate id")
         seen.add(exp.experiment_id)
-        doc = corpus_run / "docs" / f"{exp.source_id.replace(':', '_')}.txt"
-        if not doc.exists():
+        text = _source_text(exp.source_id, [corpus_run, *(extra_roots or [])])
+        if text is None:
             problems.append(f"{exp.experiment_id}: {exp.source_id} is not in the corpus")
             continue
-        body = _normalise(doc.read_text())
+        body = _normalise(text)
         for readout in exp.readouts:
             if _normalise(readout.quote) not in body:
                 problems.append(f"{exp.experiment_id}: quote not found verbatim in {exp.source_id}: "
@@ -178,8 +203,9 @@ def load_experiments(path: Path, corpus_run: Path) -> list[VariantExperiment]:
         if exp.pooled and not exp.region:
             problems.append(f"{exp.experiment_id}: a pooled experiment must state the region its source gives")
         if exp.protein_tested in ("altered_protein", "truncated_protein") and not exp.pooled:
-            aliases = [a.lower() for a in notation_aliases(exp.variant_label) + exp.notation_aliases]
-            if not any(a in _normalise(r.quote + " " + (r.figure or "")) for r in exp.readouts for a in aliases):
+            aliases = [a.lower() for a in notation_aliases(exp.variant_label) + exp.notation_aliases
+                       + ([exp.published_identity] if exp.published_identity else [])]
+            if not any(a.lower() in _normalise(r.quote + " " + (r.figure or "")) for r in exp.readouts for a in aliases):
                 problems.append(f"{exp.experiment_id}: no quote names {exp.variant_label} in any notation")
             if exp.position is None:
                 problems.append(f"{exp.experiment_id}: a variant test needs its published position")
@@ -264,10 +290,9 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
             + ", ".join(f"{e.variant_label} {e.function_at_restored_abundance}" for e in restored_tests))
 
     measured = {r.kind for e in restored_tests for r in e.readouts if r.result != "not_reported"}
-    not_reported = [k for k in ("checkpoint_activity", "chromosome_segregation", "chromosome_alignment")
-                    if restored_tests and k not in measured]
+    not_reported = [k for k in FUNCTION_ENDPOINTS if restored_tests and k not in measured]
     if class_level == "function_persists" and not_reported:
-        reported = sorted(measured & {"checkpoint_activity", "chromosome_segregation", "chromosome_alignment"})
+        reported = [k for k in FUNCTION_ENDPOINTS if k in measured]
         class_basis += (f". Only {_join(reported)} was reported at restored abundance; {_join(not_reported)} "
                         f"{'were' if len(not_reported) > 1 else 'was'} not reported at restored abundance")
 
@@ -287,8 +312,9 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
             e.variant_label for e in in_class if not e.pooled and e.abundance_condition == "ectopic_below_wild_type"
             and e.variant_label not in restored_labels))
         if unexpressible:
-            exact_basis += (f", and within this class {', '.join(unexpressible)} could not be brought to "
-                            "wild-type levels, so not every substitution here is even testable that way")
+            exact_basis += (f". {' and '.join(unexpressible)} {'was' if len(unexpressible) == 1 else 'were'} poorly "
+                            "expressed in the reported experiments; function at wild-type-comparable abundance "
+                            "remains unestablished")
 
     if exact_level == "function_persists":
         decision = "STRENGTHENS_STABILIZATION"
@@ -318,6 +344,14 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
                   key=lambda e: order.index(e.directness), default=None)
 
     open_items = []
+    impaired_elsewhere = [(e, r) for e in in_class if e.function_at_restored_abundance == "not_tested"
+                          and e.abundance_condition in ("not_applicable", "ectopic_at_or_above_wild_type")
+                          for r in e.readouts if r.kind in FUNCTION_ENDPOINTS + ("pp2a_b56_recruitment",)
+                          and r.result in ("reduced", "not_restored")]
+    for e, r in impaired_elsewhere:
+        open_items.append(f"{e.experiment_id} ({e.variant_label}, {e.source_id}): {_join([r.kind])} "
+                          f"{RESULT_WORDS[r.result]} — a function of this region that the restored-abundance tests "
+                          "did not measure")
     if not_reported:
         open_items.append(f"{_join(not_reported)} at restored abundance "
                           f"{'were' if len(not_reported) > 1 else 'was'} not reported for the substitutions tested")
@@ -332,10 +366,12 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
             "Deplete endogenous BUBR1 (shRNA in U2OS or HeLa, as in PMID:20516114 Fig. 4) and express an "
             "RNAi-insensitive construct carrying this child's exact substitution at wild-type-comparable levels, "
             "confirmed by immunoblot beside wild-type and a known restored-abundance control (I909T or L1012P) and "
-            "a poorly expressed control (L844F). Measure the nocodazole response (MPM-2), chromosome segregation "
-            "by live imaging, and chromosome alignment. Function persists → strengthens stabilization. Function "
-            "impaired at matched abundance → weakens an abundance-only strategy. Not expressible at matched levels "
-            "→ the premise that stabilising the protein is achievable needs its own test."),
+            "a poorly expressed control (L844F). Measure checkpoint activation (nocodazole response, MPM-2), "
+            "checkpoint silencing (timely mitotic exit once chromosomes are aligned), chromosome segregation by "
+            "live imaging, and chromosome alignment; where feasible, kinetochore PP2A-B56 recruitment. Function "
+            "persists → strengthens stabilization. Function impaired at matched abundance → weakens an "
+            "abundance-only strategy. Not expressible at matched levels → the premise that stabilising the protein "
+            "is achievable needs its own test."),
         what_remains_open=open_items,
         supporting_observations=[
             f"{e.experiment_id} ({e.variant_label}, {e.protein_tested.replace('_', ' ')}): {e.authors_interpretation}"

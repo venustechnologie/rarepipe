@@ -98,14 +98,22 @@ computed comparison.
    was before, what it is now, why, and when it was retrieved. If the repository answers with a
    bot-detection challenge, the supplement is recorded as `inaccessible_bot_challenge` and left
    alone. Nothing solves or bypasses the challenge. A person can download it and pass it back with
-   `--supplement SOURCE_ID=file.pdf`.
+   `--supplement SOURCE_ID=file.pdf`, plus `--supplement-provenance record.json` (source URL, licence,
+   publisher checksum). The bytes are checked against the stated checksum, and a mismatch is recorded:
+   the text is usable, but it is not the verified publisher copy. A missing PMC identifier is
+   recorded as "this PMC route could not be used", never as "no full-text route exists". Reopening
+   an already-refreshed corpus carries earlier outcomes forward.
 2. **Extract experiments, not sentences.** `research/experiments/*.yaml` holds `VariantExperiment`
    records: the construct, what protein was tested, the abundance condition and each readout
    (abundance, mRNA, turnover, chaperone dependence, checkpoint, segregation, alignment). Each
    readout's quote, and any `authors_interpretation`, must be re-found verbatim in the stored
-   source. Notation is matched across forms (I909T / Ile909Thr / p.(Ile909Thr) / LAP-I909T; 731X /
-   \*731). Normal-protein replacement is kept separate from the altered protein, and it can never
-   answer the residual-function question.
+   source or its stored supplement. Missense notation is matched across forms (I909T / Ile909Thr /
+   p.(Ile909Thr) / LAP-I909T). Truncation labels are matched by construct name only. An author's
+   "731X" abbreviates the frameshift S714fsX731 (Table S1), so it is never expanded to \*731 / Ter731,
+   which would equate it with every simple stop at 731; `published_identity` carries the full name.
+   Normal-protein replacement is kept separate from the altered protein, and it can never answer the
+   residual-function question. Checkpoint activation (arrest when spindles are disrupted) and
+   checkpoint silencing (timely exit) are separate endpoints: a protein can do one and fail the other.
 3. **Grade directness locally.** Each experiment is graded exact / same position / nearby (≤10
    residues) / same region / different region against the child's missense allele. Positions use
    the canonical isoform (UniProt O60566-1 = ENST00000287598), and the transcript is checked first.
@@ -116,12 +124,16 @@ computed comparison.
    child's allele, and keeps the two separate. The decision follows the exact-allele level:
    `STRENGTHENS_STABILIZATION`, `WEAKENS_ABUNDANCE_ONLY` or `INSUFFICIENT`. When the decision is
    insufficient, the assessment names the distinguishing experiment.
-5. **Correct extractor directions on review.** The extractor reads cue words, and new full text
-   brings new false contradictions. Examples are "comparable to wild-type" in a rescue legend and
-   "not required" about the kinase domain. `research/corrections/*.yaml` records a reviewed
-   direction for a passage, keyed by source and passage text rather than evidence id. The dossier
-   lists each correction and how many records it matched. A correction that matches nothing is
-   reported as stale.
+5. **Correct extractor directions on review, per claim.** The extractor reads cue words, and new
+   full text brings new false contradictions. Examples are "comparable to wild-type" in a rescue
+   legend and "not required" about the kinase domain. A sentence's polarity is not its relationship
+   to every claim, so `research/corrections/*.yaml` gives each passage a relationship per claim:
+   `supports`, `contradicts`, `uncertain` or `not_applicable`. A rescue observation therefore stays
+   positive evidence where it applies, and is removed only where it is irrelevant. Claims nobody
+   named keep the extractor's reading. Each change is recorded on the claim (`direction_overrides`),
+   and the run exports `direction_corrections.json` plus the input YAML: evidence id, claim id,
+   extractor direction, reviewed direction and reason. Stale entries are reported, whether a passage
+   matched nothing or a named claim was never reached.
 6. **Compare.** `mechanism resolve ... --compare-mechanism-run <frozen> --compare-track2-run <frozen>`
    writes `comparison_with_baseline.md`, a table computed from the two sanitized artifacts. It
    also lists the dependent stages that must be regenerated. Stage 07 then cites the assessment

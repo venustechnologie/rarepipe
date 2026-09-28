@@ -59,8 +59,11 @@ def compare(baseline_mechanism_run: Path, new: dict, track2_run: Path | None = N
     row("documents with full text", f"{full(old)} of {len(old['documents'])}", f"{full(new)} of {len(new['documents'])}")
     refresh = new.get("corpus_refresh") or []
     supps = [s for r in refresh for s in r.get("supplements", [])]
+    got = [s for s in supps if s["state"] == "retrieved"]
+    verified = sum(1 for s in got if s.get("bytes_verified"))
     row("supplementary files read", "none attempted",
-        f"{sum(1 for s in supps if s['state'] == 'retrieved')} of {len(supps)} listed" if supps else "none listed")
+        (f"{len(got)} of {len(supps)} listed; {verified} byte-verified against the publisher's checksum"
+         if supps else "none listed"))
     row("disease-mechanism status", old["status"], new["status"])
     row("exact-allele mechanism complete", str(old["readiness"]["exact_allele_mechanism_complete"]),
         str(new["readiness"]["exact_allele_mechanism_complete"]))
@@ -71,9 +74,11 @@ def compare(baseline_mechanism_run: Path, new: dict, track2_run: Path | None = N
     moved = sorted(k for k in old_claims.keys() & new_claims.keys() if old_claims[k] != new_claims[k])
     row("mechanism claims", f"{len(old_claims)}", f"{len(new_claims)}"
         + (f"; status changed: {', '.join(f'{k} {old_claims[k]}→{new_claims[k]}' for k in moved)}" if moved else ""))
-    row("extractor directions corrected on semantic review",
-        str(sum(c.get("applied_to", 0) for c in old.get("direction_corrections") or [])),
-        str(sum(c.get("applied_to", 0) for c in new.get("direction_corrections") or [])))
+    def reviewed(d: dict) -> str:
+        cs = d.get("direction_corrections") or []
+        return (f"{len(cs)} passage(s); {sum(len(c.get('applied') or []) for c in cs)} evidence→claim "
+                "relationship(s) reviewed" if cs else "none")
+    row("extractor directions reviewed per claim", reviewed(old), reviewed(new))
     row("variant experiments extracted", str(len(old.get("variant_experiments") or [])),
         str(len(new.get("variant_experiments") or [])))
 

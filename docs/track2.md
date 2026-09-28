@@ -63,3 +63,18 @@ appear in the archive. Before returning, the command unpacks the package and run
 `shasum -a 256 -c MANIFEST.sha256`; if that fails, no package is produced. The run's own
 `SHA256SUMS` is shipped as `verification/run_SHA256SUMS.txt` for cross-checking only. It names
 private files that are never exported, so `shasum -c` against it cannot pass inside a package.
+
+## Edited pitch wording
+
+A person may rewrite the generated pitch. `rarepipe track2 check-pitch --pitch <md> --claim-map
+<yaml> --run <sealed run>... --output <report.md>` checks it against the sealed artifacts. The claim
+map is written by a reviewer and says, for each sentence, which artifact ids support it. Every
+sentence must be covered, every id must exist in the runs, and a sentence marked `not_in_artifact`
+fails. Forbidden phrases (dosing, recommendations) fail; absolute wording is flagged. The check never
+edits the pitch. `export track2-package --pitch --pitch-check` uploads an edited pitch only with a
+passing report, and keeps the generated one under `records/`.
+
+## Superseding a hypothesis record
+
+Imported sessions are never edited. To change wording, import a new session whose `session:` block
+has `supersedes: LLMRS_000N`. The earlier record stays on disk and is no longer loaded.

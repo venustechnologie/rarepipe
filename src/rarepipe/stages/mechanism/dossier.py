@@ -162,11 +162,16 @@ def render(d: MechanismDossier) -> str:
         out.extend(refresh_section(d))
     if d.direction_corrections:
         w("## Extractor directions corrected on semantic review\n")
-        w("| source | passage | corrected to | reason | reviewed by | records |")
-        w("|---|---|---|---|---|---|")
+        w("A sentence's polarity is not its relationship to every claim it lands in, so each passage is judged per "
+          "claim. Claims a reviewer did not name keep the extractor's reading. The full record, per evidence id, is "
+          "in `direction_corrections.json`.\n")
+        w("| source | passage | per claim | reason | evidence → claim (extractor → reviewed) |")
+        w("|---|---|---|---|---|")
         for c in d.direction_corrections:
-            w(f"| {c.source_id} | {c.quote_contains[:90]}… | {c.direction.value} | {c.reason} | {c.reviewed_by} | "
-              f"{c.applied_to} |")
+            per_claim = ", ".join(f"{k}: {v}" for k, v in c.claims.items()) or (c.direction.value if c.direction else "")
+            applied = "; ".join(f"{a['evidence_id']} → {a['claim_id']} ({a['old']} → {a['new']})" for a in c.applied)
+            unused = f" — named but not reached: {', '.join(c.unused_claims)}" if c.unused_claims else ""
+            w(f"| {c.source_id} | {c.quote_contains[:90]}… | {per_claim} | {c.reason} | {applied or 'none'}{unused} |")
         w("")
     w(f"## Highest-value unresolved question\n\n{d.highest_value_unresolved_question}\n")
 

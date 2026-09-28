@@ -111,9 +111,11 @@ def fetch_full_text(pmcid: str) -> tuple[str | None, str]:
     try:
         raw = _get(PMC_EFETCH_URL.format(pmc_number=pmcid.removeprefix("PMC"))).decode("utf-8", "replace")
     except Exception as exc:
-        return None, f"full text not available from Europe PMC or NCBI PMC ({type(exc).__name__})"
+        return None, (f"full text could not be retrieved from Europe PMC or NCBI PMC ({type(exc).__name__}); "
+                      "other routes were not assessed")
     if "<body" not in raw:
-        return None, "NCBI PMC returned no article body: full text is not available under a permitting licence"
+        return None, ("NCBI PMC returned no article body under a permitting licence; this PMC route could not be "
+                      "used. Availability through other routes remains unassessed")
     licence = re.search(r"<license[^>]*>(.*?)</license>", raw, re.S)
     licence_text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", licence.group(1))).strip() if licence else ""
     if not TEXT_MINING_LICENCES.search(licence_text):

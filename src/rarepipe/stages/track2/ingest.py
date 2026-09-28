@@ -60,7 +60,8 @@ def import_hypotheses(root: Path, analysis_path: Path, *, session_index: int = 1
         interface=meta.get("interface", "unrecorded"), model=meta.get("model", "unrecorded"),
         knowledge_task=meta.get("knowledge_task", "unrecorded"), permitted_inputs=sorted(documents),
         prompt_template=meta.get("prompt_template"), human_reviewed=bool(meta.get("human_reviewed")),
-        performed_at=utc_now().isoformat(), case_specific_genomic_data_supplied=False, note=meta.get("note", ""))
+        performed_at=utc_now().isoformat(), case_specific_genomic_data_supplied=False, note=meta.get("note", ""),
+        supersedes=meta.get("supersedes"))
 
     hypotheses: list[ResearchRepurposingHypothesis] = []
     rejected: list[InvalidInference] = []
@@ -177,10 +178,14 @@ def save(root: Path, result: IngestResult) -> Path:
 
 
 def load_all(root: Path):
+    """Every hypothesis session, except those a later session explicitly supersedes."""
     sessions, hypotheses, evidence, rejected = [], [], {}, []
     folder = root / "hypotheses"
-    for path in sorted(folder.glob("LLMRS_*.json")) if folder.exists() else []:
-        payload = json.loads(path.read_text())
+    payloads = [json.loads(p.read_text()) for p in sorted(folder.glob("LLMRS_*.json"))] if folder.exists() else []
+    superseded = {p["session"].get("supersedes") for p in payloads} - {None}
+    for payload in payloads:
+        if payload["session"]["session_id"] in superseded:
+            continue
         sessions.append(LLMResearchSession(**payload["session"]))
         hypotheses += [ResearchRepurposingHypothesis(**h) for h in payload["hypotheses"]]
         evidence.update(payload.get("evidence", {}))

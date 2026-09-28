@@ -25,6 +25,10 @@ SUPPLEMENT_URL = "https://pmc.ncbi.nlm.nih.gov/articles/instance/{pmc_number}/bi
 CHALLENGE = re.compile(r"recaptcha|captcha|challenge", re.I)
 
 
+NO_PMCID = ("No PMC identifier was available; this PMC retrieval route could not be used. Availability through "
+            "other routes remains unassessed.")
+
+
 class SupplementRecord(BaseModel):
     href: str
     label: str = ""
@@ -32,6 +36,12 @@ class SupplementRecord(BaseModel):
     note: str = ""
     characters: int = 0
     content_hash: str | None = None
+    source_url: str | None = None
+    licence: str | None = None
+    sha256: str | None = None
+    md5: str | None = None
+    bytes_verified: bool | None = Field(
+        None, description="True only when the bytes match a checksum the publisher states; None if none was given.")
 
 
 class RefreshRecord(BaseModel):
@@ -88,26 +98,49 @@ def _supplements(pmcid: str, xml: str, docs_dir: Path, source_id: str) -> list[S
     return out
 
 
-def ingest_local_supplement(corpus_run: Path, source_id: str, pdf_path: Path, label: str = "") -> SupplementRecord:
-    """For files a person fetched by hand — the legitimate route past a bot challenge."""
+def ingest_local_supplement(corpus_run: Path, source_id: str, pdf_path: Path, label: str = "",
+                            provenance: dict | None = None) -> SupplementRecord:
+    """For files a person fetched by hand — the legitimate route past a bot challenge.
+
+    If the person supplies provenance (source URL, licence, the publisher's checksum), the bytes are
+    checked against it. A mismatch is recorded, not hidden: the text is still usable, but it is not
+    the verified publisher copy.
+    """
     import io
 
     from pypdf import PdfReader
 
     raw = pdf_path.read_bytes()
+    sha256, md5 = hashlib.sha256(raw).hexdigest(), hashlib.md5(raw).hexdigest()  # noqa: S324 — md5 is the publisher's
+    verified, check = None, "no publisher checksum supplied"
+    if provenance:
+        expected_md5 = provenance.get("publisher_computed_md5") or provenance.get("md5")
+        expected_sha = provenance.get("sha256")
+        verified = (md5 == expected_md5) if expected_md5 else (sha256 == expected_sha if expected_sha else None)
+        check = ("bytes match the publisher's stated checksum" if verified else
+                 f"bytes do NOT match the stated checksum (publisher md5 {expected_md5}, got {md5}; stated size "
+                 f"{provenance.get('size_bytes')}, got {len(raw)}): content is used as text, but this is not the "
+                 "verified publisher copy" if verified is False else check)
     text = "\n".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(raw)).pages)
     existing = sorted((corpus_run / "docs").glob(f"{source_id.replace(':', '_')}__supp*.txt"))
     path = corpus_run / "docs" / f"{source_id.replace(':', '_')}__supp{len(existing) + 1}.txt"
     path.write_text(text)
-    return SupplementRecord(href=pdf_path.name, label=label or "supplied by a person", state="retrieved",
-                            note=f"ingested from a local file supplied by a person ({pdf_path.name})",
-                            characters=len(text),
-                            content_hash="sha256:" + hashlib.sha256(raw).hexdigest())
+    provenance = provenance or {}
+    licence = provenance.get("licence")
+    return SupplementRecord(
+        href=provenance.get("original_filename") or pdf_path.name, label=label or "supplied by a person",
+        state="retrieved", note=f"ingested from a local file supplied by a person ({pdf_path.name}); {check}"
+        + (f"; {provenance['pmc_byte_equivalence']}" if provenance.get("pmc_byte_equivalence") else ""),
+        characters=len(text), content_hash="sha256:" + sha256, source_url=provenance.get("source_url"),
+        licence=(f"{licence.get('name')} ({licence.get('url')})" if isinstance(licence, dict) else licence),
+        sha256=sha256, md5=md5, bytes_verified=verified)
 
 
 def refresh(frozen_corpus: Path, output: Path, console: Console | None = None,
-            supplied: dict[str, list[Path]] | None = None) -> Path:
-    """``supplied`` maps a source id to supplement files a person downloaded by hand."""
+            supplied: dict[str, list[Path]] | None = None, provenance: dict[str, dict] | None = None) -> Path:
+    """``supplied`` maps a source id to supplement files a person downloaded by hand; ``provenance`` maps a
+    file name to what the person recorded about it. Reopening an already-refreshed corpus carries its
+    earlier outcomes forward and re-attempts only what is still incomplete."""
     console = console or Console()
     started, t0 = utc_now(), time.monotonic()
     run_id = new_run_id(started)
@@ -118,17 +151,18 @@ def refresh(frozen_corpus: Path, output: Path, console: Console | None = None,
     for junk in docs_dir.glob("._*"):
         junk.unlink()
 
-    records: list[RefreshRecord] = []
+    records: list[RefreshRecord] = [RefreshRecord(**r) for r in index.get("refresh") or []]
     targets = [d for d in index["documents"] if not d["full_text"]]
     console.step(1, 2, f"Re-attempting full text for {len(targets)} abstract-only document(s)...")
     for doc in targets:
         stored = docs_dir / f"{doc['source_id'].replace(':', '_')}.txt"
         before = stored.read_text() if stored.exists() else ""
         now = utc_now().isoformat()
+        records = [r for r in records if r.source_id != doc["source_id"]]
         if not doc.get("pmcid"):
             records.append(RefreshRecord(source_id=doc["source_id"], after="no_pmcid", retrieved_at=now,
-                                         reason="no PMC identifier: no licensed full-text route exists for it",
-                                         characters_before=len(before), characters_after=len(before)))
+                                         reason=NO_PMCID, characters_before=len(before),
+                                         characters_after=len(before)))
             console.info(f"{doc['source_id']:16} no PMCID")
             continue
         body, note = fetch_full_text(doc["pmcid"])
@@ -164,13 +198,16 @@ def refresh(frozen_corpus: Path, output: Path, console: Console | None = None,
                                    reason="unchanged; supplement supplied by a person", retrieved_at=utc_now().isoformat())
             records.append(record)
         for pdf in paths:
-            supp = ingest_local_supplement(run.staging, source_id, pdf)
-            blocked = next((s for s in record.supplements if s.href == pdf.name and s.state != "retrieved"), None)
+            supp = ingest_local_supplement(run.staging, source_id, pdf, provenance=(provenance or {}).get(pdf.name))
+            blocked = next((s for s in record.supplements if s.href == supp.href and s.state != "retrieved"), None)
             if blocked:
                 record.supplements.remove(blocked)
                 supp.note += f"; the automated attempt had been: {blocked.state}"
             record.supplements.append(supp)
-            console.ok(f"{source_id:16} supplement {pdf.name}: {supp.characters:,} chars, supplied by a person")
+            verdict = {True: "publisher checksum verified", False: "CHECKSUM MISMATCH",
+                       None: "no checksum to verify"}[supp.bytes_verified]
+            (console.ok if supp.bytes_verified is not False else console.warn)(
+                f"{source_id:16} supplement {pdf.name}: {supp.characters:,} chars, supplied by a person — {verdict}")
 
     console.step(2, 2, "Writing the refreshed corpus...")
     index["refreshed_from"] = {"corpus_run": frozen_corpus.name, "corpus_digest": index.get("corpus_digest")}

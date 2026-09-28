@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -232,7 +233,7 @@ def track2_import_hypotheses(
     from rarepipe.stages.track2.ingest import IngestError, import_hypotheses, save
 
     console = Console(quiet=quiet)
-    existing = len(list((research / "hypotheses").glob("LLMRS_*.json"))) if (research / "hypotheses").exists() else 0
+    existing = _max_session(research / "hypotheses")
     try:
         result = import_hypotheses(research, analysis, session_index=existing + 1)
     except IngestError as exc:
@@ -293,7 +294,7 @@ def discovery_import_experiences(
     from rarepipe.stages.discovery.ingest import IngestError, import_experiences, save
 
     console = Console(quiet=quiet)
-    existing = len(list((research / "experiences").glob("LLMRS_*.json"))) if (research / "experiences").exists() else 0
+    existing = _max_session(research / "experiences")
     try:
         result = import_experiences(research, analysis, session_index=existing + 1)
     except IngestError as exc:
@@ -622,7 +623,7 @@ def research_import_analysis(
     needles: list[str] = []
     if adjudication_run:
         needles, _ = residue_needles(_j.loads(adjudication_run.read_text()))
-    existing = len(list((research / "analyses").glob("LLMRS_*.json"))) if (research / "analyses").exists() else 0
+    existing = _max_session(research / "analyses")
     try:
         result = import_analysis(research, analysis, residue_needles=needles, session_index=existing + 1,
                                  synthesis_only=synthesis_only)
@@ -646,6 +647,7 @@ def mechanism_refresh_corpus(
     corpus_run: Annotated[Path, typer.Option(help="The frozen corpus run to reopen. It is never modified.")],
     output: Annotated[Path, typer.Option(help="Directory under which the new corpus run is created.")],
     supplement: Annotated[list[str] | None, typer.Option(help="SOURCE_ID=path.pdf — a supplement a person downloaded by hand. Repeatable.")] = None,
+    supplement_provenance: Annotated[list[Path] | None, typer.Option(help="JSON recording a supplied file's source, licence and publisher checksum (matched by delivered_filename). Repeatable.")] = None,
     quiet: Annotated[bool, typer.Option(help="Suppress progress output.")] = False,
 ) -> None:
     """Reopen a frozen corpus as a new run: re-attempt licensed full text and supplements, record every outcome."""
@@ -658,7 +660,13 @@ def mechanism_refresh_corpus(
             typer.echo(f"error: --supplement expects SOURCE_ID=existing.pdf, got {item!r}", err=True)
             raise typer.Exit(EXIT_USAGE)
         supplied.setdefault(source_id, []).append(Path(path))
-    typer.echo(str(refresh(corpus_run, output, Console(quiet=quiet), supplied)))
+    import json as _j
+
+    provenance = {}
+    for path in supplement_provenance or []:
+        record = _j.loads(path.read_text())
+        provenance[record.get("delivered_filename") or path.stem] = record
+    typer.echo(str(refresh(corpus_run, output, Console(quiet=quiet), supplied, provenance)))
 
 
 @mechanism_app.command("resolve")
@@ -692,8 +700,32 @@ def mechanism_resolve(
         raise typer.Exit(EXIT_BLOCKED)
 
 
+def _max_session(folder: Path) -> int:
+    """Highest LLMRS number already used — max, not count, so a removed file can never cause an overwrite."""
+    numbers = [int(m.group(1)) for p in folder.glob("LLMRS_*.json") if (m := re.match(r"LLMRS_(\d+)", p.name))]
+    return max(numbers, default=0) if folder.exists() else 0
+
+
 export_app = typer.Typer(no_args_is_help=True, help="Generate external submission packages. Nothing is uploaded — a person submits.")
 app.add_typer(export_app, name="export")
+
+
+@track2_app.command("check-pitch")
+def track2_check_pitch(
+    pitch: Annotated[Path, typer.Option(help="The pitch as edited by a person.")],
+    claim_map: Annotated[Path, typer.Option(help="Reviewer's YAML mapping each sentence to artifact ids.")],
+    run: Annotated[list[Path], typer.Option(help="A sealed run whose sanitized artifacts the pitch may cite. Repeatable.")],
+    output: Annotated[Path, typer.Option(help="Where to write the check report (markdown).")],
+) -> None:
+    """Check that every sentence of an edited pitch traces to a sealed artifact. Never edits the pitch."""
+    from rarepipe.stages.track2 import pitch_check as P
+
+    results = P.check(pitch.read_text(), P.load_mapping(claim_map), P.artifact_text(run))
+    output.write_text(P.render(pitch.name, results, run))
+    failed = [r for r in results if r.fails]
+    typer.echo(f"{output}\n{'PASS' if not failed else f'FAIL: {len(failed)} sentence(s)'}")
+    if failed:
+        raise typer.Exit(EXIT_BLOCKED)
 
 
 @export_app.command("track2-package")
@@ -704,6 +736,8 @@ def export_track2_package(
     mechanism_run: Annotated[Path | None, typer.Option(help="Stage 06 run whose comparison and dossier report to include.")] = None,
     extra: Annotated[list[str] | None, typer.Option(help="ARCHIVE/PATH=local_file to add, e.g. verification/pytest.txt=out.txt. Repeatable.")] = None,
     note: Annotated[str, typer.Option(help="Free text for the README (what changed, for the reviewer).")] = "",
+    pitch: Annotated[Path | None, typer.Option(help="A person's edited pitch to upload instead of the generated one. Its claim check must be supplied too.")] = None,
+    pitch_check: Annotated[Path | None, typer.Option(help="The `track2 check-pitch` report for --pitch.")] = None,
 ) -> None:
     """Assemble a Track 2 package whose MANIFEST.sha256 verifies with `shasum -a 256 -c` as documented."""
     import json as _j
@@ -726,6 +760,17 @@ def export_track2_package(
             if (mechanism_run / name).exists():
                 files[f"records/stage06/{name}"] = mechanism_run / name
         files["verification/stage06_run_SHA256SUMS.txt"] = mechanism_run / "SHA256SUMS"
+    if pitch:
+        if not pitch_check or "**Result: PASS**" not in pitch_check.read_text():
+            typer.echo("error: an edited pitch is uploaded only with a passing `track2 check-pitch` report", err=True)
+            raise typer.Exit(EXIT_BLOCKED)
+        files[f"upload/{submitter}_track2_pitch_script.md"] = pitch
+        files["records/generated_pitch_script.md"] = track2_run / "track2_pitch_script.md"
+        files["verification/pitch_claim_check.md"] = pitch_check
+    if mechanism_run:
+        for path in sorted(mechanism_run.glob("input_*.yaml")) + [mechanism_run / "direction_corrections.json"]:
+            if path.exists():
+                files[f"records/stage06/{path.name}"] = path
     for item in extra or []:
         arcname, _, path = item.partition("=")
         if not path or not Path(path).exists():
@@ -758,7 +803,9 @@ def export_track2_package(
         "  verification/run_SHA256SUMS.txt is the run directory's own list on the controlled drive. It also",
         "  names private files that are never exported, so do not run `shasum -c` against it here. Instead,",
         "  each records/ file's hash in MANIFEST.sha256 equals its line in run_SHA256SUMS.txt, and the two",
-        "  upload files equal the run's *_track2_report.md and track2_pitch_script.md lines.",
+        "  upload files equal the run's *_track2_report.md and track2_pitch_script.md lines"
+        + (" — except an edited pitch, which is checked by verification/pitch_claim_check.md instead; the generated "
+           "one is kept as records/generated_pitch_script.md." if pitch else "."),
         *(["  records/stage06/ files likewise equal their lines in verification/stage06_run_SHA256SUMS.txt."]
           if mechanism_run else []),
         ""])

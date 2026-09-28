@@ -17,6 +17,7 @@ from rarepipe.stages.mechanism.model import (
     ClaimType,
     Confidence,
     Direction,
+    DirectionOverride,
     EpistemicClass,
     EvidenceLevel,
     EvidenceRecord,
@@ -38,6 +39,28 @@ class Bundle:
     def __post_init__(self):
         if self.indirect is None:
             self.indirect = []
+
+    def for_claim(self, claim_id: str) -> tuple[Bundle, list[DirectionOverride]]:
+        """Apply reviewed per-claim relationships. Records without one keep the extractor's direction."""
+        routed: dict[str, list[EvidenceRecord]] = {"supports": [], "contradicts": [], "uncertain": []}
+        indirect: list[EvidenceRecord] = []
+        overrides: list[DirectionOverride] = []
+        indirect_ids = {id(r) for r in self.indirect}
+        for record in self.supporting + self.contradicting + self.uncertain + self.indirect:
+            review = record.claim_directions.get(claim_id)
+            if review:
+                overrides.append(DirectionOverride(
+                    evidence_id=record.evidence_id, extractor_direction=record.direction.value,
+                    direction_for_this_claim=review.direction, reason=review.reason, reviewed_by=review.reviewed_by))
+                if review.direction == "not_applicable":
+                    continue
+            direction = review.direction if review else record.direction.value
+            if id(record) in indirect_ids:
+                indirect.append(record)
+            else:
+                routed[direction].append(record)
+        return Bundle(supporting=routed["supports"], contradicting=routed["contradicts"],
+                      uncertain=routed["uncertain"], indirect=indirect), overrides
 
     @property
     def sources(self) -> set[str]:
@@ -108,8 +131,10 @@ def build_claim(claim_id: str, claim_type: ClaimType, statement: str, b: Bundle,
                 *, extra_limits: list[str] | None = None, unknown_reason: str | None = None,
                 epistemic: EpistemicClass = EpistemicClass.EXTERNAL_EVIDENCE,
                 inference: Inference | None = None) -> MechanismClaim:
+    b, overrides = b.for_claim(claim_id)
     status, confidence = status_of(b)
     return MechanismClaim(
+        direction_overrides=overrides,
         id=claim_id, type=claim_type, statement=statement, status=status, scope=scope,
         epistemic_class=epistemic if status is not ClaimStatus.UNRESOLVED else EpistemicClass.UNKNOWN,
         evidence=[e.evidence_id for e in b.supporting], indirect_evidence=[e.evidence_id for e in b.indirect],
