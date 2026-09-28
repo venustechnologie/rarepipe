@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "document_type": "M5_AGENT_PROPOSAL",
+  "producer": {"actor_type": "AGENT", "role": "research-coordinator", "model": null, "workflow_version": "1.0"},
+  "baseline": {"package_sha256": null, "plan_id": null, "plan_version": null, "plan_content_hash": null, "limitations": ["Populate from current authorized artifacts before proposing version-specific edits."]},
+  "scope": {"data_boundary": "PUBLIC_ONLY", "authorization_ref": null, "runner_authorization_verified": false},
+  "actions": {"automatic_external_action": false, "clinical_action": false, "real_plan_freeze": false, "human_signoff_created": false},
+  "sources": [],
+  "items": [
+    {
+      "id": "WORK_TEMPLATE_001",
+      "source_gap_ids": [],
+      "source_gap_mapping": "UNVERIFIED",
+      "field_path": null,
+      "question": "Replace with the bounded scientific decision.",
+      "status": "NEEDS_DESIGN_DECISION",
+      "proposal": {"value": null, "rationale": "Scientific preparation has not started in this template.", "alternatives": [], "conditions": [], "limitations": ["Template only; not an approved plan field."]},
+      "basis": {"kind": "UNRESOLVED", "source_refs": [], "calculation_refs": [], "assumptions": []},
+      "required_reviewer_roles": ["scientific_lead"],
+      "reviewer_question": "Complete the evidence-backed proposal before requesting a decision.",
+      "next_action": "Read the actual question, permitted evidence and relevant role before drafting."
+    }
+  ],
+  "new_human_reviews": []
+}

@@ -60,10 +60,26 @@ def init(baseline: Annotated[Path, typer.Option(help="Verified Stage 09 package 
 
 
 @app.command("validate")
-def validate(workspace: WorkspaceOpt, plan_id: PlanOpt = seed_mod.PLAN_ID) -> None:
+def validate(workspace: WorkspaceOpt, plan_id: PlanOpt = seed_mod.PLAN_ID,
+             as_json: Annotated[bool, typer.Option("--json", help="Machine-readable report with every gap record.")]
+             = False) -> None:
     """Structural, scientific-readiness, provenance and policy errors, reported separately."""
-    report = W.validate(PlanStore(workspace, plan_id).load())
-    typer.echo(report.render())
+    plan = PlanStore(workspace, plan_id).load()
+    report = W.validate(plan)
+    if not as_json:
+        typer.echo(report.render())
+        return
+    from rarepipe.stages.prospective.store import review_digest
+
+    typer.echo(json.dumps({
+        "plan_id": plan.plan_id, "plan_version": plan.version_id, "plan_content_digest": plan.content_digest,
+        "review_digest": review_digest(plan), "lifecycle": plan.lifecycle.value,
+        "baseline": {"status": plan.baseline.status, "package_sha256": plan.baseline.package_sha256,
+                     "stage09_digest": plan.baseline.semantic_digests.get("stage09")},
+        "freezable": report.freezable, "structural": report.structural, "provenance": report.provenance,
+        "policy": report.policy,
+        "scientific_readiness": [{"gap_id": f"{u.object_ref}.{u.field}", **u.model_dump(mode="json")}
+                                 for u in report.scientific_readiness]}, indent=2))
 
 
 @app.command("preview")

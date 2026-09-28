@@ -1,0 +1,14 @@
+interface:
+  display_name: Rarepipe Prospective Research Team
+  short_description: Prepare evidence and scientific plans for Stage 10
+  default_prompt: Use $rarepipe-prospective-research-team to turn the current M5 gaps
+    into evidence-backed proposals and a concise human review packet.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

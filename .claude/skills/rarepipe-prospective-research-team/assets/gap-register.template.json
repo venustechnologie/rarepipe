@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "document_type": "M5_GAP_REGISTER",
+  "source_validator_artifact": null,
+  "source_plan_version": null,
+  "reported_gap_count": null,
+  "inspected_gap_count": 0,
+  "source_gap_records": [],
+  "work_packages": [],
+  "progress": {"researched": 0, "drafted": 0, "ready_for_human_review": 0, "externally_confirmed": 0, "human_accepted_fields": 0},
+  "instructions": "Preserve actual gap IDs/paths/owners/reasons. Work packages reference all affected source gaps, shared dependencies, the proposal file and precise next action. Do not generate source gaps from a reported total."
+}
