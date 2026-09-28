@@ -10,283 +10,304 @@
   "stage10-prospective": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "M0 Baseline closure: verified supplement, RH_001 v3, revised pitch, build/test lineage",
         "description": "Close PRD §2: import publisher-verified supplement bytes, supersede RH_001 with genotype-verification and viability/death/division requirements, revise pitch sentence 15, rebuild Stages 06-09, pass the pitch check, record build/test commits.",
         "details": "Record original, received (INTEGRITY_MISMATCH) and derived artifacts separately (FR-044). Package candidate with manifest. Existing frozen runs and superseded records stay immutable.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:02:59.351Z"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Stage 10 domain schemas",
         "description": "Pydantic contracts for ProspectivePlan, BaselineRef, Hypothesis, ExperimentSpec, EndpointSpec, Forecast, Observation, DecisionRule, DecisionRecord, SimulationRun, ResearchTask, ReviewRecord (PRD §13).",
         "details": "Typed statements (FR-001), scope fields (FR-002), distinct uncertainty states and null-with-reason numerics (FR-003), endpoint-specific results (FR-004), independence groups (FR-006), forecast modes and null probability with reason (FR-011/012), temporal status and evaluation modes (FR-014/015), lifecycle and execution states (§14). Immutable IDs plus version IDs with parent and change reason (§13.1).",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          1
+          "1"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.654Z"
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Canonicalization, content digests and immutable version store",
         "description": "Documented canonical JSON algorithm; raw-byte hashes separate from semantic digests; atomic writes; idempotent re-import; version preconditions and conflict-with-diff (§13.1, §17).",
         "details": "Frozen payloads immutable; a change creates a successor with parent version and machine-readable reason. Competing edits on the same version return a conflict (AT23). Identical evidence imported twice keeps one identity (AT15).",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          2
+          "2"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.660Z"
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Baseline import and verification",
         "description": "rarepipe prospective init --baseline PATH: verify package manifest, schema versions, run IDs and visibility; pin BaselineRef; show candidate/frozen status and limitations (§6.1).",
         "details": "AT01 (23 entries verify for r2/r3), AT02 (a changed byte or digest blocks verified import and freeze). Reads only sanitized artifacts.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          3
+          "3"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.661Z"
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Policy adapter and permissions",
         "description": "Actor types and roles (§3), separate read/draft/review/freeze/private-export/external-send permissions enforced in the domain layer; external send and remote execution disabled (FR-050..053).",
         "details": "An agent cannot sign as a human reviewer. Untrusted document text cannot change policy (AT22). Policy decisions go to an audit log without sensitive payloads.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          2
+          "2"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.661Z"
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "MVA seed plan: H01-H07, EXP01-EXP03, endpoints, forecasts",
         "description": "Seed the MVA_001/RH_001 plan from the corrected baseline with the hypothesis set (§7), experiment specifications (§8) and qualitative conditional forecasts (§9).",
         "details": "Unresolved assay thresholds, model availability and reviews are named with owner and reason; probabilities null with reason (AT24); model applicability labels distinct (exact allele / complete genotype / generic deficient). Plan stays DRAFT/REVIEW_REQUIRED.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          2,
-          4
+          "2",
+          "4"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.662Z"
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Three-valued predicate engine and branch evaluator B00-B15",
         "description": "Evaluate observation vectors with TRUE/FALSE/UNKNOWN predicates; missing required data yields UNKNOWN; all matches preserved; precedence and conflicts per §10.1; DecisionRecord per §10.2.",
         "details": "Adverse flag always creates hold-and-review even if unverified; quality gates decide admissibility; contradictory actions produce DECISION_REVIEW_REQUIRED; unmodelled results create a model-revision task. AT04-AT13, AT26, AT27. Deterministic replay.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          2
+          "2"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.662Z"
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Observation intake",
         "description": "rarepipe prospective ingest: store the immutable original result, verify identity/provenance, unit and denominator checks, classify the observation vector, produce a review proposal (§6.7, §13.2).",
         "details": "Reject incompatible units and missing denominators, never impute zero (AT14); synthetic fixtures cannot be promoted to real evidence (AT19); re-ingesting identical evidence does not duplicate or add independence (AT15).",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          3,
-          7
+          "3",
+          "7"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.663Z"
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Scenario explorer preview",
         "description": "rarepipe prospective preview PLAN --scenario PATH: evaluate hypothetical inputs, show matches, unknowns, next actions and which assumptions matter, clearly labelled Hypothetical scenario (FR-020).",
         "details": "Never mutates the case or evidence store and never sends anything (AT18). Supports positive, negative, partial, adverse, inconclusive and unexpected inputs.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          7
+          "7"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.663Z"
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Readiness validation and freeze gates",
         "description": "rarepipe prospective validate/freeze: structural, scientific-readiness, provenance and policy errors reported separately; freeze refused while required thresholds are null or reviews missing (FR-040/041).",
         "details": "Draft export allowed but marked incomplete (AT03). Outcome-availability declaration and TEMPORAL_STATUS_UNVERIFIED (AT25). Freezing a synthetic fixture never preregisters a real experiment.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          3,
-          6
+          "3",
+          "6"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.664Z"
       },
       {
-        "id": 11,
+        "id": "11",
         "title": "Review, decision records and successor versions",
         "description": "rarepipe prospective review DECISION: record authorized human interpretation (accept/amend with reason/request clarification/defer) and task proposals; successor plans for post-freeze changes (FR-042).",
         "details": "Post-result amendments labelled retrospective for affected forecasts; original scoring preserved (AT16). Two reviewers on one version produce a conflict (AT23). Human judgement is a separate event from rule evaluation.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          7,
-          8,
-          10
+          "7",
+          "8",
+          "10"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.665Z"
       },
       {
-        "id": 12,
+        "id": "12",
         "title": "Diff and dependency impact report",
         "description": "rarepipe prospective diff OLD NEW: scientific vs editorial vs operational changes; baseline changes produce an impact report and review invalidation for the successor (FR-043, §16.5).",
         "details": "A changed sentence that changes scope is a scientific change. AT17.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          3,
-          11
+          "3",
+          "11"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.665Z"
       },
       {
-        "id": 13,
+        "id": "13",
         "title": "Capability requests and node query drafts",
         "description": "Extend NodeQuerySpecification with FIND_EXISTING_RESULT, ASSESS_MODEL_AVAILABILITY, ASSESS_ASSAY_CAPABILITY, REQUEST_FEASIBILITY_ESTIMATE as unsent drafts; response states per FR-031; EvidenceEnvelope schema (FR-032).",
         "details": "No relevant cases or access denied is operational, never MEASURED_NO_EFFECT (AT13). Nothing is sent in this deployment.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          2,
-          5
+          "2",
+          "5"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.666Z"
       },
       {
-        "id": 14,
+        "id": "14",
         "title": "Export with output policy",
         "description": "rarepipe prospective export PLAN --visibility public|private: allowlist plus leakage review over structured and free text, complete manifest, atomic write (FR-053, §13.1).",
         "details": "A synthetic private marker in free text is rejected or removed with a logged reason (AT21). No raw variant, reversible encoding, low-entropy genotype hash or nearest-known-variant clue in public output.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          3,
-          5
+          "3",
+          "5"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.666Z"
       },
       {
-        "id": 15,
+        "id": "15",
         "title": "CLI and internal service interface",
         "description": "Wire init/validate/preview/freeze/ingest/review/diff/export as rarepipe prospective commands, and the same operations as an internal service interface with idempotency keys and version preconditions (§17).",
         "details": "Mutations atomic; failed builds do not advance the active plan pointer.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          4,
-          8,
-          9,
-          10,
-          11,
-          12,
-          14
+          "4",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "14"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.667Z"
       },
       {
-        "id": 16,
+        "id": "16",
         "title": "Frontend views",
         "description": "Offline HTML views generated from the same records: doctor view, operator plan editor/readiness, scenario explorer, result review, change and audit view (§16).",
         "details": "Doctor view hides run IDs by default; hypothetical label persists in print/export; missing fields name field, reason and owner; conflicting evidence stays visible.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          15
+          "15"
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.667Z"
       },
       {
-        "id": 17,
+        "id": "17",
         "title": "Synthetic fixtures and acceptance tests AT01-AT28",
         "description": "Synthetic scenario fixtures (never biological evidence) and an end-to-end test suite exercising the real importer, evaluator and export path for AT01-AT28 (§19).",
         "details": "Includes AT20 (731X frameshift identity) and AT28 (pitch check traces viability to RH_001 v3). Offline, deterministic.",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
-          15
+          "15"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2026-09-28T15:19:20.668Z"
       },
       {
-        "id": 18,
+        "id": "18",
         "title": "Completion demonstration and operator guide",
         "description": "Offline demo script for §19.1: import candidate, explain why the real plan cannot freeze, preview branches, freeze a labelled synthetic fixture, ingest a synthetic outcome, review and successor, sanitized export, deterministic replay. Operator guide and architecture decision record (§23).",
         "details": "Demo must not mark the actual MVA plan as experimentally validated.",
         "testStrategy": "",
         "status": "pending",
         "dependencies": [
-          16,
-          17
+          "16",
+          "17"
         ],
         "priority": "medium",
         "subtasks": []
       },
       {
-        "id": 19,
+        "id": "19",
         "title": "M5 pilot readiness: scientific review of the real plan",
         "description": "Scientific review of the real MVA plan, lab feasibility and predeclared evaluation (§21 M5, §22).",
         "details": "Requires human owners: assay methods and thresholds, meaningful effects, model availability, exposure plausibility, patient-relevant goals. Engineering prepares the named-blocker list; it cannot supply these answers.",
         "testStrategy": "",
         "status": "pending",
         "dependencies": [
-          18
+          "18"
         ],
         "priority": "low",
         "subtasks": []
       },
       {
-        "id": 20,
+        "id": "20",
         "title": "M6 numerical adapters and permissioned node pilot",
         "description": "Reviewed simulation adapter and one permissioned evidence-node pilot (P1, §11.2, §12, §21 M6).",
         "details": "Requires validated models, parameters and verified dataset rights; out of scope for P0.",
         "testStrategy": "",
         "status": "pending",
         "dependencies": [
-          18
+          "18"
         ],
         "priority": "low",
         "subtasks": []
       }
     ],
     "metadata": {
-      "created": "2026-09-28T15:01:55.184Z",
-      "updated": "2026-09-28T15:02:31.743Z",
-      "description": "Stage 10: prospective experiment and decision plan (PRD v1.0, 2026-09-28)"
+      "version": "1.0.0",
+      "lastModified": "2026-09-28T15:19:20.668Z",
+      "taskCount": 20,
+      "completedCount": 17,
+      "tags": [
+        "stage10-prospective"
+      ]
     }
   }
 }

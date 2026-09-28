@@ -48,9 +48,11 @@ def _scan(obj, path: str, patterns: list[re.Pattern], mode: str, result: ScanRes
         out = [_scan(v, f"{path}[{i}]", patterns, mode, result) for i, v in enumerate(obj)]
         return [v for v in out if v is not _DROP]
     if isinstance(obj, str):
-        for pattern in patterns:
+        for n, pattern in enumerate(patterns):
             if pattern.search(obj):
-                reason = f"{path}: matched output-policy pattern {pattern.pattern[:40]!r}"
+                # Name the rule, never the pattern: a private term must not reappear in the removal log.
+                rule = "private reference or local path" if n == 0 else f"local private term #{n}"
+                reason = f"{path}: removed under output-policy rule '{rule}'"
                 if mode == "reject":
                     raise ExportRejected([reason])
                 result.removed.append(reason)

@@ -399,6 +399,8 @@ def test_AT21_a_private_marker_in_free_text_is_removed_or_rejected(tmp_path):
     manifest = json.loads((out / "export_manifest.json").read_text())
     assert "SYNTHETIC-SECRET-ZX91" not in text and "private:" not in text
     assert any("assessment_note" in r for r in manifest["output_policy"]["removed"])
+    everything = "".join(p.read_text() for p in out.glob("*.json"))
+    assert "SYNTHETIC-SECRET-ZX91" not in everything and "private:" not in everything, "the log must not leak either"
     assert any(e["event"] == "export_fields_removed" for e in store.audit_events())
     with pytest.raises(ExportRejected):
         do_export(store, tmp_path / "out2", "public", private_terms=["SYNTHETIC-SECRET-ZX91"], mode="reject")
