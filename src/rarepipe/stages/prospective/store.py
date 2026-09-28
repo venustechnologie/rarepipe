@@ -81,14 +81,24 @@ def _atomic_write(path: Path, data: bytes) -> None:
 
 
 def _write_once(path: Path, data: bytes) -> None:
+    """Create-only. A hard link publishes the complete file atomically; filesystems without links (the
+    exFAT/NTFS case drive) fall back to an exclusive create, which still never replaces a file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".tmp-")
     with os.fdopen(fd, "wb") as fh:
         fh.write(data)
     try:
-        os.link(tmp, path)  # fails if the target exists: an immutable file is never replaced
+        os.link(tmp, path)
     except FileExistsError as exc:
         raise ImmutableError(f"{path.name} already exists and is immutable") from exc
+    except OSError:
+        try:
+            with path.open("xb") as fh:
+                fh.write(data)
+                fh.flush()
+                os.fsync(fh.fileno())
+        except FileExistsError as exc:
+            raise ImmutableError(f"{path.name} already exists and is immutable") from exc
     finally:
         Path(tmp).unlink(missing_ok=True)
     os.chmod(path, 0o444)

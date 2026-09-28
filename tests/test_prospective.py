@@ -455,3 +455,19 @@ def test_cli_end_to_end_on_a_verified_package(tmp_path):
     assert r.exit_code == 0 and (tmp_path / "v" / "doctor.html").exists()
     r = runner.invoke(app, ["prospective", "export", "--workspace", str(ws), "--output", str(tmp_path / "e")])
     assert r.exit_code == 0 and "private:" not in next((tmp_path / "e").glob("RUN_*/plan.json")).read_text()
+
+
+def test_write_once_works_without_hard_links(tmp_path, monkeypatch):
+    import os
+
+    from rarepipe.stages.prospective.store import _write_once
+
+    def no_links(*a, **k):
+        raise OSError(45, "Operation not supported")
+    monkeypatch.setattr(os, "link", no_links)
+    target = tmp_path / "v.json"
+    _write_once(target, b"{}")
+    assert target.read_bytes() == b"{}"
+    with pytest.raises(ImmutableError):
+        _write_once(target, b"[]")
+    assert not list(tmp_path.glob(".tmp-*"))
