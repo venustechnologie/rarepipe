@@ -69,7 +69,8 @@ READOUT_KINDS = ("protein_abundance", "mrna_level", "protein_turnover", "chapero
 FUNCTION_ENDPOINTS = ("checkpoint_activity", "checkpoint_silencing", "chromosome_segregation", "chromosome_alignment")
 ENDPOINT_NAMES = {"checkpoint_activity": "checkpoint activation (nocodazole response)",
                   "checkpoint_silencing": "checkpoint silencing", "chromosome_segregation": "chromosome segregation",
-                  "chromosome_alignment": "chromosome alignment"}
+                  "chromosome_alignment": "chromosome alignment",
+                  "pp2a_b56_recruitment": "kinetochore PP2A-B56 recruitment"}
 RESULTS = ("normal", "reduced", "increased", "restored", "not_restored", "not_reported")
 
 
@@ -161,9 +162,6 @@ def _normalise(text: str) -> str:
 def _join(kinds: list[str]) -> str:
     words = [ENDPOINT_NAMES.get(k, k.replace("_", " ")) for k in kinds]
     return words[0] if len(words) == 1 else ", ".join(words[:-1]) + " and " + words[-1]
-
-
-RESULT_WORDS = {"reduced": "was impaired", "not_restored": "was not restored"}
 
 
 def _region(position: int | None) -> str | None:
@@ -361,10 +359,17 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
                           and e.abundance_condition in ("not_stated", "not_applicable", "ectopic_at_or_above_wild_type")
                           for r in e.readouts if r.kind in FUNCTION_ENDPOINTS + ("pp2a_b56_recruitment",)
                           and r.result in ("reduced", "not_restored")]
+    by_experiment: dict[str, list[str]] = {}
     for e, r in impaired_elsewhere:
-        open_items.append(f"{e.experiment_id} ({e.variant_label}, {e.source_id}): {_join([r.kind])} "
-                          f"{RESULT_WORDS[r.result]} — a function of this region that the restored-abundance tests "
-                          "did not measure")
+        kinds = by_experiment.setdefault(e.experiment_id, [])
+        if r.kind not in kinds:
+            kinds.append(r.kind)
+    for e in in_class:
+        if e.experiment_id in by_experiment:
+            kinds = by_experiment[e.experiment_id]
+            open_items.append(f"{e.experiment_id} ({e.variant_label}; {e.source_id}): {_join(kinds)} "
+                              f"{'were' if len(kinds) > 1 else 'was'} impaired, at an abundance the source does not "
+                              "state — functions of this region the restored-abundance tests did not measure")
     if not_reported:
         open_items.append(f"{_join(not_reported)} at restored abundance "
                           f"{'were' if len(not_reported) > 1 else 'was'} not reported for the substitutions tested")
@@ -388,7 +393,10 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
             "is achievable needs its own test."),
         what_remains_open=open_items,
         supporting_observations=[
-            f"{e.experiment_id} ({e.variant_label}, {e.protein_tested.replace('_', ' ')}): {e.authors_interpretation}"
+            f"{e.experiment_id} ({e.variant_label}"
+            + (f" = {e.published_identity}" if e.published_identity else "")
+            + f", {e.protein_tested.replace('_', ' ')}): {e.authors_interpretation}"
+            + "".join(f" [{x}]" for x in e.limitations if x.startswith("scope:"))
             for e in experiments if e.authors_interpretation and (
                 e.protein_tested in ("truncated_protein", "normal_protein_titration")
                 or any(r.kind in ("chaperone_dependence", "protein_turnover") for r in e.readouts))],

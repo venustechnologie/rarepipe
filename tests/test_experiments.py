@@ -253,7 +253,7 @@ def test_domain_functions_the_restored_tests_did_not_measure_stay_open():
                  function_at_restored_abundance="not_tested",
                  readouts=[{"kind": "checkpoint_silencing", "result": "reduced", "quote": "q"}])
     a = assess([_e(position=909), removal], child_missense(child(850)))
-    assert any("VX_20" in x and "checkpoint silencing was impaired" in x for x in a.what_remains_open)
+    assert any("VX_20" in x and "checkpoint silencing was impaired" in x and "does not state" in x for x in a.what_remains_open)
     assert a.decision == "INSUFFICIENT"
 
 

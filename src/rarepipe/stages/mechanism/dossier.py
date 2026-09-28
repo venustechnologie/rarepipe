@@ -267,11 +267,23 @@ def residual_section(d: MechanismDossier) -> list[str]:
     return out
 
 
+def _verified(s: dict) -> str:
+    if s.get("state") != "retrieved":
+        return ""
+    flag = {True: " (bytes verified against the publisher checksum)",
+            False: " (bytes do NOT match the publisher checksum: text used, not the verified publisher copy)",
+            None: " (no publisher checksum supplied)"}[s.get("bytes_verified")]
+    source = f"; source {s['source_url']}" if s.get("source_url") else ""
+    licence = f"; licence {s['licence']}" if s.get("licence") else ""
+    return flag + source + licence
+
+
 def refresh_section(d: MechanismDossier) -> list[str]:
     out = ["## Corpus refresh — what became available\n",
            "| document | before | after | why | retrieved | supplements |", "|---|---|---|---|---|---|"]
     for r in d.corpus_refresh:
-        supps = ", ".join(f"{s['href']}: {s['state'].replace('_', ' ')}" for s in r.get("supplements", [])) or "—"
+        supps = ", ".join(f"{s['href']}: {s['state'].replace('_', ' ')}{_verified(s)}"
+                          for s in r.get("supplements", [])) or "—"
         out.append(f"| {r['source_id']} {r.get('pmcid') or ''} | {r['before'].replace('_', ' ')} | "
                    f"{r['after'].replace('_', ' ')} | {r['reason']} | {r['retrieved_at'][:10]} | {supps} |")
     out.append("")
