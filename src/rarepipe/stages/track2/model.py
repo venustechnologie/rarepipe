@@ -102,6 +102,11 @@ class ValidationPlan(BaseModel):
     readouts: list[str] = Field(default_factory=list)
     hypothesis: str
     falsification: str
+    model_requirements: list[str] = Field(
+        default_factory=list, description="What the experimental model must satisfy before a result is interpretable, "
+                                          "e.g. genotype verified locally and its applicability labelled.")
+    not_authorized: list[str] = Field(
+        default_factory=list, description="What this plan explicitly does not establish or authorize.")
 
 
 class MindChanger(BaseModel):

@@ -316,3 +316,19 @@ def test_a_passage_is_judged_per_claim():
     assert untouched.contradicting_evidence == ["EV_2"], "a claim nobody reviewed keeps the extractor's reading"
     assert [(o.evidence_id, o.extractor_direction, o.direction_for_this_claim) for o in other.direction_overrides] \
         == [("EV_2", "contradicts", "not_applicable")]
+
+
+def test_a_pipeline_retrieval_is_not_described_as_person_supplied(tmp_path):
+    import hashlib
+
+    from pypdf import PdfWriter
+
+    pdf = tmp_path / "s.pdf"
+    w = PdfWriter()
+    w.add_blank_page(10, 10)
+    w.write(pdf)
+    (tmp_path / "docs").mkdir()
+    rec = R.ingest_local_supplement(tmp_path, "PMID:1", pdf, provenance={
+        "retrieved_by": "pipeline", "download_url": "https://example.org/f",
+        "publisher_computed_md5": hashlib.md5(pdf.read_bytes()).hexdigest()})
+    assert rec.note.startswith("retrieved by the pipeline from https://example.org/f") and rec.bytes_verified

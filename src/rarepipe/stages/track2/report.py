@@ -61,6 +61,10 @@ def render(s: Track2HypothesisSet, evidence: dict) -> str:
             w(f"- readouts: {', '.join(v.readouts)}")
             w(f"- hypothesis: {v.hypothesis}")
             w(f"- falsification: {v.falsification}")
+            for req in v.model_requirements:
+                w(f"- model requirement: {req}")
+            for item in v.not_authorized:
+                w(f"- not established or authorized: {item}")
             w("")
         c = h.what_would_change_our_mind
         for label, items in (("would strengthen", c.would_strengthen), ("would weaken", c.would_weaken),
@@ -181,7 +185,10 @@ def submission(s: Track2HypothesisSet, evidence: dict, discovery: dict) -> str:
             continue
         v = h.validation_plan
         w(f"**{h.active_ingredient}** — in {v.system}, apply {v.intervention} and measure "
-          f"{', '.join(v.readouts)}. Supported if {v.hypothesis}. Falsified if {v.falsification}.\n")
+          f"{', '.join(v.readouts)}. Supported if {v.hypothesis}. Falsified if {v.falsification}."
+          + (f" Before any result is interpreted: {'; '.join(v.model_requirements)}." if v.model_requirements else "")
+          + (f" This plan does not establish or authorize: {'; '.join(v.not_authorized)}." if v.not_authorized else "")
+          + "\n")
     w("## 9. Negative search results\n")
     for o in s.search_outcomes:
         if o.result.value in ("NO_EVIDENCE_FOUND", "EXHAUSTED_TO_THRESHOLD"):

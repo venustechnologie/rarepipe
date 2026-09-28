@@ -129,7 +129,10 @@ def ingest_local_supplement(corpus_run: Path, source_id: str, pdf_path: Path, la
     licence = provenance.get("licence")
     return SupplementRecord(
         href=provenance.get("original_filename") or pdf_path.name, label=label or "supplied by a person",
-        state="retrieved", note=f"ingested from a local file supplied by a person ({pdf_path.name}); {check}"
+        state="retrieved",
+        note=(f"retrieved by the pipeline from {provenance['download_url']} and verified locally; {check}"
+              if provenance.get("retrieved_by") == "pipeline" and provenance.get("download_url") else
+              f"ingested from a local file supplied by a person ({pdf_path.name}); {check}")
         + (f"; {provenance['pmc_byte_equivalence']}" if provenance.get("pmc_byte_equivalence") else ""),
         characters=len(text), content_hash="sha256:" + sha256, source_url=provenance.get("source_url"),
         licence=(f"{licence.get('name')} ({licence.get('url')})" if isinstance(licence, dict) else licence),
@@ -204,10 +207,10 @@ def refresh(frozen_corpus: Path, output: Path, console: Console | None = None,
                 record.supplements.remove(blocked)
                 supp.note += f"; the automated attempt had been: {blocked.state}"
             record.supplements.append(supp)
-            verdict = {True: "publisher checksum verified", False: "CHECKSUM MISMATCH",
+            verdict = {True: "publisher checksum verified", False: "INTEGRITY_MISMATCH",
                        None: "no checksum to verify"}[supp.bytes_verified]
             (console.ok if supp.bytes_verified is not False else console.warn)(
-                f"{source_id:16} supplement {pdf.name}: {supp.characters:,} chars, supplied by a person — {verdict}")
+                f"{source_id:16} supplement {pdf.name}: {supp.characters:,} chars — {verdict}")
 
     console.step(2, 2, "Writing the refreshed corpus...")
     index["refreshed_from"] = {"corpus_run": frozen_corpus.name, "corpus_digest": index.get("corpus_digest")}
