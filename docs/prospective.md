@@ -18,7 +18,7 @@ All commands take `--workspace DIR` (plan stores live under it) and default to t
 | Command | What it does |
 |---|---|
 | `prospective init --baseline PKG` | Verifies every manifest entry of a Stage 09 package, pins a `BaselineRef` and seeds the MVA plan as `DRAFT`. It is idempotent: the same package gives the same version. |
-| `prospective validate` | Reports structural, scientific-readiness, provenance and policy errors separately. Each gap names the field, why it matters and its owner. |
+| `prospective validate [--json]` | Reports structural, scientific-readiness, provenance and policy errors separately. Each gap names the field, why it matters and its owner. `--json` emits every gap record with the plan version and digests, which is what the M5 research-team skill reads. |
 | `prospective preview --scenario JSON` | Evaluates hypothetical inputs. It writes nothing, sends nothing, and labels every output as a hypothetical scenario. |
 | `prospective review-plan --decision APPROVE_FOR_FREEZE --role ...` | Records a human review of the plan's exact current content. |
 | `prospective freeze --actor ... [--availability JSON]` | Checks the freeze gates (FR-040), then writes an immutable version. It refuses while gaps remain. |
