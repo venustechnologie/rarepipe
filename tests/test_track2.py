@@ -357,6 +357,7 @@ def _mechanism(tmp_path, run_id="RUN_MECH", decision="INSUFFICIENT"):
                               "class_level_basis": "2 altered proteins in the protein kinase domain (I909T, L1012P) "
                                                    "were restored",
                               "exact_allele_basis": "no experiment expressed this child's exact substitution",
+                              "class_level_endpoints": ["checkpoint activation (nocodazole response)"],
                               "distinguishing_experiment": "express the exact substitution at matched abundance"}}))
     imap = tmp_path / "map" / "RUN_MAP"
     imap.mkdir(parents=True, exist_ok=True)
@@ -374,7 +375,8 @@ def test_the_residual_function_dependency_is_derived_from_stage06(discovery, wor
     assert dep.what_would_resolve_it == "express the exact substitution at matched abundance"
     assert "RUN_MECH" in dep.basis
     sc004 = next(c for c in r.hypothesis_set.submission_claims if c.id == "SC_004")
-    assert "leans toward the protein working" in sc004.statement and "remains unresolved" in sc004.statement
+    assert "checkpoint activation (nocodazole response) returned once abundance was restored" in sc004.statement
+    assert "remains unresolved" in sc004.statement
     from rarepipe.stages.track2.report import pitch
     r.sanitized.residual_function["class_level_variants"] = ["I909T", "L1012P"]
     text = pitch(r.sanitized, {"experiences": []})

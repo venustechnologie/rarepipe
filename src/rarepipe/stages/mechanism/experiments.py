@@ -90,6 +90,8 @@ class VariantExperiment(BaseModel):
     published_identity: str | None = Field(
         None, description="The full published identity when the label abbreviates it, e.g. S714fsX731 for 731X. "
                           "A frameshift is never collapsed into a simple stop at the same position.")
+    identity_quote: str | None = Field(None, description="Verbatim passage (article or supplement) that establishes "
+                                                         "published_identity; verified on import.")
     notation_aliases: list[str] = Field(default_factory=list)
     position: int | None = Field(None, description="Published residue, canonical isoform numbering.")
     ref_residue: str | None = None
@@ -101,7 +103,7 @@ class VariantExperiment(BaseModel):
     construct_name: str = ""
     system: str = ""
     abundance_condition: Literal["patient_endogenous", "ectopic_below_wild_type", "restored_to_wild_type_level",
-                                 "ectopic_at_or_above_wild_type", "titrated_down", "not_applicable"]
+                                 "ectopic_at_or_above_wild_type", "titrated_down", "not_stated", "not_applicable"]
     readouts: list[Readout]
     function_at_restored_abundance: Literal["restored", "impaired", "partial", "not_tested"] = "not_tested"
     authors_interpretation: str | None = Field(None, description="The authors' own words, verbatim.")
@@ -118,6 +120,8 @@ class ResidualFunctionAssessment(BaseModel):
     class_level_basis: str
     class_level_variants: list[str] = Field(default_factory=list,
                                             description="Published variants tested at restored abundance.")
+    class_level_endpoints: list[str] = Field(default_factory=list,
+                                             description="Functions actually measured at restored abundance.")
     exact_allele: Literal["function_persists", "function_impaired", "insufficient"]
     exact_allele_basis: str
     decision: Literal["STRENGTHENS_STABILIZATION", "WEAKENS_ABUNDANCE_ONLY", "INSUFFICIENT"]
@@ -198,6 +202,11 @@ def load_experiments(path: Path, corpus_run: Path, extra_roots: list[Path] | Non
             if _normalise(readout.quote) not in body:
                 problems.append(f"{exp.experiment_id}: quote not found verbatim in {exp.source_id}: "
                                 f"{readout.quote[:60]!r}")
+        if exp.published_identity and not exp.identity_quote:
+            problems.append(f"{exp.experiment_id}: published_identity needs an identity_quote from the source")
+        if exp.identity_quote and (_normalise(exp.identity_quote) not in body
+                                   or (exp.published_identity or "").lower() not in _normalise(exp.identity_quote)):
+            problems.append(f"{exp.experiment_id}: identity_quote must be verbatim and name {exp.published_identity}")
         if exp.authors_interpretation and _normalise(exp.authors_interpretation) not in body:
             problems.append(f"{exp.experiment_id}: authors_interpretation must be the authors' words, verbatim")
         if exp.pooled and not exp.region:
@@ -329,10 +338,14 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
         "INSUFFICIENT": "the residual-function dependency stays unresolved for this child; the distinguishing "
                         "experiment is specified below",
     }[decision]
+    reported_names = [ENDPOINT_NAMES[k] for k in FUNCTION_ENDPOINTS if k in measured]
     if decision == "INSUFFICIENT" and class_level == "function_persists":
-        meaning += (". The class-level evidence now leans toward function persisting, which makes the abundance "
-                    "premise more plausible than the frozen result stated, but it does not substitute for the "
-                    "exact-allele measurement")
+        meaning += (f". At class level, {_join([k for k in FUNCTION_ENDPOINTS if k in measured])} persisted at "
+                    "restored abundance, which makes the abundance premise more plausible than the frozen result "
+                    "stated"
+                    + (f"; {_join(not_reported)} {'were' if len(not_reported) > 1 else 'was'} not measured at "
+                       "restored abundance" if not_reported else "")
+                    + ". None of this substitutes for the exact-allele measurement")
     elif decision == "INSUFFICIENT" and class_level in ("function_impaired", "mixed"):
         meaning += ". The class-level evidence does not favour an abundance-only strategy"
 
@@ -345,7 +358,7 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
 
     open_items = []
     impaired_elsewhere = [(e, r) for e in in_class if e.function_at_restored_abundance == "not_tested"
-                          and e.abundance_condition in ("not_applicable", "ectopic_at_or_above_wild_type")
+                          and e.abundance_condition in ("not_stated", "not_applicable", "ectopic_at_or_above_wild_type")
                           for r in e.readouts if r.kind in FUNCTION_ENDPOINTS + ("pp2a_b56_recruitment",)
                           and r.result in ("reduced", "not_restored")]
     for e, r in impaired_elsewhere:
@@ -360,7 +373,8 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
                       "is a separate dependency and is not addressed by these experiments")
     return ResidualFunctionAssessment(
         class_level=class_level, class_level_basis=class_basis,
-        class_level_variants=[e.variant_label for e in restored_tests], exact_allele=exact_level, exact_allele_basis=exact_basis,
+        class_level_variants=[e.variant_label for e in restored_tests],
+        class_level_endpoints=reported_names, exact_allele=exact_level, exact_allele_basis=exact_basis,
         decision=decision, decision_meaning=meaning, readouts_not_reported_at_restored_abundance=not_reported,
         distinguishing_experiment=(
             "Deplete endogenous BUBR1 (shRNA in U2OS or HeLa, as in PMID:20516114 Fig. 4) and express an "

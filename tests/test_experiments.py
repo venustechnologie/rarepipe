@@ -119,7 +119,8 @@ def test_class_evidence_does_not_decide_the_childs_allele():
     assert a.class_level == "function_persists"
     assert a.exact_allele == "insufficient"
     assert a.decision == "INSUFFICIENT"
-    assert "leans toward function persisting" in a.decision_meaning
+    assert "At class level, checkpoint activation (nocodazole response) persisted" in a.decision_meaning
+    assert "not measured at restored abundance" in a.decision_meaning
     assert "checkpoint activation" in a.class_level_basis
     assert "checkpoint silencing" in a.class_level_basis, "activation and silencing are different functions"
 
@@ -227,11 +228,14 @@ def test_direction_corrections_need_a_reason_and_report_stale_matches(tmp_path):
 def test_a_frameshift_construct_is_named_by_its_published_identity(corpus, tmp_path):
     (corpus / "docs" / "PMID_1__supp1.txt").write_text("IVS16-2A>G* S714fsX731731X Y155C*")
     fs = exp(experiment_id="VX_9", variant_label="731X", published_identity="S714fsX731", position=714,
+             identity_quote="IVS16-2A>G* S714fsX731",
              alt_residue=None, protein_tested="truncated_protein", abundance_condition="ectopic_at_or_above_wild_type",
              function_at_restored_abundance="not_tested",
              readouts=[{"kind": "protein_abundance", "result": "normal", "quote": "S714fsX731"}])
     [e] = load_experiments(write(tmp_path, fs), corpus)  # quote found in the stored supplement
     assert e.published_identity == "S714fsX731"
+    with pytest.raises(ExperimentError, match="identity_quote"):
+        load_experiments(write(tmp_path, {**fs, "identity_quote": None}), corpus)
 
 
 def test_poor_expression_is_not_called_impossible():

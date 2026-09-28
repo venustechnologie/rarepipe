@@ -484,8 +484,8 @@ def _sc004(residual: dict | None) -> SubmissionClaim:
                       "BUBR1 abundance helps only if the protein that accumulates retains useful "
                       "function, and that remains unresolved.",
             basis_note="Stage 06 MC_0006 unresolved")
-    lean = {"function_persists": "at class level, the evidence leans toward the protein working once its abundance "
-                                 "is restored",
+    measured = " and ".join(residual.get("class_level_endpoints") or []) or "the measured function"
+    lean = {"function_persists": f"at class level, {measured} returned once abundance was restored",
             "function_impaired": "at class level, the evidence leans toward the protein staying impaired even at "
                                  "restored abundance",
             "mixed": "at class level the evidence is mixed",
