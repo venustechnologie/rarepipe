@@ -511,3 +511,19 @@ def test_full_text_is_stored_only_under_a_licence_that_permits_it(monkeypatch):
     body, note = mod.fetch_full_text("PMC1")
     assert body and "similar rates" in body
     assert "under its stated licence" in note and "text mining" in note
+
+
+def test_a_superseding_analysis_session_replaces_the_earlier_one(tmp_path):
+    import json as _json
+
+    from rarepipe.stages.mechanism.research import load_analyses
+
+    folder = tmp_path / "analyses"
+    folder.mkdir()
+    base = {"accepted_claims": [], "accepted_evidence": [], "rejected": []}
+    for sid, sup in (("LLMRS_0001", None), ("LLMRS_0002", "LLMRS_0001")):
+        session = {"session_id": sid, "provider": "p", "interface": "i", "model": "m", "knowledge_task": "KT_1",
+                   "supersedes": sup}
+        (folder / f"{sid}.json").write_text(_json.dumps({"session": session, **base}))
+    sessions, *_ = load_analyses(tmp_path)
+    assert [s.session_id for s in sessions] == ["LLMRS_0002"]

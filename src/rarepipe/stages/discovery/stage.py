@@ -200,7 +200,7 @@ def _assemble(experiences, approvals, specs, forbidden, gene, console):
                 state=CandidateState.INSUFFICIENT_EVIDENCE, adversarial_search_performed=True,
                 adversarial_search_note="discovered by the adversarial lane itself",
                 limitations=[detail] + [l for e in mine for l in e.limitations][:2]))
-            console.info(f"MED_{n:03d} {ingredient[:32]:34} INSUFFICIENT_EVIDENCE (considered, never measured)")
+            console.info(f"MED_{n:03d} {ingredient[:32]:34} INSUFFICIENT_EVIDENCE (considered; no measurement reported)")
             continue
 
         if harmful and not positive:

@@ -219,7 +219,7 @@ def import_analysis(root: Path, analysis_path: Path, *, residue_needles: list[st
         knowledge_task=task_id, permitted_inputs=sorted(documents), prompt_template=meta.get("prompt_template"),
         human_reviewed=bool(meta.get("human_reviewed")), performed_at=utc_now().isoformat(),
         case_specific_genomic_data_supplied=False,
-        note=meta.get("note", ""))
+        note=meta.get("note", ""), supersedes=meta.get("supersedes"))
 
     accepted_claims: list[MechanismClaim] = []
     accepted_evidence: list[EvidenceRecord] = []
@@ -357,9 +357,14 @@ def save_analysis(root: Path, result: ImportResult) -> Path:
 
 
 def load_analyses(root: Path) -> tuple[list[LLMResearchSession], list[MechanismClaim], list[EvidenceRecord], list[InvalidInference]]:
+    """Every accepted analysis, except sessions a later session explicitly supersedes (kept on disk)."""
     sessions, claims, evidence, rejected = [], [], [], []
-    for path in sorted((root / ANALYSES).glob("LLMRS_*.json")) if (root / ANALYSES).exists() else []:
-        payload = json.loads(path.read_text())
+    folder = root / ANALYSES
+    payloads = [json.loads(p.read_text()) for p in sorted(folder.glob("LLMRS_*.json"))] if folder.exists() else []
+    superseded = {p["session"].get("supersedes") for p in payloads} - {None}
+    for payload in payloads:
+        if payload["session"]["session_id"] in superseded:
+            continue
         sessions.append(LLMResearchSession(**payload["session"]))
         claims += [MechanismClaim(**c) for c in payload["accepted_claims"]]
         evidence += [EvidenceRecord(**e) for e in payload["accepted_evidence"]]

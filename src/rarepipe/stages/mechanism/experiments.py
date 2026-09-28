@@ -369,7 +369,7 @@ def assess(experiments: list[VariantExperiment], child: tuple[int, str, str, boo
             kinds = by_experiment[e.experiment_id]
             open_items.append(f"{e.experiment_id} ({e.variant_label}; {e.source_id}): {_join(kinds)} "
                               f"{'were' if len(kinds) > 1 else 'was'} impaired, at an abundance the source does not "
-                              "state — functions of this region the restored-abundance tests did not measure")
+                              "state — functions of this region for which the restored-abundance tests reported no measurement")
     if not_reported:
         open_items.append(f"{_join(not_reported)} at restored abundance "
                           f"{'were' if len(not_reported) > 1 else 'was'} not reported for the substitutions tested")
