@@ -222,6 +222,7 @@ def main() -> int:
         rev = "unknown"
     results = {"generated_by": "tools/m5/sim/run.py", "reps": args.reps, "seed": args.seed,
                "code_revision": rev, "python": platform.python_version(), "numpy": np.__version__,
+               "rules_version": rules.RULES_VERSION,
                "seed_derivation": "base seed + zlib.crc32('world|procedure|framing') % 1_000_000",
                "margin_rate": worlds.MARGIN_RATE, "margin_minutes": worlds.MARGIN_MIN,
                "caveat": ("Every value is conditional on the assumptions in worlds.py. None is a measurement, an "

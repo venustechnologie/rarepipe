@@ -156,3 +156,28 @@ def test_a_stale_field_status_summary_is_caught(tmp_path):
     item["field_status_summary"] = {"CONDITIONAL": 1, "BLOCKED_HUMAN": 1}
     (packet / "proposals.json").write_text(json.dumps(proposals))
     assert not [p for p in consistency.check(packet, None, None) if "field_status_summary" in p]
+
+
+def test_withdrawn_reasoning_in_an_active_instruction_is_caught(tmp_path):
+    """Stale guidance outside the archived object is as damaging as a stale value."""
+    packet = _packet(tmp_path, field_values={
+        "E01_ACT.method": {"value": "x", "status": "CONDITIONAL"},
+        "EXP01.analysis.meaningful_effect": {"value": None, "status": "BLOCKED_HUMAN"}})
+    proposals = json.loads((packet / "proposals.json").read_text())
+    item = proposals["items"][0]
+    item["status"] = "NEEDS_EXTERNAL_EVIDENCE"
+    item["proposal"] = {"value": {"E01_ACT.method": "x", "EXP01.analysis.meaningful_effect": None},
+                        "limitations": ["the three-preparation floor is more likely to rise"]}
+    item["field_status_summary"] = {"CONDITIONAL": 1, "BLOCKED_HUMAN": 1}
+    item["next_action"] = "meaningful effect is filled only from the pilot"
+    (packet / "proposals.json").write_text(json.dumps(proposals))
+    problems = consistency.check(packet, None, None)
+    assert any("next_action still carries withdrawn reasoning" in p for p in problems)
+    assert any("limitations[0] still carries withdrawn reasoning" in p for p in problems)
+
+    # An archived superseded object may keep it, and a sentence recording the withdrawal is fine.
+    item["next_action"] = "the scientific lead proposes meaningful-effect boundaries with their rationale"
+    item["proposal"]["limitations"] = ["removed: the three-preparation floor was withdrawn"]
+    item["superseded_proposal"] = {"reason": "audit only", "object": {"note": "filled only from the pilot"}}
+    (packet / "proposals.json").write_text(json.dumps(proposals))
+    assert not [p for p in consistency.check(packet, None, None) if "withdrawn reasoning" in p]

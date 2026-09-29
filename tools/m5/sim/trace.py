@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -109,6 +110,7 @@ def main() -> int:
     ap.add_argument("--reps", type=int, default=500)
     ap.add_argument("--seed", type=int, default=20260928)
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--plan-version", default="PP_MVA_001_RH_001@0002-455419f1")
     args = ap.parse_args()
     world = next(w for w in worlds.worlds() if w.key == "selective_loss")
     rng = np.random.default_rng(_seed(args.seed, "selective_loss", "trace"))
@@ -117,6 +119,8 @@ def main() -> int:
     cond = [r for r in rows if r["adverse_established"] and r["benefit_unknown"]]
     branch_counts = Counter(b for r in cond for b in r["branches"])
     any_hold = sum(1 for r in cond if {"B08", "B09"} & set(r["branches"]))
+    # B16 was added after this gap was established; count the route that now carries the concern.
+    any_carried = sum(1 for r in cond if {"B08", "B09", "B16"} & set(r["branches"]))
     # Which adverse signal was established matters: the engine's adverse predicate reads cell death
     # and worsened function, but not a fall in division rate.
     by_signal = {}
@@ -126,15 +130,26 @@ def main() -> int:
         sub = [r for r in cond if pick(r)]
         by_signal[label] = {"replicates": len(sub),
                             "reaching_B08_or_B09": sum(1 for r in sub if {"B08", "B09"} & set(r["branches"])),
+                            "reaching_any_hold_or_review": sum(1 for r in sub
+                                                               if {"B08", "B09", "B16"} & set(r["branches"])),
                             "branches": dict(Counter(b for r in sub for b in r["branches"]))}
     adverse_unknown = sum(1 for r in rows if not r["adverse_established"])
 
     verdict = (
-        "CONFIRMED_COVERAGE_GAP" if cond and any_hold == 0 else
-        "NOT_A_COVERAGE_GAP: a hold fires whenever the adverse verdict is established" if cond and any_hold == len(cond)
-        else "PARTIAL" if cond else "UNTESTABLE_IN_THIS_WORLD: the adverse verdict was never established")
+        "UNTESTABLE_IN_THIS_WORLD: the adverse verdict was never established" if not cond else
+        "COVERAGE_GAP: no branch carries the population concern" if any_carried == 0 else
+        "COVERED: every replicate meeting the condition reaches a hold or review route"
+        if any_carried == len(cond) else
+        "PARTIAL: some replicates meeting the condition reach no route")
 
+    try:
+        rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
+                             cwd=Path(__file__).resolve().parents[3]).stdout.strip() or "unknown"
+    except Exception:
+        rev = "unknown"
     report = {
+        "provenance": {"rules_version": rules.RULES_VERSION, "code_revision": rev,
+                       "plan_version": args.plan_version, "status": "current engine behaviour"},
         "world": world.key,
         "question": ("With the benefit verdict UNKNOWN and the adverse verdict ESTABLISHED, does any branch carry "
                      "the population concern?"),
@@ -142,6 +157,7 @@ def main() -> int:
         "replicates_with_adverse_verdict_unknown": adverse_unknown,
         "replicates_meeting_the_condition": len(cond),
         "of_those_reaching_B08_or_B09": any_hold,
+        "of_those_reaching_any_hold_or_review": any_carried,
         "branch_counts_under_the_condition": dict(branch_counts),
         "split_by_established_adverse_signal": by_signal,
         "verdict": verdict,

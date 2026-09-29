@@ -23,6 +23,21 @@ from pathlib import Path
 
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 
+# Withdrawn reasoning that must not survive in an ACTIVE instruction. The archived
+# superseded_proposal is exempt: keeping it is the point. Each entry is (pattern, why).
+WITHDRAWN_REASONING = [
+    (re.compile(r"only from the .{0,20}pilot|filled only from", re.I),
+     "a pilot-only route to a value whose dependencies are not all calibration"),
+    (re.compile(r"until the pilot runs,? every", re.I),
+     "every criterion held on one pilot, rather than each field on its own dependencies"),
+    (re.compile(r"three[- ]preparation floor", re.I), "the withdrawn replication floor"),
+    (re.compile(r"pilot[- ]dependent numbers", re.I), "pilot-dependent framing of decisions that are judgements"),
+    (re.compile(r"\b30% (matched-)?subset (cutoff|rule)\b", re.I), "the withdrawn expression cutoff"),
+]
+ACTIVE_FIELDS = ("next_action", "reviewer_question", "question")
+ACTIVE_PROPOSAL_LISTS = ("alternatives", "conditions", "limitations", "rationale")
+EXEMPT = ("remains removed", "is withdrawn", "was withdrawn", "no longer applies", "removed:")
+
 
 def load(path: Path):
     return json.loads(path.read_text()) if path.exists() else None
@@ -130,6 +145,25 @@ def check(packet: Path, plan_store: Path | None, plan_id: str | None) -> list[st
                 if stored is not None and stored != actual:
                     problems.append(f"{item['id']}: field_status_summary {stored} disagrees with the fields "
                                     f"{actual}; a stored summary must be recomputed or removed")
+            # Active instructions carry as much weight as a generated value. The archived object is skipped.
+            active = {f: item.get(f) for f in ACTIVE_FIELDS if isinstance(item.get(f), str)}
+            proposal = item.get("proposal") or {}
+            for name in ACTIVE_PROPOSAL_LISTS:
+                v = proposal.get(name)
+                if isinstance(v, str):
+                    active[f"proposal.{name}"] = v
+                elif isinstance(v, list):
+                    for i, entry in enumerate(v):
+                        if isinstance(entry, str):
+                            active[f"proposal.{name}[{i}]"] = entry
+            for where, text_value in active.items():
+                low = text_value.lower()
+                if any(e in low for e in EXEMPT):
+                    continue
+                for pattern, why in WITHDRAWN_REASONING:
+                    if pattern.search(text_value):
+                        problems.append(f"{item['id']}.{where} still carries withdrawn reasoning ({why}): "
+                                        f"{text_value[:90]!r}")
             if item.get("superseded_proposal") and not item["superseded_proposal"].get("reason"):
                 problems.append(f"{item['id']}: superseded_proposal must say why it was superseded")
         for item in proposals["items"]:
@@ -159,7 +193,9 @@ def main() -> int:
                     "digests cited in prose", "gap coverage: invented, missing, double-claimed",
                     "advertised ready fields actually carry values",
                     "reviewer-facing proposal.value matches field_values exactly",
-                    "any stored field_status_summary matches the fields"],
+                    "any stored field_status_summary matches the fields",
+                    "active next actions, questions, alternatives, conditions and limitations carry no withdrawn "
+                    "reasoning (the archived superseded_proposal is exempt)"],
         "not_checked": ["whether the science is right", "whether a cited source says what is claimed",
                         "human identity", "native Rarepipe plan validation"],
     }, indent=2))

@@ -153,24 +153,45 @@ def main() -> int:
             w_(f"| {label.replace('_', ' ')} | {m} | {rate(k, m) if m else 'n/a'} | "
                f"{', '.join(f'{b} x{c}' for b, c in sorted(row['branches'].items()))} |")
         w_("")
-        w_("So: **increased cell death is handled correctly** — B09 fires in every such replicate, "
-           "whatever the benefit verdict. My earlier claim was wrong for that case. What is *not* handled "
-           "is a **fall in division rate with death unchanged**: `division_rate: decreased` appears in "
-           "`rules.py` only inside the `problematic` term that feeds B08, and B08 additionally requires an "
-           "improvement claim. It is absent from the `adverse` term that feeds B09. So when benefit is "
-           "unresolved and the only established adverse signal is reduced division, the evaluation reaches "
-           "B01 alone and no branch carries the population concern.\n")
-        w_("B08 requiring improvement remains consistent with its own definition, and is not a bug. The "
-           "proposed change is narrow: include a fall in division rate in the adverse/evaluability term, "
-           "or add a separate evaluability flag that does not depend on a benefit claim. Proposed, not "
-           "applied — it is a change to the rules engine and belongs in normal review. Required "
-           "semantics are unchanged from the table below.\n")
-        w_(f"A full chain for one replicate — measurements → estimate and interval → verdicts → "
-           f"branches → actions — is in `a5_finding4_trace.json` (`example_trace`, and "
-           "`example_trace_meeting_condition` for a replicate satisfying the condition above). Regenerate "
-           "with `uv run python tools/m5/sim/trace.py --reps 500`.\n")
-    else:
-        w_("*(trace file absent: regenerate with `tools/m5/sim/trace.py`)*\n")
+        w_("So: **increased cell death is handled correctly** \u2014 B09 fires in every such replicate, "
+           "whatever the benefit verdict. My earlier claim was wrong for that case. What was *not* handled "
+           "was a **fall in division rate with death unchanged**: `division_rate: decreased` appeared in "
+           "`rules.py` only inside the `problematic` term feeding B08, which additionally requires an "
+           "improvement claim, and was absent from the `adverse` term feeding B09. With benefit "
+           "unresolved, the evaluation reached B01 alone.\n")
+        pre = json.loads((args.results.parent / "a5_finding4_trace_pre_b16.json").read_text()) \
+            if (args.results.parent / "a5_finding4_trace_pre_b16.json").exists() else None
+        prov = trace.get("provenance", {})
+        w_("### The fix, and the same vector replayed\n")
+        w_("B16 was added: an established problematic population change is carried whatever the benefit "
+           "verdict says, asking for an evaluability review of what the surviving, dividing population "
+           "represents. It does not declare toxicity or selective loss. B08 keeps its own meaning and B09 "
+           "keeps its death hold.\n")
+        w_("The identical observation vector was replayed under the new rules:\n")
+        w_("| | rules version | code | example vector | branches | carried the concern |")
+        w_("|---|---|---|---|---|---|")
+        if pre:
+            pp, pe = pre.get("provenance", {}), pre["example_trace_meeting_condition"]
+            pv = ", ".join(f"{k}={v}" for k, v in pe["verdicts"].items())
+            w_(f"| before | `{pp.get('rules_version')}` | `{pp.get('code_revision')}` | {pv} | "
+               f"{', '.join(pe['branches'])} | "
+               f"{pre['split_by_established_adverse_signal']['division_decreased_only']['reaching_B08_or_B09']}"
+               f"/{pre['split_by_established_adverse_signal']['division_decreased_only']['replicates']} |")
+        ce = trace["example_trace_meeting_condition"]
+        cv = ", ".join(f"{k}={v}" for k, v in ce["verdicts"].items())
+        div = trace["split_by_established_adverse_signal"]["division_decreased_only"]
+        w_(f"| after | `{prov.get('rules_version')}` | `{prov.get('code_revision')}` | {cv} | "
+           f"{', '.join(ce['branches'])} | "
+           f"{div.get('reaching_any_hold_or_review', 0)}/{div['replicates']} |")
+        w_("")
+        w_(f"Under the condition (adverse established, benefit unknown), "
+           f"{rate(trace['of_those_reaching_any_hold_or_review'], trace['replicates_meeting_the_condition'])} "
+           f"now reach a hold or review route; the verdict is `{trace['verdict']}`. The actions attached to "
+           f"the replayed example are: {', '.join(ce['actions'])}.\n")
+        w_(f"Bound to plan version `{prov.get('plan_version')}`. The pre-B16 record is retained as "
+           "`a5_finding4_trace_pre_b16.json`, labelled with the rules version that produced it, as evidence "
+           "of the original failure.\n")
+        w_("B08 requiring improvement remains consistent with its own definition and was never a bug.\n")
     w_("Required semantics for any such flag:\n")
     w_("| Benefit evidence | Adverse evidence | Required interpretation |")
     w_("|---|---|---|")
