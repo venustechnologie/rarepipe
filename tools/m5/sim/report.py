@@ -233,12 +233,21 @@ def main() -> int:
                          ("seed-to-stream mapping", "base seed + CRC32(world|procedure|framing) mod 1e6; one "
                           "independent Generator per arm"),
                          ("stream collisions", d.get("stream_collisions", "checked at run time")),
-                         ("results digest", d.get("results_digest", "computed after writing")),
-                         ("two fresh-process runs", d.get("reproducibility_note", "verified byte-identical"))]:
+                         ("results digest (full SHA256)", (d.get("results_digest") or {}).get("sha256", "not recorded")
+                          if isinstance(d.get("results_digest"), dict) else d.get("results_digest", "not recorded")),
+                         ("what that digest covers", (d.get("results_digest") or {}).get("covers", "see run.py")
+                          if isinstance(d.get("results_digest"), dict) else "see run.py"),
+                         ("two fresh-process runs", (d.get("reproducibility_note") or {}).get("claim", "not recorded")
+                          if isinstance(d.get("reproducibility_note"), dict) else
+                          d.get("reproducibility_note", "not recorded")),
+                         ("file SHA256 of this results document", (d.get("reproducibility_note") or {}).get(
+                             "file_sha256", "not recorded") if isinstance(d.get("reproducibility_note"), dict)
+                          else "not recorded")]:
         w_(f"| {label} | `{value}` |")
     w_("")
-    w_("Repeating a result proves determinism under the tested configuration. It says nothing about "
-       "whether the biological model is right.\n")
+    w_("All digests above are complete 64-character SHA256 values, not display prefixes. Repeating a "
+       "result proves determinism under the tested configuration; it says nothing about whether the "
+       "biological model is right.\n")
     w_("## Limitations\n")
     w_("- Every number is conditional on the assumed parameters in `worlds.py`; each is labelled LIT, "
        "ASSUME or STRESS, and none is measured in this system.")

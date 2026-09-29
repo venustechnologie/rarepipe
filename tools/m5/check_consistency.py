@@ -122,6 +122,14 @@ def check(packet: Path, plan_store: Path | None, plan_id: str | None) -> list[st
                                     f"record: {extra[:3]}")
             elif fv and pv is not None and not isinstance(pv, dict):
                 problems.append(f"{item['id']}: has field_values but proposal.value is not generated from them")
+            if fv:
+                actual = {}
+                for spec in fv.values():
+                    actual[spec.get("status")] = actual.get(spec.get("status"), 0) + 1
+                stored = item.get("field_status_summary")
+                if stored is not None and stored != actual:
+                    problems.append(f"{item['id']}: field_status_summary {stored} disagrees with the fields "
+                                    f"{actual}; a stored summary must be recomputed or removed")
             if item.get("superseded_proposal") and not item["superseded_proposal"].get("reason"):
                 problems.append(f"{item['id']}: superseded_proposal must say why it was superseded")
         for item in proposals["items"]:
@@ -150,7 +158,8 @@ def main() -> int:
                     "digest recomputed from the plan store where reachable",
                     "digests cited in prose", "gap coverage: invented, missing, double-claimed",
                     "advertised ready fields actually carry values",
-                    "reviewer-facing proposal.value matches field_values exactly"],
+                    "reviewer-facing proposal.value matches field_values exactly",
+                    "any stored field_status_summary matches the fields"],
         "not_checked": ["whether the science is right", "whether a cited source says what is claimed",
                         "human identity", "native Rarepipe plan validation"],
     }, indent=2))

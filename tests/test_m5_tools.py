@@ -138,3 +138,21 @@ def test_an_undeclared_superseded_reason_is_caught(tmp_path):
     item["superseded_proposal"] = {"object": {"old": True}}
     (packet / "proposals.json").write_text(json.dumps(proposals))
     assert any("must say why it was superseded" in p for p in consistency.check(packet, None, None))
+
+
+def test_a_stale_field_status_summary_is_caught(tmp_path):
+    """The work-package table read a stored summary that no longer matched its fields."""
+    packet = _packet(tmp_path, field_values={
+        "E01_ACT.method": {"value": "x", "status": "CONDITIONAL"},
+        "EXP01.analysis.meaningful_effect": {"value": None, "status": "BLOCKED_HUMAN"}})
+    proposals = json.loads((packet / "proposals.json").read_text())
+    item = proposals["items"][0]
+    item["status"] = "NEEDS_EXTERNAL_EVIDENCE"
+    item["proposal"] = {"value": {"E01_ACT.method": "x", "EXP01.analysis.meaningful_effect": None}}
+    item["field_status_summary"] = {"APPLY_READY": 2}
+    (packet / "proposals.json").write_text(json.dumps(proposals))
+    assert any("field_status_summary" in p and "disagrees" in p for p in consistency.check(packet, None, None))
+
+    item["field_status_summary"] = {"CONDITIONAL": 1, "BLOCKED_HUMAN": 1}
+    (packet / "proposals.json").write_text(json.dumps(proposals))
+    assert not [p for p in consistency.check(packet, None, None) if "field_status_summary" in p]

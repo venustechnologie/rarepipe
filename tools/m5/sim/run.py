@@ -259,7 +259,11 @@ def main() -> int:
     results["stream_collisions"] = ("none: " + f"{len(streams)} distinct streams"
                                     if not collisions else f"COLLISIONS: {collisions}")
     text = json.dumps(results, indent=2)
-    results["results_digest"] = "sha256:" + __import__("hashlib").sha256(text.encode()).hexdigest()[:24]
+    results["results_digest"] = {
+        "sha256": __import__("hashlib").sha256(text.encode()).hexdigest(),
+        "covers": ("the full 64-character SHA256 of this results document serialised as json.dumps(indent=2) with "
+                   "every field except results_digest and reproducibility_note present"),
+    }
     text = json.dumps(results, indent=2)
     if args.out:
         args.out.write_text(text + "\n")

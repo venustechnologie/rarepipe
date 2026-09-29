@@ -473,3 +473,57 @@ def test_write_once_works_without_hard_links(tmp_path, monkeypatch):
     with pytest.raises(ImmutableError):
         _write_once(target, b"[]")
     assert not list(tmp_path.glob(".tmp-*"))
+
+
+# ── B16: an established population change must be carried even with benefit unresolved ──────
+
+
+def test_B16_carries_reduced_division_when_benefit_is_unknown(tmp_path):
+    """The gap the A5 trace established: division down, death unchanged, benefit UNKNOWN."""
+    d, _ = _eval(tmp_path, "EXP02", FX.exp02(
+        missegregation=Knowledge.UNKNOWN, checkpoint_activation="unchanged", checkpoint_silencing="unchanged",
+        chromosome_alignment="unchanged", division_rate="decreased"))
+    assert "B16" in d.matches, "an established fall in division rate must reach a branch"
+    assert "B08" not in d.matches, "B08 still requires an improvement claim"
+    assert {"RECORD_POPULATION_CHANGE", "CREATE_EVALUABILITY_REVIEW"} <= set(d.proposed_actions)
+    assert any(t.type == "evaluability_review" for t in d.proposed_tasks)
+    assert "H06" in d.hypothesis_updates
+
+
+def test_B16_does_not_disturb_the_existing_death_hold(tmp_path):
+    """Established death must still trigger B09, exactly as before."""
+    d, _ = _eval(tmp_path, "EXP02", FX.exp02(missegregation=Knowledge.UNKNOWN, cell_death="increased"))
+    assert "B09" in d.matches and "B16" in d.matches
+    assert "HOLD_PROGRESSION" in d.proposed_actions
+
+
+def test_B08_keeps_its_meaning_when_benefit_is_present(tmp_path):
+    d, _ = _eval(tmp_path, "EXP02", FX.SCENARIOS["exp02_selection"]["values"])
+    assert "B08" in d.matches and "B16" in d.matches
+    assert "HOLD_RESCUE_CONCLUSION" in d.proposed_actions
+
+
+def test_B16_is_not_a_toxicity_or_selection_finding(tmp_path):
+    """B16 must ask for review, not assert a cause. The disclaimers are part of the text, so they are
+    removed before checking for an affirmative claim rather than being matched by accident."""
+    d, _ = _eval(tmp_path, "EXP02", FX.exp02(missegregation=Knowledge.UNKNOWN, division_rate="decreased"))
+    text = " ".join(d.interpretation + d.proposed_actions + [t.description for t in d.proposed_tasks]).lower()
+    assert "does not by itself declare toxicity" in text
+    assert "not a finding of toxicity or selective loss" in text
+    stripped = text
+    for disclaimer in ("does not by itself declare toxicity or selective loss",
+                       "not a finding of toxicity or selective loss"):
+        stripped = stripped.replace(disclaimer, "")
+    for claim in ("toxic", "selective loss", "selection confirmed", "cytotoxic"):
+        assert claim not in stripped, f"B16 must not assert {claim!r}"
+
+
+def test_B16_and_a_candidate_signal_cannot_coexist_unreviewed(tmp_path):
+    d, _ = _eval(tmp_path, "EXP02", FX.exp02(division_rate="decreased"))
+    if "B10" in d.matches and "B16" in d.matches:
+        assert d.status == "DECISION_REVIEW_REQUIRED"
+
+
+def test_a_clean_result_does_not_trigger_B16(tmp_path):
+    d, _ = _eval(tmp_path, "EXP02", FX.exp02())
+    assert "B16" not in d.matches and "B10" in d.matches

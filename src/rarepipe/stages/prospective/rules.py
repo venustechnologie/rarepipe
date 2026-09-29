@@ -23,7 +23,7 @@ from rarepipe.stages.prospective.model import (
     RuleDescriptor,
 )
 
-RULES_VERSION = "stage10-rules-1.0.0"
+RULES_VERSION = "stage10-rules-1.1.0"
 Tri = bool | None
 T, F, U = True, False, None
 
@@ -74,9 +74,11 @@ ACTIONS = {
     "B13": ["CREATE_TRANSLATIONAL_REVIEW_TASK"],
     "B14": ["SHOW_DISAGREEMENT", "REQUIRE_EXPLICIT_INTERPRETATION", "HOLD_RESCUE_CONCLUSION"],
     "B15": ["RECORD_UNMODELLED_OBSERVATION", "CREATE_MODEL_REVISION_TASK"],
+    "B16": ["RECORD_POPULATION_CHANGE", "CREATE_EVALUABILITY_REVIEW"],
 }
 INCOMPATIBLE = {
-    "PROPOSE_INDEPENDENT_REPLICATION": {"HOLD_PROGRESSION", "HOLD_RESCUE_CONCLUSION", "QUARANTINE_INTERPRETATION"},
+    "PROPOSE_INDEPENDENT_REPLICATION": {"HOLD_PROGRESSION", "HOLD_RESCUE_CONCLUSION", "QUARANTINE_INTERPRETATION",
+                                        "CREATE_EVALUABILITY_REVIEW"},
     "CREATE_TRANSLATIONAL_REVIEW_TASK": {"HOLD_PROGRESSION", "HOLD_TRANSLATIONAL_PROGRESSION",
                                          "HOLD_RESCUE_CONCLUSION", "QUARANTINE_INTERPRETATION"},
     "PERMIT_DRUG_MECHANISM_PLANNING": {"HOLD_PROGRESSION", "QUARANTINE_INTERPRETATION"},
@@ -112,12 +114,18 @@ TASK_FOR_ACTION: dict[str, tuple[str, Role, str]] = {
                                         "interpret conflicting endpoints explicitly"),
     "CREATE_MODEL_REVISION_TASK": ("model_revision", Role.SCIENTIFIC_LEAD,
                                    "the result fits no modelled branch: revise the model"),
+    "CREATE_EVALUABILITY_REVIEW": ("evaluability_review", Role.STATISTICIAN,
+                                   "an established change in death, division or viability means the observed "
+                                   "population is not the one the experiment set out to measure: review what the "
+                                   "surviving, dividing cells represent before any functional reading is used. This "
+                                   "is a request for review, not a finding of toxicity or selective loss"),
 }
 HYPOTHESIS_UPDATES = {
     "B03": {"H01": "STRENGTHENED"}, "B04": {"H01": "WEAKENED", "H02": "UNDER_INVESTIGATION"},
     "B05": {"H03": "UNDER_INVESTIGATION"}, "B06": {"H04": "UNDER_INVESTIGATION"},
     "B07": {"H02": "UNDER_INVESTIGATION"}, "B08": {"H06": "UNDER_INVESTIGATION"},
     "B11": {"H05": "UNDER_INVESTIGATION"}, "B12": {"H07": "UNDER_INVESTIGATION"},
+    "B16": {"H06": "UNDER_INVESTIGATION"},
 }
 BRANCH_TEXT = {
     "B00": "source or sample identity unverified, or quality criteria failed: scientific interpretation quarantined",
@@ -140,6 +148,10 @@ BRANCH_TEXT = {
     "B13": "replication and relevance justify further assessment: translational-review task only",
     "B14": "valid results conflict across endpoints: disagreement shown, explicit interpretation required",
     "B15": "valid result fits no modelled branch: recorded as unmodelled, model revision required",
+    "B16": ("an established problematic change in the observed population — increased death, reduced division or "
+            "reduced viability — whatever the benefit verdict says. It asks for review of what the surviving, "
+            "dividing population now represents. It does not by itself declare toxicity or selective loss, and it "
+            "does not claim or deny a benefit"),
 }
 
 
@@ -161,6 +173,7 @@ def descriptors() -> list[RuleDescriptor]:
                                                           "context.relevance_review"],
         "B13": ["context.replicated", "context.exposure_feasible", "context.relevance_review"],
         "B14": [*FUNCTION_KEYS], "B15": ["all of the above"],
+        "B16": ["cell_death", "division_rate", "viability"],
     }
     applies = {"B02": [exp01], "B03": [exp01], "B04": [exp01], "B05": drug, "B06": drug, "B07": drug,
                "B11": drug, "B12": drug, "B13": [exp03]}
@@ -297,6 +310,10 @@ def evaluate(obs: Observation, kind: ExperimentKind, required: list[EndpointSpec
         scientific["B06"] = and3(upstream, not3(mechanism))
         scientific["B07"] = and3(abundance, none_improved)
         scientific["B08"] = and3(improved_any, problematic)
+        # B16 carries an established population change when no benefit claim is available. B08 keeps its
+        # own meaning (improvement accompanied by a problem) and is unchanged; this covers the case where
+        # `improved_any` is UNKNOWN, which previously reached B01 alone.
+        scientific["B16"] = problematic
         scientific["B10"] = benefit
         scientific["B11"] = and3(benefit, not3(mechanism))
         scientific["B12"] = and3(benefit, replicated, not3(and3(exposure, relevance)))
@@ -328,18 +345,19 @@ def evaluate(obs: Observation, kind: ExperimentKind, required: list[EndpointSpec
     p["adverse_direction"] = show(adverse)
 
     order = ["B00", "B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09", "B10", "B11", "B12", "B13",
-             "B14", "B15"]
+             "B14", "B15", "B16"]
     raw_matches = {"B00": b00, "B01": b01, **{k: bool(val) for k, val in scientific.items() if val is True},
                    "B09": adverse is True}
     for b in order:
         if not raw_matches.get(b):
             continue
         # B02 only keeps a question unresolved, so a quality gate never needs to suppress it.
-        if b in ("B00", "B01", "B09") or admissible or (b == "B02" and not b00):
+        if b in ("B00", "B01", "B09", "B16") or admissible or (b == "B02" and not b00):
             ev.matches.append(b)
         else:
             ev.inadmissible.append(b)
-    if admissible and not any(b in ev.matches for b in order[2:15] if b != "B09") and "B09" not in ev.matches:
+    if admissible and not any(b in ev.matches for b in order[2:] if b not in ("B09", "B16")) \
+            and not {"B09", "B16"} & set(ev.matches):
         ev.matches.append("B15")
     if "B09" in ev.matches and not admissible:
         ev.interpretation.append("adverse flag raised on a result that is not yet admissible: the hold stands, and "

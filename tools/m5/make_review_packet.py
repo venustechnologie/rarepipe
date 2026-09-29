@@ -64,7 +64,9 @@ def main() -> int:
     w("| Package | Gaps | Item status | Field mix |")
     w("|---|---:|---|---|")
     for item in props["items"]:
-        mix = item.get("field_status_summary") or {}
+        # Derived here, not read from a stored summary: a stored copy went stale once already.
+        fv = item.get("field_values") or {}
+        mix = Counter(v.get("status") for v in fv.values())
         mix_s = ", ".join(f"{v} {k.lower().replace('_', ' ')}" for k, v in sorted(mix.items())) or "not declared"
         w(f"| {item['id']} | {len(item['source_gap_ids'])} | {item['status']} | {mix_s} |")
     w("")

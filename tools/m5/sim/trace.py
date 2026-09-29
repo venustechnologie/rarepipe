@@ -33,6 +33,9 @@ from sim import analysis, dgp, worlds  # noqa: E402
 from sim.run import FUNCTION_KEYS, _seed, endpoints_for, observe  # noqa: E402
 
 
+POP_DELTA = 0.05  # harness convenience only; see the note in one_replicate()
+
+
 def one_replicate(world, rng, margin: float) -> dict:
     """Run a single selective-loss replicate and record every step."""
     data = dgp.simulate_selection(rng, world.design, world.truth)
@@ -42,8 +45,13 @@ def one_replicate(world, rng, margin: float) -> dict:
     est = analysis.prep_summary(data.prep, data.arm, data.y_obs, data.n_obs, 0, 1)
     verdict = analysis.framing_benefit(est, margin, beneficial_sign=-1, require_margin=True)
     mis = verdict if verdict in ("improved", "worsened", "unchanged") else "UNKNOWN"
-    death_cat = "increased" if death_rate[1] > death_rate[0] + 0.05 else "unchanged"
-    div_cat = "decreased" if div_rate[1] < div_rate[0] - 0.05 else "unchanged"
+    # These two verdicts are categorised by a crude absolute-difference rule, stated here so the
+    # classification can be audited rather than inferred. It is a simulation harness convenience, NOT a
+    # proposed assay criterion: the real criteria are exactly the ones M5_W003 leaves unresolved, and no
+    # uncertainty is attached to these differences.
+    death_delta, div_delta = death_rate[1] - death_rate[0], div_rate[1] - div_rate[0]
+    death_cat = "increased" if death_delta > POP_DELTA else "unchanged"
+    div_cat = "decreased" if div_delta < -POP_DELTA else "unchanged"
     values = {k: "unchanged" for k in FUNCTION_KEYS}
     values["missegregation"] = mis
     values.update({"viability": "decreased" if death_cat == "increased" else "unchanged",
@@ -65,6 +73,26 @@ def one_replicate(world, rng, margin: float) -> dict:
         },
         "estimate": {"difference": round(float(est.est), 4), "ci": [round(float(est.lo), 4), round(float(est.hi), 4)],
                      "method": est.method, "margin_used": margin},
+        "population_endpoint_classification": {
+            "rule": (f"absolute difference in the pooled rate against the reference arm; |delta| > {POP_DELTA} "
+                     "classifies, otherwise 'unchanged'. Harness convenience, not a proposed assay criterion, and "
+                     "no uncertainty is attached to the difference."),
+            "cell_death": {"reference": round(death_rate[0], 4), "test": round(death_rate[1], 4),
+                           "delta": round(death_delta, 4), "threshold": POP_DELTA,
+                           "classified": death_cat,
+                           "why": (f"delta {death_delta:+.4f} "
+                                   + ("exceeds" if death_delta > POP_DELTA else "does not exceed")
+                                   + f" +{POP_DELTA}. The two rates differ, but this rule does not treat that "
+                                     "difference as meaningful unless it clears the threshold, and it carries no "
+                                     "interval, so 'unchanged' here means 'not classified by this rule', not "
+                                     "'shown to be equal'.")},
+            "division_rate": {"reference": round(div_rate[0], 4), "test": round(div_rate[1], 4),
+                              "delta": round(div_delta, 4), "threshold": -POP_DELTA,
+                              "classified": div_cat,
+                              "why": (f"delta {div_delta:+.4f} "
+                                      + ("is below" if div_delta < -POP_DELTA else "is not below")
+                                      + f" -{POP_DELTA}.")},
+        },
         "verdicts": {"missegregation": mis, "cell_death": death_cat, "division_rate": div_cat},
         "adverse_established": death_cat == "increased" or div_cat == "decreased",
         "benefit_unknown": mis == "UNKNOWN",
@@ -117,6 +145,11 @@ def main() -> int:
         "branch_counts_under_the_condition": dict(branch_counts),
         "split_by_established_adverse_signal": by_signal,
         "verdict": verdict,
+        "classification_caveat": (
+            "The population verdicts come from an absolute-difference rule with no uncertainty attached. That is "
+            "enough to show the routing consequence — an established 'decreased' reaches no hold — but it says "
+            "nothing about how reliably a real assay would produce that verdict. Detection reliability is a separate "
+            "question this trace does not answer."),
         "interpretation": (
             "The condition is defined on the observation vector, not on the generator's truth, which is the "
             "distinction the successor review drew. Where the adverse verdict is not established, any failure to "
