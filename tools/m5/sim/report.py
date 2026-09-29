@@ -224,30 +224,35 @@ def main() -> int:
        "returned \"unresolved\" and the two framings looked equally safe.\n")
 
     w_("## Reproducibility record\n")
+    rn = d.get("reproducibility_note") or {}
+    sd = d.get("science_digest") or {}
+    rd = d.get("results_digest") or {}
+    rows = [("code revision", d.get("code_revision", "not recorded")),
+            ("python", d.get("python", "not recorded")),
+            ("numpy", d.get("numpy", "not recorded")),
+            ("seed", d.get("seed")),
+            ("replicates per arm", d.get("reps")),
+            ("seed-to-stream mapping", d.get("seed_derivation", "not recorded")),
+            ("stream collisions", d.get("stream_collisions", "not checked")),
+            ("science digest (simulated content only)", sd.get("sha256", "not recorded")),
+            ("whole-document digest", rd.get("sha256", "not recorded")),
+            ("run 1 file SHA256", rn.get("run1_file_sha256", "not recorded")),
+            ("run 2 file SHA256", rn.get("run2_file_sha256", "not recorded")),
+            ("two fresh processes, same commit, byte-identical", rn.get("verified", "not verified"))]
     w_("| Item | Value |")
     w_("|---|---|")
-    for label, value in [("code revision", d.get("code_revision", "recorded at run time")),
-                         ("python", d.get("python", "see results file")),
-                         ("numpy", d.get("numpy", "see results file")),
-                         ("seed", d["seed"]), ("replicates per arm", d["reps"]),
-                         ("seed-to-stream mapping", "base seed + CRC32(world|procedure|framing) mod 1e6; one "
-                          "independent Generator per arm"),
-                         ("stream collisions", d.get("stream_collisions", "checked at run time")),
-                         ("results digest (full SHA256)", (d.get("results_digest") or {}).get("sha256", "not recorded")
-                          if isinstance(d.get("results_digest"), dict) else d.get("results_digest", "not recorded")),
-                         ("what that digest covers", (d.get("results_digest") or {}).get("covers", "see run.py")
-                          if isinstance(d.get("results_digest"), dict) else "see run.py"),
-                         ("two fresh-process runs", (d.get("reproducibility_note") or {}).get("claim", "not recorded")
-                          if isinstance(d.get("reproducibility_note"), dict) else
-                          d.get("reproducibility_note", "not recorded")),
-                         ("file SHA256 of this results document", (d.get("reproducibility_note") or {}).get(
-                             "file_sha256", "not recorded") if isinstance(d.get("reproducibility_note"), dict)
-                          else "not recorded")]:
+    for label, value in rows:
         w_(f"| {label} | `{value}` |")
     w_("")
-    w_("All digests above are complete 64-character SHA256 values, not display prefixes. Repeating a "
-       "result proves determinism under the tested configuration; it says nothing about whether the "
-       "biological model is right.\n")
+    w_("Two digests, because they answer different questions. **science digest** covers the simulated "
+       f"content only: {sd.get('covers', 'see run.py')} **Whole-document digest** covers "
+       f"{rd.get('covers', 'see run.py')}\n")
+    if rn.get("earlier_failed_check"):
+        w_(f"An earlier reproducibility check failed, and the cause is worth recording: "
+           f"{rn['earlier_failed_check']}\n")
+    w_("All digests are complete 64-character SHA256 values, not display prefixes. Repeating a result "
+       "proves determinism under the tested configuration; it says nothing about whether the biological "
+       "model is right.\n")
     w_("## Limitations\n")
     w_("- Every number is conditional on the assumed parameters in `worlds.py`; each is labelled LIT, "
        "ASSUME or STRESS, and none is measured in this system.")
