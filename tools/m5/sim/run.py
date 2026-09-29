@@ -259,10 +259,25 @@ def main() -> int:
     results["stream_collisions"] = ("none: " + f"{len(streams)} distinct streams"
                                     if not collisions else f"COLLISIONS: {collisions}")
     text = json.dumps(results, indent=2)
+    import hashlib as _h
+    # Two digests, because they answer different questions. The provenance stamp (code revision) makes
+    # the whole document differ between commits even when every simulated number is identical — which
+    # invalidated a reproducibility check once. The science digest excludes provenance so the comparison
+    # means what it claims.
+    science = json.dumps({"worlds": results["worlds"], "reps": results["reps"], "seed": results["seed"],
+                          "seed_derivation": results["seed_derivation"]}, indent=2, sort_keys=True)
+    results["science_digest"] = {
+        "sha256": _h.sha256(science.encode()).hexdigest(),
+        "covers": ("the full 64-character SHA256 of the simulated content only: the worlds array, reps, seed and "
+                   "seed derivation, serialised with sorted keys. It excludes code_revision, environment and the "
+                   "digests themselves, so two runs at different commits with identical results agree here."),
+    }
     results["results_digest"] = {
-        "sha256": __import__("hashlib").sha256(text.encode()).hexdigest(),
-        "covers": ("the full 64-character SHA256 of this results document serialised as json.dumps(indent=2) with "
-                   "every field except results_digest and reproducibility_note present"),
+        "sha256": _h.sha256(text.encode()).hexdigest(),
+        "covers": ("the full 64-character SHA256 of this whole results document as written by json.dumps(indent=2), "
+                   "including code_revision and environment, before science_digest, results_digest and "
+                   "reproducibility_note were added. It changes when the recording commit changes, even if every "
+                   "simulated number is identical."),
     }
     text = json.dumps(results, indent=2)
     if args.out:
