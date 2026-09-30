@@ -1,0 +1,1201 @@
+{
+  "schema": "rarepipe.research-network.seed-nodes.v0.1",
+  "version": "1.0.0",
+  "generated_at": "2026-09-30T00:00:00Z",
+  "ranking_basis": "ordinal: public evidence specificity (direct target literature > methods/reconstitution > discovery/referral network); not a reply probability",
+  "ranking_version": "1.0.0",
+  "campaigns": [
+    {
+      "id": "cmp-mva-001",
+      "purpose": "Investigation of nicotinic acid for BUB1B-associated mosaic variegated aneuploidy",
+      "case_ref": "PP_MVA_001_RH_001",
+      "scope": "MVA_SCIENTIFIC",
+      "mode": "live",
+      "owner": null,
+      "exclusions": [
+        "MVA Society",
+        "child",
+        "family"
+      ],
+      "status": "DRAFT",
+      "limits": {
+        "max_requests": null,
+        "minimum_interval": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "spend_limit": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "quiet_hours": null
+      },
+      "questions": [
+        {
+          "id": "Q01",
+          "campaign_id": "cmp-mva-001",
+          "scope": "MVA_SCIENTIFIC",
+          "decision": "Whether an abundance-restoration premise remains plausible; which functional endpoints remain necessary",
+          "dependencies": [],
+          "evidence_criteria": {
+            "intervention": "UNKNOWN",
+            "compartment": "UNKNOWN",
+            "species": null,
+            "model": null,
+            "tissue_or_cell": null,
+            "endpoint": "BubR1 residual function",
+            "comparator": null,
+            "exposure": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "method": null,
+            "experimental_unit": null,
+            "denominator": null,
+            "timeframe": null,
+            "effect_criterion": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "uncertainty_method": null
+          },
+          "required_reviewer": "scientific_lead",
+          "state": "UNKNOWN",
+          "native_artifact_refs": []
+        },
+        {
+          "id": "Q02",
+          "campaign_id": "cmp-mva-001",
+          "scope": "MVA_SCIENTIFIC",
+          "decision": "Whether the first drug-to-cell connection is supported for that model",
+          "dependencies": [
+            "Q01"
+          ],
+          "evidence_criteria": {
+            "intervention": "nicotinic_acid",
+            "compartment": "UNKNOWN",
+            "species": null,
+            "model": null,
+            "tissue_or_cell": null,
+            "endpoint": "NAD",
+            "comparator": null,
+            "exposure": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "method": null,
+            "experimental_unit": null,
+            "denominator": null,
+            "timeframe": null,
+            "effect_criterion": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "uncertainty_method": null
+          },
+          "required_reviewer": "scientific_lead",
+          "state": "UNKNOWN",
+          "native_artifact_refs": []
+        },
+        {
+          "id": "Q03",
+          "campaign_id": "cmp-mva-001",
+          "scope": "MVA_SCIENTIFIC",
+          "decision": "Which mechanistic connection is supported or challenged",
+          "dependencies": [
+            "Q02"
+          ],
+          "evidence_criteria": {
+            "intervention": "nicotinic_acid",
+            "compartment": "UNKNOWN",
+            "species": null,
+            "model": null,
+            "tissue_or_cell": null,
+            "endpoint": "BubR1 stability / SIRT2 activity",
+            "comparator": null,
+            "exposure": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "method": null,
+            "experimental_unit": null,
+            "denominator": null,
+            "timeframe": null,
+            "effect_criterion": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "uncertainty_method": null
+          },
+          "required_reviewer": "scientific_lead",
+          "state": "UNKNOWN",
+          "native_artifact_refs": []
+        },
+        {
+          "id": "Q04",
+          "campaign_id": "cmp-mva-001",
+          "scope": "MVA_SCIENTIFIC",
+          "decision": "Whether independent confirmation or translational review is justified",
+          "dependencies": [
+            "Q01",
+            "Q03"
+          ],
+          "evidence_criteria": {
+            "intervention": "nicotinic_acid",
+            "compartment": "UNKNOWN",
+            "species": null,
+            "model": null,
+            "tissue_or_cell": null,
+            "endpoint": "chromosome segregation / cell division",
+            "comparator": null,
+            "exposure": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "method": null,
+            "experimental_unit": null,
+            "denominator": null,
+            "timeframe": null,
+            "effect_criterion": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "uncertainty_method": null
+          },
+          "required_reviewer": "scientific_lead",
+          "state": "UNKNOWN",
+          "native_artifact_refs": []
+        },
+        {
+          "id": "Q05",
+          "campaign_id": "cmp-mva-001",
+          "scope": "MVA_SCIENTIFIC",
+          "decision": "Where and how to obtain the next contribution",
+          "dependencies": [],
+          "evidence_criteria": {
+            "intervention": "UNKNOWN",
+            "compartment": "UNKNOWN",
+            "species": null,
+            "model": null,
+            "tissue_or_cell": null,
+            "endpoint": null,
+            "comparator": null,
+            "exposure": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "method": null,
+            "experimental_unit": null,
+            "denominator": null,
+            "timeframe": null,
+            "effect_criterion": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "uncertainty_method": null
+          },
+          "required_reviewer": "research_operations",
+          "state": "UNKNOWN",
+          "native_artifact_refs": []
+        },
+        {
+          "id": "Q06",
+          "campaign_id": "cmp-mva-001",
+          "scope": "MVA_SCIENTIFIC",
+          "decision": "Which scientific design decisions can be prepared for review",
+          "dependencies": [],
+          "evidence_criteria": {
+            "intervention": "UNKNOWN",
+            "compartment": "UNKNOWN",
+            "species": null,
+            "model": null,
+            "tissue_or_cell": null,
+            "endpoint": null,
+            "comparator": null,
+            "exposure": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "method": null,
+            "experimental_unit": null,
+            "denominator": null,
+            "timeframe": null,
+            "effect_criterion": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "uncertainty_method": null
+          },
+          "required_reviewer": "scientific_lead",
+          "state": "UNKNOWN",
+          "native_artifact_refs": []
+        }
+      ],
+      "contributions": [],
+      "feedback": []
+    },
+    {
+      "id": "cmp-partnership-oncology",
+      "purpose": "Explore AI research partnership with Centre Léon Bérard for virtual tumour board note extraction",
+      "case_ref": "CHALLENGE_RECODING_MEDICINE",
+      "scope": "PARTNERSHIP_ONCOLOGY",
+      "mode": "live",
+      "owner": null,
+      "exclusions": [],
+      "status": "DRAFT",
+      "limits": {
+        "max_requests": null,
+        "minimum_interval": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "spend_limit": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "quiet_hours": null
+      },
+      "questions": [
+        {
+          "id": "Q_ONC_01",
+          "campaign_id": "cmp-partnership-oncology",
+          "scope": "PARTNERSHIP_ONCOLOGY",
+          "decision": "Whether Centre Léon Bérard is still considering an AI partner for Recoding Medicine",
+          "dependencies": [],
+          "evidence_criteria": {
+            "intervention": "UNKNOWN",
+            "compartment": "UNKNOWN",
+            "species": null,
+            "model": null,
+            "tissue_or_cell": null,
+            "endpoint": null,
+            "comparator": null,
+            "exposure": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "method": null,
+            "experimental_unit": null,
+            "denominator": null,
+            "timeframe": null,
+            "effect_criterion": {
+              "value": null,
+              "unit": null,
+              "null_reason": "UNKNOWN",
+              "note": ""
+            },
+            "uncertainty_method": null
+          },
+          "required_reviewer": "research_operations",
+          "state": "UNKNOWN",
+          "native_artifact_refs": []
+        }
+      ],
+      "contributions": [],
+      "feedback": []
+    }
+  ],
+  "leads": [
+    {
+      "node": {
+        "id": "node-hubrecht-kops",
+        "institution": "Hubrecht Institute",
+        "group": "Kops group",
+        "node_type": "evidence_producing_lab",
+        "source": {
+          "reference": "https://www.hubrecht.eu/research-groups/kops-group/",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": null
+        },
+        "capabilities": [
+          {
+            "description": "Chromosome segregation fidelity, SAC signaling, and aneuploidy mechanisms research",
+            "source": {
+              "reference": "https://www.hubrecht.eu/research-groups/kops-group/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Cellular and organoid model systems for kinetochore and spindle checkpoint dynamics",
+            "source": {
+              "reference": "https://www.hubrecht.eu/research-groups/kops-group/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Live-cell microscopy for mitotic timing and chromosome alignment",
+            "source": {
+              "reference": "https://www.hubrecht.eu/research-groups/kops-group/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q01",
+        "Q04",
+        "Q06"
+      ],
+      "candidate_rationale": "Current MVA and chromosome-segregation research; potential existing restored-abundance findings, endpoint limits, model/method referral",
+      "sourced_evidence": [
+        "Active peer-reviewed research on BUB1B/BubR1 chromosome segregation mechanisms",
+        "Published expertise in live-cell mitotic imaging assays at Hubrecht Institute"
+      ],
+      "inferred": [
+        "Laboratory may hold cellular models with altered BubR1 abundance or relevant SAC assay systems",
+        "Protocols could be adapted to evaluate residual function in variant alleles"
+      ],
+      "confirmation_remains": [
+        "Whether specific BUB1B variant models are currently available in the lab",
+        "Functional assay bandwidth and willingness to test variant alleles",
+        "Institutional material transfer and analysis permission"
+      ],
+      "evidence_family_id": "ef-hubrecht-kops",
+      "ranking_tier": 1,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-helsinki-aswlab",
+        "institution": "University of Helsinki",
+        "group": "ASWLab",
+        "node_type": "evidence_producing_lab",
+        "source": {
+          "reference": "https://www.helsinki.fi/en/researchgroups/mitochondrial-medicine/research",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": "2020-05-07T00:00:00Z"
+        },
+        "capabilities": [
+          {
+            "description": "Mitochondrial medicine and systemic/tissue NAD metabolomics research",
+            "source": {
+              "reference": "https://www.helsinki.fi/en/researchgroups/mitochondrial-medicine/research",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2020-05-07T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Clinical trial execution and metabolomic profiling of nicotinic acid supplementation in humans",
+            "source": {
+              "reference": "https://www.helsinki.fi/en/researchgroups/mitochondrial-medicine/research",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2020-05-07T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Targeted mass spectrometry protocols for NAD+ metabolome quantification",
+            "source": {
+              "reference": "https://www.helsinki.fi/en/researchgroups/mitochondrial-medicine/research",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2020-05-07T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q02",
+        "Q06"
+      ],
+      "candidate_rationale": "Tissue/systemic metabolism; human nicotinic-acid research; blood-versus-cell measurement interpretation and existing methods",
+      "sourced_evidence": [
+        "Co-led clinical study demonstrating systemic and tissue NAD+ elevation by nicotinic acid in humans (PMID 32386566)",
+        "Established institutional protocols for NAD metabolite quantification"
+      ],
+      "inferred": [
+        "Metabolomic expertise applies to distinguishing intracellular vs blood NAD compartmental concentrations",
+        "Could advise on dose-response and exposure conditions for nicotinic acid"
+      ],
+      "confirmation_remains": [
+        "Whether cellular/intracellular compartmental assays are routinely supported",
+        "Availability of experimental capacity for non-mitochondrial disease models",
+        "Institutional collaboration and data sharing permission"
+      ],
+      "evidence_family_id": "ef-niacin-trial-pmid32386566",
+      "ranking_tier": 1,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-oulu-pirinen",
+        "institution": "University of Oulu",
+        "group": "Pirinen Lab",
+        "node_type": "evidence_producing_lab",
+        "source": {
+          "reference": "https://www.oulu.fi/en/research-groups/mitochondria-and-nutrient-signaling",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": "2020-05-07T00:00:00Z"
+        },
+        "capabilities": [
+          {
+            "description": "Mitochondria and nutrient signaling with focus on NAD+ boosting therapies",
+            "source": {
+              "reference": "https://www.oulu.fi/en/research-groups/mitochondria-and-nutrient-signaling",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2020-05-07T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Cell-type-specific nicotinic acid response and NAD synthesis pathway analyses",
+            "source": {
+              "reference": "https://www.oulu.fi/en/research-groups/mitochondria-and-nutrient-signaling",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2020-05-07T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Preclinical pharmacology and metabolic flux analysis of NAD precursors",
+            "source": {
+              "reference": "https://www.oulu.fi/en/research-groups/mitochondria-and-nutrient-signaling",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2020-05-07T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q02",
+        "Q06"
+      ],
+      "candidate_rationale": "NAD metabolism and the same human niacin study; nicotinic-acid-specific response conditions and feasible analyses",
+      "sourced_evidence": [
+        "Co-led landmark trial of niacin in humans (PMID 32386566)",
+        "Documented expertise in cellular NAD precursor utilization and nutrient signaling"
+      ],
+      "inferred": [
+        "Laboratory can define interpretable cell culture exposure conditions for nicotinic acid",
+        "Experience with NAD quantification methods in cell models"
+      ],
+      "confirmation_remains": [
+        "Cell model availability and feasibility of testing BUB1B/MVA cell contexts",
+        "Current laboratory testing capacity and service availability",
+        "Formal institutional research collaboration agreement"
+      ],
+      "evidence_family_id": "ef-niacin-trial-pmid32386566",
+      "ranking_tier": 1,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-harvard-sinclair",
+        "institution": "Harvard Medical School",
+        "group": "Sinclair Lab",
+        "node_type": "evidence_producing_lab",
+        "source": {
+          "reference": "https://agingresearch.hms.harvard.edu/faculty/sinclair/",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": "2014-05-08T00:00:00Z"
+        },
+        "capabilities": [
+          {
+            "description": "Sirtuin biochemistry, NAD+ biology, and deacetylation target identification",
+            "source": {
+              "reference": "https://agingresearch.hms.harvard.edu/faculty/sinclair/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2014-05-08T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Original SIRT2/BubR1 deacetylation and protein stabilization assays",
+            "source": {
+              "reference": "https://agingresearch.hms.harvard.edu/faculty/sinclair/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2014-05-08T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Small molecule sirtuin modulators and NAD biology expertise",
+            "source": {
+              "reference": "https://agingresearch.hms.harvard.edu/faculty/sinclair/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2014-05-08T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q03",
+        "Q04"
+      ],
+      "candidate_rationale": "Original SIRT2/BubR1 work; current NAD/sirtuin expertise; existing mechanistic findings and distinction between abundance and function",
+      "sourced_evidence": [
+        "North et al. (2014) demonstrated SIRT2-mediated deacetylation of BubR1 and its role in stability (PMID 24825348)",
+        "World-renowned expertise in NAD biology and sirtuin regulation"
+      ],
+      "inferred": [
+        "May possess historical constructs, antibodies, or assay protocols specific to BubR1 deacetylation",
+        "Could advise on whether SIRT2 activation increases mutant BubR1 functional activity vs abundance alone"
+      ],
+      "confirmation_remains": [
+        "Whether BubR1/mitotic research remains active in the laboratory vs general aging pathways",
+        "Reagent availability and willingness to evaluate MVA-specific variant alleles",
+        "Institutional MTA and IP requirements"
+      ],
+      "evidence_family_id": "ef-sirt2-bubr1-pmid24825348",
+      "ranking_tier": 1,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-bbmri-eric",
+        "institution": "BBMRI-ERIC",
+        "group": null,
+        "node_type": "discovery_network",
+        "source": {
+          "reference": "https://www.bbmri-eric.eu/bbmri-sample-and-data-portal/",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": null
+        },
+        "capabilities": [
+          {
+            "description": "Pan-European biobank discovery portal with federated sample and dataset search",
+            "source": {
+              "reference": "https://www.bbmri-eric.eu/bbmri-sample-and-data-portal/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Negotiator service for sample access and data transfer governance across European biobanks",
+            "source": {
+              "reference": "https://www.bbmri-eric.eu/bbmri-sample-and-data-portal/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Quality management and compliance frameworks for biological sample acquisition",
+            "source": {
+              "reference": "https://www.bbmri-eric.eu/bbmri-sample-and-data-portal/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q05"
+      ],
+      "candidate_rationale": "Collection discovery and negotiation infrastructure; identify a holder and a permitted feasibility/local-analysis route",
+      "sourced_evidence": [
+        "Official European research infrastructure linking hundreds of biobanks across Europe",
+        "Standardized negotiator system for requesting samples from biobank holders"
+      ],
+      "inferred": [
+        "Network queries can identify whether any participating European biobank holds BUB1B/MVA patient specimens or relevant cell models",
+        "Could identify permitted local-analysis routes avoiding biological specimen transport"
+      ],
+      "confirmation_remains": [
+        "Whether any annotated BUB1B/MVA specimens currently exist in indexed biobanks",
+        "Specific biobank custodians' willingness to participate in rare disease access requests",
+        "Cross-border data/sample transfer regulations and ethics approval"
+      ],
+      "evidence_family_id": "ef-bbmri-portal",
+      "ranking_tier": 3,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-euro-bioimaging",
+        "institution": "Euro-BioImaging",
+        "group": null,
+        "node_type": "analysis_service",
+        "source": {
+          "reference": "https://www.eurobioimaging.eu/image-data-services/image-analysis-services/",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": null
+        },
+        "capabilities": [
+          {
+            "description": "Quantitative biological image analysis, machine learning pipelines, and cellular tracking",
+            "source": {
+              "reference": "https://www.eurobioimaging.eu/image-data-services/image-analysis-services/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Standardized image quality control, open workflow execution, and computational infrastructure",
+            "source": {
+              "reference": "https://www.eurobioimaging.eu/image-data-services/image-analysis-services/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Distributed access to European advanced microscopy and image analysis facilities",
+            "source": {
+              "reference": "https://www.eurobioimaging.eu/image-data-services/image-analysis-services/",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q04",
+        "Q06"
+      ],
+      "candidate_rationale": "Image analysis, tracking and workflow services; endpoint feasibility, image QC and execution arrangement",
+      "sourced_evidence": [
+        "European research infrastructure offering coordinated image analysis services and expert workflows",
+        "Published catalog of specialized image data services and QC protocols"
+      ],
+      "inferred": [
+        "Can execute or adapt automated mitotic tracking, micronucleus counts, or segregation defect quantification on microscopy datasets",
+        "Can advise on imaging standards necessary to make functional division endpoints interpretable"
+      ],
+      "confirmation_remains": [
+        "Node assignment and facility capacity for specific mitotic analysis tasks",
+        "Service costs, pricing tier, and expected analysis turnaround times",
+        "Data access agreement terms for external case data"
+      ],
+      "evidence_family_id": "ef-euro-bioimaging-services",
+      "ranking_tier": 2,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-mpi-musacchio",
+        "institution": "MPI Molecular Physiology",
+        "group": "Musacchio group",
+        "node_type": "evidence_producing_lab",
+        "source": {
+          "reference": "https://www.mpi-dortmund.mpg.de/research-groups/musacchio",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": null
+        },
+        "capabilities": [
+          {
+            "description": "Biochemical reconstitution of kinetochore complexes and spindle assembly checkpoint machinery",
+            "source": {
+              "reference": "https://www.mpi-dortmund.mpg.de/research-groups/musacchio",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Cryo-EM and structural analysis of BubR1/BUB1/Bub3 protein assemblies",
+            "source": {
+              "reference": "https://www.mpi-dortmund.mpg.de/research-groups/musacchio",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "In vitro phosphorylation and functional reconstitution assays for checkpoint proteins",
+            "source": {
+              "reference": "https://www.mpi-dortmund.mpg.de/research-groups/musacchio",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q01",
+        "Q03",
+        "Q06"
+      ],
+      "candidate_rationale": "Biochemical reconstitution and cell-division methods; orthogonal assay interpretation when cellular results are ambiguous",
+      "sourced_evidence": [
+        "World-leading publication record in reconstituting human SAC complexes containing BubR1",
+        "Definitive biochemical and structural methodologies for analyzing BubR1 interactions and activities"
+      ],
+      "inferred": [
+        "Reconstitution system can test whether residual activity or interaction partners of mutant BubR1 change upon SIRT2 deacetylation",
+        "Provides decisive orthogonal evidence when cellular assays are ambiguous or confounded by cell death"
+      ],
+      "confirmation_remains": [
+        "Feasibility and interest in testing specific patient BUB1B variants in reconstitution assays",
+        "Capacity for academic collaboration or scientific advisory consultation",
+        "Formal institutional collaboration agreement"
+      ],
+      "evidence_family_id": "ef-musacchio-kinetochore",
+      "ranking_tier": 1,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-chu-quebec-elowe",
+        "institution": "CHU de Québec–Université Laval",
+        "group": "Elowe lab",
+        "node_type": "evidence_producing_lab",
+        "source": {
+          "reference": "https://www.projets-recherche.ulaval.ca/projet?id=479868",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": null
+        },
+        "capabilities": [
+          {
+            "description": "Mitotic kinase signaling, BubR1 phosphorylation, and checkpoint silencing research",
+            "source": {
+              "reference": "https://www.projets-recherche.ulaval.ca/projet?id=479868",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Cell-based functional assays for chromosome alignment and spindle checkpoint timing",
+            "source": {
+              "reference": "https://www.projets-recherche.ulaval.ca/projet?id=479868",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Structure-function analysis of BubR1 pseudokinase domain and functional motifs",
+            "source": {
+              "reference": "https://www.projets-recherche.ulaval.ca/projet?id=479868",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q01",
+        "Q04",
+        "Q06"
+      ],
+      "candidate_rationale": "Mitotic signaling and domain/silencing research; activation versus silencing/alignment limitations",
+      "sourced_evidence": [
+        "Funded research project and publications on BubR1 phosphorylation dynamics and SAC signaling (Project ID 479868)",
+        "Extensive methodology for evaluating mitotic checkpoint arrest versus slippage"
+      ],
+      "inferred": [
+        "Expertise can distinguish whether restoring BubR1 abundance restores functional checkpoint silencing or merely checkpoint activation",
+        "Assay platforms can evaluate functional division endpoints in variant-expressing lines"
+      ],
+      "confirmation_remains": [
+        "Current model availability and willingness to evaluate specific BUB1B alleles",
+        "Turnaround and experimental capacity within the academic laboratory",
+        "Institutional research agreement and MTA"
+      ],
+      "evidence_family_id": "ef-elowe-mitotic-signaling",
+      "ranking_tier": 1,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-icr-london",
+        "institution": "Institute of Cancer Research",
+        "group": null,
+        "node_type": "historical_custodial_lead",
+        "source": {
+          "reference": "https://www.icr.ac.uk/about-us/icr-news/detail/children-with-rare-disorder-lead-scientists-to-cancer-related-gene",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": "2004-11-21T00:00:00Z"
+        },
+        "capabilities": [
+          {
+            "description": "Historical identification and characterization of BUB1B mutations in mosaic variegated aneuploidy",
+            "source": {
+              "reference": "https://www.icr.ac.uk/about-us/icr-news/detail/children-with-rare-disorder-lead-scientists-to-cancer-related-gene",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2004-11-21T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Cancer genetics archive and historical rare disease cohort documentation",
+            "source": {
+              "reference": "https://www.icr.ac.uk/about-us/icr-news/detail/children-with-rare-disorder-lead-scientists-to-cancer-related-gene",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2004-11-21T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Referral pathway to historical clinical and genetic research networks",
+            "source": {
+              "reference": "https://www.icr.ac.uk/about-us/icr-news/detail/children-with-rare-disorder-lead-scientists-to-cancer-related-gene",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": "2004-11-21T00:00:00Z"
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": null,
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "MVA_SCIENTIFIC",
+      "questions": [
+        "Q05"
+      ],
+      "candidate_rationale": "Historical BUB1B/MVA research involvement; current custodial or scientific referral, not an assumed resource",
+      "sourced_evidence": [
+        "Led the original 2004 discovery connecting biallelic BUB1B mutations to MVA (Hanks et al., Nat Genet 2004)",
+        "Maintains institutional scientific archives regarding the discovery"
+      ],
+      "inferred": [
+        "Archival records or emeritus investigators might identify where original specimens or patient-derived cell lines were archived or transferred",
+        "Could provide referral to active European or UK curators of rare chromosome instability cohorts"
+      ],
+      "confirmation_remains": [
+        "Whether any physical samples or cell lines remain in custody or storage",
+        "Whether historical investigators or curators are contactable and permitted to respond",
+        "Referral to current custodian (ICR is NOT an assumed resource holder)"
+      ],
+      "evidence_family_id": "ef-icr-mva-discovery-2004",
+      "ranking_tier": 3,
+      "supplies_mva_evidence": true
+    },
+    {
+      "node": {
+        "id": "node-centre-leon-berard",
+        "institution": "Centre Léon Bérard",
+        "group": null,
+        "node_type": "historical_custodial_lead",
+        "source": {
+          "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
+          "accessed_at": "2026-09-30T00:00:00Z",
+          "published_at": null
+        },
+        "capabilities": [
+          {
+            "description": "Listing-reported material: multidisciplinary virtual tumour board meeting notes (2017–2026), raw, not longitudinal, no annotation or linkage listed",
+            "source": {
+              "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Listing-reported access status: consent basis unclear, access model undecided, departure from institution unsure, ethics approval not started",
+            "source": {
+              "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          },
+          {
+            "description": "Listing-reported partnership opportunity: oncology data holder seeking AI partner for Recoding Medicine",
+            "source": {
+              "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
+              "accessed_at": "2026-09-30T00:00:00Z",
+              "published_at": null
+            },
+            "evidence_status": "PUBLICLY_REPORTED"
+          }
+        ],
+        "contact_route": {
+          "recipient": "info@schmitt-t.com",
+          "source": {
+            "reference": "Directory listing / screenshot for Recoding Medicine challenge",
+            "accessed_at": "2026-09-30T00:00:00Z",
+            "published_at": null
+          },
+          "verification": null
+        },
+        "resource_available": "UNKNOWN",
+        "analysis_permission": "UNKNOWN",
+        "capacity": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "cost": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "turnaround": {
+          "value": null,
+          "unit": null,
+          "null_reason": "UNKNOWN",
+          "note": ""
+        },
+        "confirmation_events": []
+      },
+      "campaign_scope": "PARTNERSHIP_ONCOLOGY",
+      "questions": [
+        "Q_ONC_01"
+      ],
+      "candidate_rationale": "Listing-reported oncology data holder seeking AI partner for Recoding Medicine challenge; multidisciplinary virtual tumour board notes 2017–2026",
+      "sourced_evidence": [
+        "Directory listing screenshot for Recoding Medicine challenge",
+        "Contact email info@schmitt-t.com provided in directory listing"
+      ],
+      "inferred": [
+        "Centre Léon Bérard may still be seeking an AI research partner to extract research questions, clinical reasoning, and evidence needs from tumour board notes"
+      ],
+      "confirmation_remains": [
+        "Whether Centre Léon Bérard is still considering an AI partner",
+        "Clarification of consent basis, access model, data departure permission, and ethics approval",
+        "Verification of authentic institutional contact and governance"
+      ],
+      "evidence_family_id": "ef-clb-recoding-medicine",
+      "ranking_tier": 1,
+      "supplies_mva_evidence": false
+    }
+  ]
+}
