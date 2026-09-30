@@ -58,6 +58,42 @@ class TransportFixture(ImmutableModel):
     permitted_content: str = ""
 
 
+
+WITHHELD = "<withheld: reveals the synthetic world's hidden truth>"
+
+
+def truth_revealing_assumption_names() -> frozenset[str]:
+    """Assumption names that carry this catalogue's hidden truth rather than a mere setting.
+
+    The builders below label an assumption with the latent field it sets, so S01's
+    `residual_function = 'retained'` IS S01's hidden truth. Anything projecting these assumptions
+    into a payload must redact the value; read from the type so the set cannot drift.
+    """
+    return frozenset(LatentScientificTruth.model_fields)
+
+
+def redact_world_truth(
+    assumptions: tuple[LabeledParam, ...], *, reveal: bool,
+) -> tuple[tuple[LabeledParam, ...], tuple[str, ...]]:
+    """Blank the value of every truth-revealing assumption, keeping its name and label.
+
+    An operator still sees which dimension a scenario varies; they do not see the answer the
+    policy is meant to discover (A16). `reveal=True` is a post-hoc review payload only.
+    """
+    if reveal:
+        return assumptions, ()
+    revealing = truth_revealing_assumption_names()
+    shown, withheld = [], []
+    for param in assumptions:
+        if param.name in revealing:
+            withheld.append(param.name)
+            shown.append(LabeledParam(name=param.name, value=WITHHELD, label=param.label,
+                                      note=param.note or ""))
+        else:
+            shown.append(param)
+    return tuple(shown), tuple(withheld)
+
+
 def _base_latent(**updates: Any) -> LatentScientificTruth:
     data = dict(
         residual_function=ResidualFunction.UNKNOWN,
