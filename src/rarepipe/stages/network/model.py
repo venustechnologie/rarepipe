@@ -187,6 +187,9 @@ class AdditionalResponseState(StrEnum):
     DECLINED = "declined"
     INVALID_MEASUREMENT = "invalid_measurement"
     INFORMATIVE_NEGATIVE = "informative_negative"
+    # A reply nobody could classify. It asserts nothing about the node and routes to a human.
+    # The absence of this state is what made "capability reported" the fallback.
+    UNCLASSIFIED = "unclassified"
 
 
 OperationalState = Literal[
@@ -195,6 +198,7 @@ OperationalState = Literal[
     AdditionalResponseState.NO_RELEVANT_RESOURCE,
     AdditionalResponseState.CANNOT_DISCLOSE, AdditionalResponseState.DECLINED,
     AdditionalResponseState.CAPABILITY_REPORTED,
+    AdditionalResponseState.UNCLASSIFIED,
 ]
 ScientificState = Literal[
     ResponseState.INCONCLUSIVE_RESULT, ResponseState.MEASURED_NO_EFFECT,

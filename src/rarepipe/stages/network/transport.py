@@ -145,7 +145,9 @@ def manual_import_reply(
     received_at: datetime,
     evidence_family_id: str,
     rationale: str = "Manual paste of authentic institutional reply by authorized operator",
-    response_state: AdditionalResponseState | ResponseState = AdditionalResponseState.CAPABILITY_REPORTED,
+    # Defaults to UNCLASSIFIED: a pasted reply asserts nothing about the node until someone
+    # says what it is. Defaulting to CAPABILITY_REPORTED manufactured a capability claim.
+    response_state: AdditionalResponseState | ResponseState = AdditionalResponseState.UNCLASSIFIED,
     outbox: Outbox | None = None,
     transport_headers: dict[str, str] | None = None,
 ) -> ManualImportResult:
