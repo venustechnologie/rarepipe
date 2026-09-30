@@ -1,5 +1,5 @@
 {
-  "schema": "rarepipe.research-network.seed-nodes.v0.1",
+  "schema_id": "rarepipe.research-network.seed-nodes.v0.1",
   "version": "1.0.0",
   "generated_at": "2026-09-30T00:00:00Z",
   "ranking_basis": "ordinal: public evidence specificity (direct target literature > methods/reconstitution > discovery/referral network); not a reply probability",
@@ -39,6 +39,7 @@
           "id": "Q01",
           "campaign_id": "cmp-mva-001",
           "scope": "MVA_SCIENTIFIC",
+          "text": "In an appropriately characterized model, what function remains when altered BubR1 abundance is normalized?",
           "decision": "Whether an abundance-restoration premise remains plausible; which functional endpoints remain necessary",
           "dependencies": [],
           "evidence_criteria": {
@@ -75,6 +76,7 @@
           "id": "Q02",
           "campaign_id": "cmp-mva-001",
           "scope": "MVA_SCIENTIFIC",
+          "text": "Does nicotinic acid increase intracellular NAD in a relevant cell compartment under interpretable conditions?",
           "decision": "Whether the first drug-to-cell connection is supported for that model",
           "dependencies": [
             "Q01"
@@ -113,6 +115,7 @@
           "id": "Q03",
           "campaign_id": "cmp-mva-001",
           "scope": "MVA_SCIENTIFIC",
+          "text": "Does the proposed NAD/SIRT2 connection change BubR1 stability or a relevant activity?",
           "decision": "Which mechanistic connection is supported or challenged",
           "dependencies": [
             "Q02"
@@ -151,6 +154,7 @@
           "id": "Q04",
           "campaign_id": "cmp-mva-001",
           "scope": "MVA_SCIENTIFIC",
+          "text": "Do required functional outcomes improve, accounting for division, cell loss, and measurement limitations?",
           "decision": "Whether independent confirmation or translational review is justified",
           "dependencies": [
             "Q01",
@@ -190,6 +194,7 @@
           "id": "Q05",
           "campaign_id": "cmp-mva-001",
           "scope": "MVA_SCIENTIFIC",
+          "text": "Who currently has a suitable, permitted model, existing finding, assay, or analysis capability?",
           "decision": "Where and how to obtain the next contribution",
           "dependencies": [],
           "evidence_criteria": {
@@ -226,6 +231,7 @@
           "id": "Q06",
           "campaign_id": "cmp-mva-001",
           "scope": "MVA_SCIENTIFIC",
+          "text": "Which methods and analysis choices can make a proposed measurement interpretable?",
           "decision": "Which scientific design decisions can be prepared for review",
           "dependencies": [],
           "evidence_criteria": {
@@ -255,72 +261,6 @@
             "uncertainty_method": null
           },
           "required_reviewer": "scientific_lead",
-          "state": "UNKNOWN",
-          "native_artifact_refs": []
-        }
-      ],
-      "contributions": [],
-      "feedback": []
-    },
-    {
-      "id": "cmp-partnership-oncology",
-      "purpose": "Explore AI research partnership with Centre Léon Bérard for virtual tumour board note extraction",
-      "case_ref": "CHALLENGE_RECODING_MEDICINE",
-      "scope": "PARTNERSHIP_ONCOLOGY",
-      "mode": "live",
-      "owner": null,
-      "exclusions": [],
-      "status": "DRAFT",
-      "limits": {
-        "max_requests": null,
-        "minimum_interval": {
-          "value": null,
-          "unit": null,
-          "null_reason": "UNKNOWN",
-          "note": ""
-        },
-        "spend_limit": {
-          "value": null,
-          "unit": null,
-          "null_reason": "UNKNOWN",
-          "note": ""
-        },
-        "quiet_hours": null
-      },
-      "questions": [
-        {
-          "id": "Q_ONC_01",
-          "campaign_id": "cmp-partnership-oncology",
-          "scope": "PARTNERSHIP_ONCOLOGY",
-          "decision": "Whether Centre Léon Bérard is still considering an AI partner for Recoding Medicine",
-          "dependencies": [],
-          "evidence_criteria": {
-            "intervention": "UNKNOWN",
-            "compartment": "UNKNOWN",
-            "species": null,
-            "model": null,
-            "tissue_or_cell": null,
-            "endpoint": null,
-            "comparator": null,
-            "exposure": {
-              "value": null,
-              "unit": null,
-              "null_reason": "UNKNOWN",
-              "note": ""
-            },
-            "method": null,
-            "experimental_unit": null,
-            "denominator": null,
-            "timeframe": null,
-            "effect_criterion": {
-              "value": null,
-              "unit": null,
-              "null_reason": "UNKNOWN",
-              "note": ""
-            },
-            "uncertainty_method": null
-          },
-          "required_reviewer": "research_operations",
           "state": "UNKNOWN",
           "native_artifact_refs": []
         }
@@ -1104,98 +1044,6 @@
       "evidence_family_id": "ef-icr-mva-discovery-2004",
       "ranking_tier": 3,
       "supplies_mva_evidence": true
-    },
-    {
-      "node": {
-        "id": "node-centre-leon-berard",
-        "institution": "Centre Léon Bérard",
-        "group": null,
-        "node_type": "historical_custodial_lead",
-        "source": {
-          "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
-          "accessed_at": "2026-09-30T00:00:00Z",
-          "published_at": null
-        },
-        "capabilities": [
-          {
-            "description": "Listing-reported material: multidisciplinary virtual tumour board meeting notes (2017–2026), raw, not longitudinal, no annotation or linkage listed",
-            "source": {
-              "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
-              "accessed_at": "2026-09-30T00:00:00Z",
-              "published_at": null
-            },
-            "evidence_status": "PUBLICLY_REPORTED"
-          },
-          {
-            "description": "Listing-reported access status: consent basis unclear, access model undecided, departure from institution unsure, ethics approval not started",
-            "source": {
-              "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
-              "accessed_at": "2026-09-30T00:00:00Z",
-              "published_at": null
-            },
-            "evidence_status": "PUBLICLY_REPORTED"
-          },
-          {
-            "description": "Listing-reported partnership opportunity: oncology data holder seeking AI partner for Recoding Medicine",
-            "source": {
-              "reference": "https://www.sprind.org/en/actions/challenges/recoding-medicine",
-              "accessed_at": "2026-09-30T00:00:00Z",
-              "published_at": null
-            },
-            "evidence_status": "PUBLICLY_REPORTED"
-          }
-        ],
-        "contact_route": {
-          "recipient": "info@schmitt-t.com",
-          "source": {
-            "reference": "Directory listing / screenshot for Recoding Medicine challenge",
-            "accessed_at": "2026-09-30T00:00:00Z",
-            "published_at": null
-          },
-          "verification": null
-        },
-        "resource_available": "UNKNOWN",
-        "analysis_permission": "UNKNOWN",
-        "capacity": {
-          "value": null,
-          "unit": null,
-          "null_reason": "UNKNOWN",
-          "note": ""
-        },
-        "cost": {
-          "value": null,
-          "unit": null,
-          "null_reason": "UNKNOWN",
-          "note": ""
-        },
-        "turnaround": {
-          "value": null,
-          "unit": null,
-          "null_reason": "UNKNOWN",
-          "note": ""
-        },
-        "confirmation_events": []
-      },
-      "campaign_scope": "PARTNERSHIP_ONCOLOGY",
-      "questions": [
-        "Q_ONC_01"
-      ],
-      "candidate_rationale": "Listing-reported oncology data holder seeking AI partner for Recoding Medicine challenge; multidisciplinary virtual tumour board notes 2017–2026",
-      "sourced_evidence": [
-        "Directory listing screenshot for Recoding Medicine challenge",
-        "Contact email info@schmitt-t.com provided in directory listing"
-      ],
-      "inferred": [
-        "Centre Léon Bérard may still be seeking an AI research partner to extract research questions, clinical reasoning, and evidence needs from tumour board notes"
-      ],
-      "confirmation_remains": [
-        "Whether Centre Léon Bérard is still considering an AI partner",
-        "Clarification of consent basis, access model, data departure permission, and ethics approval",
-        "Verification of authentic institutional contact and governance"
-      ],
-      "evidence_family_id": "ef-clb-recoding-medicine",
-      "ranking_tier": 1,
-      "supplies_mva_evidence": false
     }
   ]
 }

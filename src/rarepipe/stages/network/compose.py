@@ -13,8 +13,10 @@ Composes structured first requests and follow-ups. Each first request states:
 Confirmed clinical leadership may only be asserted when an authentic human treating
 clinician is appointed. If unappointed, the message must not imply clinical leadership exists.
 
-The partnership campaign (Centre Léon Bérard) is structurally separated: its composer is
-incapable of accepting or emitting private case information or technical architecture.
+The partnership campaign is structurally separated from the MVA campaign: its composer is
+incapable of accepting or emitting private case information or technical architecture. No
+partnership institution is seeded in this project's registry; the separation is kept because a
+partnership reply must remain unable to satisfy an MVA scientific question (A26).
 """
 
 from __future__ import annotations
@@ -111,6 +113,8 @@ class ScientificRequestComposer:
 
         endpoint_text = f"\nTarget Endpoint: {question.evidence_criteria.endpoint}" if question.evidence_criteria.endpoint else ""
 
+        question_text = f"Question: {question.text}\n" if question.text else ""
+
         disclosure_text = disclosure_limits or (
             "Preclinical research scope only. Under institutional policy, no identifying patient combinations, "
             "exact variant coordinates, private repository paths, or clinical case records are disclosed."
@@ -126,7 +130,7 @@ Dear Research Team at {node.institution},
 
 1. Bounded Research Question:
 We are investigating a specific preclinical question ({question.id}):
-Decision Question: {question.decision}{endpoint_text}
+{question_text}What an answer could change: {question.decision}{endpoint_text}
 
 2. Relevance and Public Source:
 Your institution was identified based on public scientific publications and institutional profiles:
@@ -200,7 +204,7 @@ Dear Team at {node.institution},
 We are reaching out regarding the public challenge listing referencing {node.institution} ({node.source.reference}):
 The listing reports multidisciplinary virtual tumour board meeting notes (2017-2026) and interest in an AI research partner.
 
-We are inquiring whether Centre Léon Bérard is still considering an AI research partner to extract research questions, clinical reasoning, and evidence needs from permitted meeting-note material.
+We are inquiring whether {node.institution} is still considering an AI research partner to extract research questions, clinical reasoning, and evidence needs from permitted material.
 
 We offer several flexible response options:
 1. Confirm availability: Inform us if exploration of research partnerships remains open.

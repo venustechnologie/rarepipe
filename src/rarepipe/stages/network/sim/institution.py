@@ -33,6 +33,8 @@ REAL_PUBLIC_INSTITUTION_NAMES: frozenset[str] = frozenset({
     "Université Laval",
     "Elowe",
     "Institute of Cancer Research",
+    # Kept in the guard set although no longer a lead here: the point of this set is that
+    # synthetic text must not name a real institution, which applies to any of them.
     "Centre Léon Bérard",
 })
 
@@ -221,10 +223,6 @@ def public_capability_catalogue() -> tuple[PublicCatalogueEntry, ...]:
             official_source=("https://www.icr.ac.uk/about-us/icr-news/detail/"
                              "children-with-rare-disorder-lead-scientists-to-cancer-related-gene"),
             initial_questions=("Q05",)),
-        PublicCatalogueEntry(
-            node_id="pub-clb-partnership", institution="Centre Léon Bérard",
-            official_source="directory listing (partnership lead; not MVA evidence)",
-            initial_questions=()),
     )
 
 

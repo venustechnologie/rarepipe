@@ -170,6 +170,10 @@ class Question(ImmutableModel):
     id: str = Field(default_factory=new_id)
     campaign_id: str
     scope: CampaignScope
+    # `decision` is the decision consequence (PRD 6): what an answer could change. `text` is the
+    # question itself, as it would be put to a person. Both are needed — a message that states only
+    # the consequence never actually asks anything.
+    text: str | None = None
     decision: str
     dependencies: tuple[str, ...] = ()
     evidence_criteria: EvidenceCriteria = Field(default_factory=EvidenceCriteria)

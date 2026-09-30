@@ -605,7 +605,7 @@ def test_a26_partnership_reply_cannot_satisfy_mva_scientific_question():
 
     # Inbound reply originating from a partnership campaign
     payload_partner = InboundPayload(
-        raw_content="Centre Léon Bérard is open to discussing institutional collaboration on pediatric oncology.",
+        raw_content="Our centre is open to discussing institutional collaboration on pediatric oncology.",
         campaign_id=q_mva.campaign_id,
         scope=CampaignScope.PARTNERSHIP_ONCOLOGY,  # Partnership scope
         question_id=q_mva.id,

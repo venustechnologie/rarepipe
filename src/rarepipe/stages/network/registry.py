@@ -6,8 +6,11 @@ permission, capacity, cost, turnaround) default to UNKNOWN until confirmed by an
 institutional operational response.
 
 Helsinki and Oulu share an evidence-family ID to reflect their common underlying human
-study (PMID 32386566). Centre Léon Bérard is isolated in a separate PARTNERSHIP_ONCOLOGY
-campaign seed with listing-reported governance states and supplies no MVA scientific evidence.
+study (PMID 32386566).
+
+This registry seeds the MVA campaign only. The PARTNERSHIP_ONCOLOGY scope still exists in the
+model and is exercised by the A26 tests, because keeping a partnership reply structurally unable
+to satisfy an MVA scientific question is worth proving; no partnership institution is seeded here.
 """
 
 from __future__ import annotations
@@ -101,6 +104,7 @@ def _build_mva_campaign() -> Campaign:
         id="Q01",
         campaign_id="cmp-mva-001",
         scope=CampaignScope.MVA_SCIENTIFIC,
+        text="In an appropriately characterized model, what function remains when altered BubR1 abundance is normalized?",
         decision="Whether an abundance-restoration premise remains plausible; which functional endpoints remain necessary",
         evidence_criteria=EvidenceCriteria(
             endpoint="BubR1 residual function",
@@ -112,6 +116,7 @@ def _build_mva_campaign() -> Campaign:
         id="Q02",
         campaign_id="cmp-mva-001",
         scope=CampaignScope.MVA_SCIENTIFIC,
+        text="Does nicotinic acid increase intracellular NAD in a relevant cell compartment under interpretable conditions?",
         decision="Whether the first drug-to-cell connection is supported for that model",
         dependencies=("Q01",),
         evidence_criteria=EvidenceCriteria(
@@ -126,6 +131,7 @@ def _build_mva_campaign() -> Campaign:
         id="Q03",
         campaign_id="cmp-mva-001",
         scope=CampaignScope.MVA_SCIENTIFIC,
+        text="Does the proposed NAD/SIRT2 connection change BubR1 stability or a relevant activity?",
         decision="Which mechanistic connection is supported or challenged",
         dependencies=("Q02",),
         evidence_criteria=EvidenceCriteria(
@@ -139,6 +145,7 @@ def _build_mva_campaign() -> Campaign:
         id="Q04",
         campaign_id="cmp-mva-001",
         scope=CampaignScope.MVA_SCIENTIFIC,
+        text="Do required functional outcomes improve, accounting for division, cell loss, and measurement limitations?",
         decision="Whether independent confirmation or translational review is justified",
         dependencies=("Q01", "Q03"),
         evidence_criteria=EvidenceCriteria(
@@ -152,6 +159,7 @@ def _build_mva_campaign() -> Campaign:
         id="Q05",
         campaign_id="cmp-mva-001",
         scope=CampaignScope.MVA_SCIENTIFIC,
+        text="Who currently has a suitable, permitted model, existing finding, assay, or analysis capability?",
         decision="Where and how to obtain the next contribution",
         required_reviewer=Role.RESEARCH_OPERATIONS,
         state=Knowledge.UNKNOWN,
@@ -160,6 +168,7 @@ def _build_mva_campaign() -> Campaign:
         id="Q06",
         campaign_id="cmp-mva-001",
         scope=CampaignScope.MVA_SCIENTIFIC,
+        text="Which methods and analysis choices can make a proposed measurement interpretable?",
         decision="Which scientific design decisions can be prepared for review",
         required_reviewer=Role.SCIENTIFIC_LEAD,
         state=Knowledge.UNKNOWN,
@@ -173,26 +182,6 @@ def _build_mva_campaign() -> Campaign:
         exclusions=("MVA Society", "child", "family"),
         status="DRAFT",
         questions=(q01, q02, q03, q04, q05, q06),
-    )
-
-
-def _build_partnership_campaign() -> Campaign:
-    q_onc_01 = Question(
-        id="Q_ONC_01",
-        campaign_id="cmp-partnership-oncology",
-        scope=CampaignScope.PARTNERSHIP_ONCOLOGY,
-        decision="Whether Centre Léon Bérard is still considering an AI partner for Recoding Medicine",
-        required_reviewer=Role.RESEARCH_OPERATIONS,
-        state=Knowledge.UNKNOWN,
-    )
-    return Campaign(
-        id="cmp-partnership-oncology",
-        purpose="Explore AI research partnership with Centre Léon Bérard for virtual tumour board note extraction",
-        case_ref="CHALLENGE_RECODING_MEDICINE",
-        scope=CampaignScope.PARTNERSHIP_ONCOLOGY,
-        mode=CampaignMode.LIVE,
-        status="DRAFT",
-        questions=(q_onc_01,),
     )
 
 
@@ -668,70 +657,12 @@ def _build_leads() -> tuple[NodeSeedEntry, ...]:
         supplies_mva_evidence=True,
     ))
 
-    # 10. Centre Léon Bérard (Separate Partnership Lead)
-    src_clb = PublicSource(
-        reference="https://www.sprind.org/en/actions/challenges/recoding-medicine",
-        accessed_at=NOW,
-    )
-    node_clb = Node(
-        id="node-centre-leon-berard",
-        institution="Centre Léon Bérard",
-        node_type=NodeType.HISTORICAL_CUSTODIAL_LEAD,
-        source=src_clb,
-        capabilities=(
-            Capability(
-                description="Listing-reported material: multidisciplinary virtual tumour board meeting notes (2017–2026), raw, not longitudinal, no annotation or linkage listed",
-                source=src_clb,
-                evidence_status="PUBLICLY_REPORTED",
-            ),
-            Capability(
-                description="Listing-reported access status: consent basis unclear, access model undecided, departure from institution unsure, ethics approval not started",
-                source=src_clb,
-                evidence_status="PUBLICLY_REPORTED",
-            ),
-            Capability(
-                description="Listing-reported partnership opportunity: oncology data holder seeking AI partner for Recoding Medicine",
-                source=src_clb,
-                evidence_status="PUBLICLY_REPORTED",
-            ),
-        ),
-        contact_route=ContactRoute(
-            recipient="info@schmitt-t.com",
-            source=PublicSource(
-                reference="Directory listing / screenshot for Recoding Medicine challenge",
-                accessed_at=NOW,
-            ),
-            verification=None,
-        ),
-    )
-    leads.append(NodeSeedEntry(
-        node=node_clb,
-        campaign_scope=CampaignScope.PARTNERSHIP_ONCOLOGY,
-        questions=("Q_ONC_01",),
-        candidate_rationale="Listing-reported oncology data holder seeking AI partner for Recoding Medicine challenge; multidisciplinary virtual tumour board notes 2017–2026",
-        sourced_evidence=(
-            "Directory listing screenshot for Recoding Medicine challenge",
-            "Contact email info@schmitt-t.com provided in directory listing",
-        ),
-        inferred=(
-            "Centre Léon Bérard may still be seeking an AI research partner to extract research questions, clinical reasoning, and evidence needs from tumour board notes",
-        ),
-        confirmation_remains=(
-            "Whether Centre Léon Bérard is still considering an AI partner",
-            "Clarification of consent basis, access model, data departure permission, and ethics approval",
-            "Verification of authentic institutional contact and governance",
-        ),
-        evidence_family_id="ef-clb-recoding-medicine",
-        ranking_tier=1,
-        supplies_mva_evidence=False,
-    ))
-
     return tuple(leads)
 
 
 def build_seed_data() -> SeedData:
-    """Construct the canonical seed data containing both campaigns and all candidate leads."""
-    campaigns = (_build_mva_campaign(), _build_partnership_campaign())
+    """Construct the canonical seed data: the MVA campaign and its candidate leads."""
+    campaigns = (_build_mva_campaign(),)
     leads = _build_leads()
     return SeedData(
         generated_at=NOW,

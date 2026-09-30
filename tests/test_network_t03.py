@@ -8,7 +8,7 @@ Asserts:
   thereby a source about NMN.
 - Helsinki and Oulu share an evidence-family id; ICR is typed as a historical/custodial lead; no node
   has a verified contact route.
-- Centre Léon Bérard is isolated in a separate PARTNERSHIP_ONCOLOGY campaign with listing-reported
+- The registry seeds the MVA campaign only; no partnership institution is a lead here
   states and supplies no MVA scientific evidence.
 """
 
@@ -43,7 +43,7 @@ def test_a01_every_seeded_node_has_source_url_type_and_unknown_fields(registry: 
     """A01: Each seeded node has a source URL, a node type, and unknown availability/permission."""
     nodes = registry.all_nodes()
     # 9 MVA leads + 1 partnership lead
-    assert len(nodes) == 10
+    assert len(nodes) == 9
 
     for node in nodes:
         # Source must be present, with a valid HTTP/HTTPS URL
@@ -269,7 +269,6 @@ def test_no_node_has_verified_contact_route(registry: CapabilityRegistry):
     nodes = registry.all_nodes()
     for node in nodes:
         if node.id == "node-centre-leon-berard":
-            # Centre Léon Bérard stores the directory-listed contact info@schmitt-t.com
             assert node.contact_route is not None
             assert node.contact_route.recipient == "info@schmitt-t.com"
             # Explicitly NOT verified
@@ -282,38 +281,28 @@ def test_no_node_has_verified_contact_route(registry: CapabilityRegistry):
     assert all(node.contact_route is None or node.contact_route.verification is None for node in nodes)
 
 
-def test_separate_partnership_oncology_campaign_seed(registry: CapabilityRegistry):
-    """Centre Léon Bérard is seeded in a separate PARTNERSHIP_ONCOLOGY campaign and supplies no MVA evidence."""
-    # Verify campaign exists with correct scope
-    camp = registry.get_campaign("cmp-partnership-oncology")
-    assert camp.scope is CampaignScope.PARTNERSHIP_ONCOLOGY
+def test_registry_seeds_the_mva_campaign_only(registry: CapabilityRegistry):
+    """The seed registry is the MVA outreach list and nothing else.
 
-    # Verify initial question asks only whether they are still considering an AI partner
-    assert len(camp.questions) == 1
-    q_onc = camp.questions[0]
-    assert q_onc.id == "Q_ONC_01"
-    assert q_onc.scope is CampaignScope.PARTNERSHIP_ONCOLOGY
-    assert "considering an AI partner" in q_onc.decision
+    It previously also seeded Centre Léon Bérard under a PARTNERSHIP_ONCOLOGY campaign. That lead
+    came from the separate Recoding Medicine challenge and was included in this PRD by mistake, so
+    it is not part of the list handed to the people caring for this child.
 
-    # CLB node properties
-    clb = registry.get_node("node-centre-leon-berard")
-    assert clb.institution == "Centre Léon Bérard"
-    assert clb.node_type is NodeType.HISTORICAL_CUSTODIAL_LEAD
+    The PARTNERSHIP_ONCOLOGY scope itself stays in the model and is still exercised by the A26
+    tests, because a partnership reply being structurally unable to satisfy an MVA scientific
+    question is worth proving whether or not any partnership lead is seeded.
+    """
+    campaigns = registry.all_campaigns()
+    assert [c.id for c in campaigns] == ["cmp-mva-001"]
+    assert all(c.scope is CampaignScope.MVA_SCIENTIFIC for c in campaigns)
 
-    # Capabilities must store listing-reported states (PUBLICLY_REPORTED), never verified facts
-    assert len(clb.capabilities) == 3
-    for cap in clb.capabilities:
-        assert cap.evidence_status == "PUBLICLY_REPORTED"
-        assert "listing-reported" in cap.description.lower()
+    for node in registry.all_nodes():
+        assert "Léon Bérard" not in node.institution
+        assert "Bérard" not in node.institution
 
-    # CLB lead does NOT supply MVA scientific evidence and is not routed to Q01-Q06
-    lead = registry.get_lead("node-centre-leon-berard")
-    assert not lead.supplies_mva_evidence
-    assert lead.questions == ("Q_ONC_01",)
-
-    for q_id in ("Q01", "Q02", "Q03", "Q04", "Q05", "Q06"):
-        assert "node-centre-leon-berard" not in [n.id for n in registry.query_nodes_by_question(q_id)]
-
+    leads = [registry.get_lead(node.id) for node in registry.all_nodes()]
+    assert {lead.campaign_scope for lead in leads} == {CampaignScope.MVA_SCIENTIFIC}
+    assert all(lead.supplies_mva_evidence for lead in leads)
 
 def test_four_node_types_distinguished(registry: CapabilityRegistry):
     """The four node types from PRD §7 are represented and properly assigned."""
@@ -369,7 +358,8 @@ def test_query_and_explain_api(registry: CapabilityRegistry):
     assert len(query_nodes_by_question("Q04", registry)) == 4
     assert len(query_nodes_by_question("Q05", registry)) == 2
     assert len(query_nodes_by_question("Q06", registry)) == 6
-    assert len(query_nodes_by_question("Q_ONC_01", registry)) == 1
+    # No partnership institution is seeded: that lead belonged to a different challenge.
+    assert query_nodes_by_question("Q_ONC_01", registry) == []
 
     # Test explain match breakdown
     exp = explain_match("node-harvard-sinclair", "Q03", registry)
