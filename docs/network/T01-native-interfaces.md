@@ -154,3 +154,40 @@ Tests go in `tests/test_network_<task>.py`, one file per task, so parallel work 
 - Role appointments (clinical lead, scientific adjudicator, research operator) have no real people
   assigned. An unassigned owner blocks live execution of the action needing that owner and nothing
   else.
+
+## 7. Cross-cutting invariant scan (added after T05/T09 review)
+
+`tools/network/check_invariants.py` is a static scan over the whole `network/` package and its
+tests, run by `tests/test_network_invariants.py` in the normal suite. Each rule corresponds to a
+defect that actually occurred in this project or in a delegated deliverable:
+
+| Rule | What it refuses |
+|---|---|
+| `process_random_hash` | a seed derived from Python's per-process `hash()` |
+| `literal_digest` | a sha256 written by hand rather than generated |
+| `latent_reachable` | hidden world truth named outside `sim/world.py`, `sim/reward.py`, `sim/scenarios.py`, `sim/institution.py` |
+| `piped_pytest` | a pytest invocation whose reported status is a pipe's |
+| `snapshot_mutation` | `model_copy(update=)`, which skips the origin and lineage validators |
+
+Every rule is exercised against a deliberate violation before it is trusted against the real tree,
+because a check that has never failed cannot be distinguished from one that cannot fail.
+
+**If you are implementing a later task**: run it before you hand back. It is static, so it works on
+a half-built layer. A finding is a finding, not a warning to suppress — and if you believe a rule
+is wrong, say so rather than renaming a symbol to slip past it.
+
+## 8. What independent review of T05 and T09 found
+
+Both tasks' own tests passed. Both had a real hole that those tests could not catch, because the
+same author wrote the code and the assertions:
+
+- **T05** checked an authorization's sender and recipients only when *discovering* one. A request
+  that cited an authorization by id skipped the check, so any existing authorization was a licence
+  to write to any recipient. Fixed in `authorization.py` (`_covers`, applied on both branches).
+- **T09** guarded duplicate reward with a `split_from_family_id` flag the learner sets itself, and
+  a same-family check. Filing the same study under a fresh family id credited the declared
+  question twice and doubled V; invalidating the original then left the copy holding the value.
+  Fixed in `sim/reward.py`: a declared question pays once, and `invalidate_family` still frees it.
+
+The lesson for later tasks: assert the invariant against an adversary who is *not* obliged to
+declare what they are doing. A guard keyed on a flag the adversary sets is not a guard.
