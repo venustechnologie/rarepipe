@@ -188,7 +188,7 @@ class PartnershipRequestComposer:
         resolved_recipient = recipient or (node.contact_route.recipient if node.contact_route else f"info@{node.id}.org")
 
         disclosure_text = disclosure_limits or (
-            "Non-confidential inquiry. Contains no patient identifiers, private case data, or internal technical architecture."
+            "Non-confidential partnership inquiry. Contains no confidential clinical records, private case material, or internal technical architecture."
         )
 
         content = f"""From: {sender.identity}

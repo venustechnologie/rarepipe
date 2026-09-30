@@ -141,6 +141,8 @@ class EventLog:
         history = [event for event in events if event.task_id == opaque(task_id)]
         if previous_state != (history[-1].new_state if history else None):
             raise ValueError("stale event transition")
+        if history and history[-1].origin != origin:
+            raise ValueError("event origin is immutable")
         reference = content_digest(snapshot).split(":", 1)[1]
         path = self.root / "snapshots" / f"{reference}.json"
         if not path.exists():

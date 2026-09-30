@@ -22,6 +22,7 @@ from rarepipe.stages.network.model import (
 )
 from rarepipe.stages.network.scheduler import WaitingTask, parse_quiet_hours
 from rarepipe.stages.prospective.model import Actor, Quantity
+from rarepipe.stages.prospective.nodes import ResponseState
 from rarepipe.stages.prospective.store import content_digest
 
 
@@ -44,6 +45,7 @@ class OutboxEntry(WaitingTask):
     reconciliation_ref: str | None = None
     receipt_refs: tuple[str, ...] = ()
     response_refs: tuple[str, ...] = ()
+    response_digests: tuple[str, ...] = ()
     paused_from: RequestState | None = None
 
 
@@ -296,13 +298,20 @@ class Outbox:
                 raise ValueError("response scope mismatch")
             if self.campaign().mode is CampaignMode.LIVE and contribution.origin is Origin.SYNTHETIC:
                 raise ValueError("synthetic response cannot enter live outbox")
+            if (contribution.event.envelope.question_id != task.question_id
+                    or contribution.event.state == ResponseState.NO_RESPONSE):
+                raise ValueError("response must address this question and represent an actual reply")
             reference = opaque(contribution.id)
+            digest = content_digest(contribution)
             if reference in task.response_refs:
+                if task.response_digests[task.response_refs.index(reference)] != digest:
+                    raise ValueError("response id already binds different content")
                 return task
             if task.state not in {RequestState.SENT, RequestState.WAITING, RequestState.RECEIVED}:
                 raise ValueError("request cannot receive a response in this state")
             task = self.successor(task, state=RequestState.RECEIVED,
-                                  response_refs=(*task.response_refs, reference), next_trigger=None,
+                                  response_refs=(*task.response_refs, reference),
+                                  response_digests=(*task.response_digests, digest), next_trigger=None,
                                   schedule_state="UNSCHEDULED")
             self.record(task, Reason.RESPONSE_IMPORTED, actor, now, kind="response")
             return task
