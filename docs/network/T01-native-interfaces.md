@@ -176,18 +176,34 @@ because a check that has never failed cannot be distinguished from one that cann
 a half-built layer. A finding is a finding, not a warning to suppress — and if you believe a rule
 is wrong, say so rather than renaming a symbol to slip past it.
 
-## 8. What independent review of T05 and T09 found
+## 8. What independent review of each delegated task found
 
-Both tasks' own tests passed. Both had a real hole that those tests could not catch, because the
-same author wrote the code and the assertions:
+Every task passed its own test file. Every task also had a real defect that file could not catch,
+because the same author wrote the code and the assertions. The defects share a shape, and it is
+worth naming: **a guard is only as strong as the thing it keys on.**
 
-- **T05** checked an authorization's sender and recipients only when *discovering* one. A request
-  that cited an authorization by id skipped the check, so any existing authorization was a licence
-  to write to any recipient. Fixed in `authorization.py` (`_covers`, applied on both branches).
-- **T09** guarded duplicate reward with a `split_from_family_id` flag the learner sets itself, and
-  a same-family check. Filing the same study under a fresh family id credited the declared
-  question twice and doubled V; invalidating the original then left the copy holding the value.
-  Fixed in `sim/reward.py`: a declared question pays once, and `invalidate_family` still frees it.
+| Task | Its own tests said | What was actually true |
+|---|---|---|
+| T05 | authorization enforced | Sender and recipients were checked only when *discovering* an authorization. A request citing one by id skipped the check, so any authorization was a licence to write to anyone. |
+| T09 | duplicate reward prevented | The guard keyed on `split_from_family_id`, a flag the learner sets itself, plus a same-family check. Filing one study under a fresh family id paid the question twice and doubled V. |
+| T06 | A07 states stay distinct | Any unrecognised reply returned `CAPABILITY_REPORTED` — a positive claim nobody made. Refusals, exhausted-material replies and measured nulls all collapsed into it. |
+| T11 | A16 holds | True only of the fixture it chose. The catalogue labels assumptions with the latent field they set, so `scenarios_view` published S01's hidden truth verbatim. |
+| T07 | A27 holds | Backwards: it blocked "a 10 mM dose in patient-derived fibroblasts" and allowed "Start the child on niacin". |
 
-The lesson for later tasks: assert the invariant against an adversary who is *not* obliged to
-declare what they are doing. A guard keyed on a flag the adversary sets is not a guard.
+The four rules that follow from these:
+
+1. **Assert against an adversary who need not declare themselves.** A guard keyed on a flag the
+   adversary sets (T09) or on a reference they supply (T05) is not a guard.
+2. **A fallback must claim nothing.** When you cannot classify something, say so. The safe default
+   is an explicit unknown that routes to a human, never the most common positive case (T06).
+   Extend coverage only after the fallback is honest, so a miss costs you a gap and not a lie.
+3. **Attack the shipped artefact, not a fixture you chose.** If a fixture is needed to make the
+   test pass, that is the finding (T11). Assert that the hazardous condition still exists, so the
+   test fails loudly rather than going quietly vacuous.
+4. **Prefer a closed vocabulary to a word list.** Where the system already has an enumerable set —
+   `rules.descriptors()`'s 30 actions, `ActionKind`, `LatentScientificTruth.model_fields` — check
+   membership of it and read it from the type so it cannot drift. A blacklist over prose both
+   over- and under-blocks (T07), and is at best defence in depth.
+
+`tools/network/check_invariants.py` (§7) encodes the mechanical part. The four rules above are the
+part that needs judgement; apply them to your own work before handing it back.
