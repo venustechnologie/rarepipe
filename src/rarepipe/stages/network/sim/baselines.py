@@ -3,16 +3,22 @@
 Both baselines are defined before evaluation and receive the SAME observable information,
 constraints and resource budget as the learner. Do not weaken them: the sequence and the
 heuristic scoring rule are explicit named constants so a weakening change is visible in a diff.
+
+The shared episode-action type lives in ``network.policy_q`` (T10). Baselines re-export it so
+the learner and both baselines are provably selecting from one action space (A19).
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from rarepipe.stages.network.model import ImmutableModel
+from rarepipe.stages.network.policy_q import ActionKind, JointAction
 from rarepipe.stages.network.sim.world import PolicyObservation
 from rarepipe.stages.prospective.store import content_digest
+
+# Shared episode-action contract — owned by policy_q; aliased here for baseline call sites.
+BaselineAction = JointAction
 
 BASELINE_DIGEST_COVERAGE = (
     "baseline id, action kinds, question/node ids, shared budget remaining, observation "
@@ -56,17 +62,6 @@ HEURISTIC_NODE_COST_UNITS: dict[str, float] = {
     "fn-willow-partner": 0.5,
     "fn-lowland-qc": 2.0,
 }
-
-
-class ActionKind(StrEnum):
-    REQUEST_EXISTING_FINDING = "request_existing_finding"
-    ASK_CLARIFICATION = "ask_clarification"
-    VERIFY_CAPABILITY = "verify_capability"
-    VERIFY_REFERRAL = "verify_referral"
-    FOLLOW_UP = "follow_up"
-    WAIT = "wait"
-    PAUSE = "pause"
-    STOP_ROUTE = "stop_route"
 
 
 class SharedResourceBudget(ImmutableModel):
@@ -131,25 +126,9 @@ class EpisodeConstraints(ImmutableModel):
         return True
 
 
-class BaselineAction(ImmutableModel):
-    kind: str
-    question_id: str
-    node_id: str
-    rationale: str
-    cost_units: float = 0.0
-    content_digest: str | None = None
-
-    def with_digest(self) -> BaselineAction:
-        payload = self.model_dump(mode="json")
-        digest = content_digest(payload, exclude={"content_digest"})
-        data = {k: v for k, v in payload.items() if k != "content_digest"}
-        data["content_digest"] = digest
-        return BaselineAction(**data)
-
-
 class BaselineDecision(ImmutableModel):
     baseline_id: str
-    action: BaselineAction | None
+    action: JointAction | None
     observation_digest: str | None
     budget: SharedResourceBudget
     constraints: EpisodeConstraints
@@ -235,7 +214,7 @@ class FixedExpertSequenceBaseline:
                     budget=budget, constraints=constraints, stopped=True,
                     stop_reason="shared_budget_exhausted",
                 ).with_digest()
-            action = BaselineAction(
+            action = JointAction(
                 kind=kind, question_id=question_id, node_id=node_id,
                 rationale="expert_sequence_step", cost_units=cost,
             ).with_digest()
@@ -280,7 +259,7 @@ class EligibleNodeHeuristicBaseline:
             (r.question_id, r.node_id) for r in observation.request_states
             if r.state in ("WAITING", "DISPATCHING", "SENT")
         }
-        candidates: list[tuple[float, BaselineAction]] = []
+        candidates: list[tuple[float, JointAction]] = []
         for node_id in constraints.eligible_node_ids:
             for question_id in constraints.eligible_question_ids:
                 if question_id == "Q00":
@@ -296,14 +275,14 @@ class EligibleNodeHeuristicBaseline:
                 if not budget.can_afford(cost=cost, contacts=1, requests=1):
                     continue
                 score = self._score(kind, node_id, question_id, answered)
-                action = BaselineAction(
+                action = JointAction(
                     kind=kind, question_id=question_id, node_id=node_id,
                     rationale=f"heuristic_score={score}", cost_units=cost,
                 ).with_digest()
                 candidates.append((score, action))
         if not candidates:
             if budget.can_afford(cost=0.0, contacts=0, requests=0) and budget.ticks_used < budget.max_ticks:
-                wait = BaselineAction(
+                wait = JointAction(
                     kind=ActionKind.WAIT.value, question_id="Q00", node_id="fn-silent-harbour",
                     rationale="heuristic_wait_no_eligible", cost_units=0.0,
                 ).with_digest()
