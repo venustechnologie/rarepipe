@@ -10,13 +10,11 @@ from __future__ import annotations
 
 import math
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import Field, model_validator
 
-from rarepipe.stages.network.model import (
-    ClaimDirection, ImmutableModel, Origin, ScientificFinding,
-)
+from rarepipe.stages.network.model import ClaimDirection, ImmutableModel
 from rarepipe.stages.network.sim.world import (
     LatentScientificTruth, PolicyObservation, ResearchWorld, walk_for_latent_keys,
 )
@@ -378,9 +376,6 @@ class RewardScorer:
 
     def score_attempt(self, attempt: ResolutionAttempt) -> ScoredResolution:
         """Score one resolution attempt. Gaming paths yield no extra value."""
-        for cid_node in attempt.contribution_ids:
-            # contribution ids are not node ids; exclusions checked via explicit node argument elsewhere
-            pass
         if attempt.accepts_own_evidence:
             # Learner cannot accept its own evidence as resolution credit.
             return ScoredResolution(
@@ -411,17 +406,20 @@ class RewardScorer:
                 contribution_ids=attempt.contribution_ids + prior.contribution_ids,
             )
         if attempt.question_id in self._question_family:
-            # Same question already credited via another family report of the same study path:
-            # if the family was already scored, duplicate; otherwise continue.
+            # A declared question pays once. A second family reporting the same question is
+            # corroboration, not independent replication — otherwise relabelling one original
+            # study under a fresh family id buys the value again (A06). The learner does not have
+            # to admit the split for this to hold; the check does not depend on its own claim.
+            # `invalidate_family` clears this entry, so a corrected question can be resolved again.
             existing_family = self._question_family[attempt.question_id]
-            if existing_family == attempt.evidence_family_id:
-                return ScoredResolution(
-                    question_id=attempt.question_id,
-                    evidence_family_id=attempt.evidence_family_id,
-                    verdict=ResolutionVerdict.DUPLICATE,
-                    value_units=0.0,
-                    contribution_ids=attempt.contribution_ids,
-                )
+            return ScoredResolution(
+                question_id=attempt.question_id,
+                evidence_family_id=attempt.evidence_family_id,
+                verdict=ResolutionVerdict.DUPLICATE,
+                value_units=0.0,
+                contribution_ids=attempt.contribution_ids
+                + self._scored_families[existing_family].contribution_ids,
+            )
 
         declared = self._by_question.get(attempt.question_id)
         if declared is None:
@@ -589,13 +587,3 @@ def policy_cannot_buy_exclusion(
             raise AssertionError("negative cost is not a valid bypass")
         raise
     raise AssertionError("expected ConstraintViolation for excluded node")
-
-
-def latent_matches_finding(latent: LatentScientificTruth, finding: ScientificFinding) -> bool:
-    """Helper for tests: scorers compare scientific findings to latent fields, not policy labels."""
-    endpoint = finding.context.endpoint
-    if endpoint == "residual_BubR1_function":
-        return latent.residual_function.value in ("retained", "defective")
-    if endpoint == "NAD" and finding.context.compartment is not None:
-        return True
-    return finding.origin is Origin.SYNTHETIC

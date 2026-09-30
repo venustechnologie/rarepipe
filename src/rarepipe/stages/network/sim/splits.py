@@ -10,9 +10,9 @@ from __future__ import annotations
 import hashlib
 import zlib
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any
 
-from pydantic import Field, model_validator
+from pydantic import model_validator
 
 from rarepipe.stages.network.model import ImmutableModel
 from rarepipe.stages.network.sim.institution import AssumptionLabel, LabeledParam
@@ -49,10 +49,9 @@ class ParameterRegion(ImmutableModel):
     traits: tuple[ScenarioTrait, ...] = ()
 
     def fingerprint(self) -> str:
-        """Stable identity of the parameter region (seed-independent)."""
+        """Stable identity of the parameter region (family-name and seed independent)."""
         body = {
             "region_id": self.region_id,
-            "family_id": self.family_id,
             "params": [p.model_dump(mode="json") for p in self.params],
             "traits": [t.value for t in self.traits],
         }
@@ -229,7 +228,7 @@ def refuse_seed_only_split(
     shared_region: ParameterRegion,
 ) -> None:
     """Explicit API: a seed-only holdout with one shared parameter region is refused."""
-    # Build aliased families that differ only by seed / name, then let WorldSplit reject.
+    # Build aliased families that differ only by seed / name, then reject before construct.
     train_families = []
     held_families = []
     regions = []
@@ -247,6 +246,14 @@ def refuse_seed_only_split(
             region_id=shared_region.region_id, family_id=fid,
             params=shared_region.params, traits=shared_region.traits,
         ))
+    train_fps = {r.fingerprint() for r in regions if r.family_id in train_families}
+    held_fps = {r.fingerprint() for r in regions if r.family_id in held_families}
+    if train_fps & held_fps:
+        raise SeedOnlySplitError(
+            "held-out families share identical parameter-region fingerprints with train; "
+            "holding out random seeds / renamed aliases alone is insufficient"
+        )
+    # If fingerprints somehow differ, still construct — WorldSplit enforces the same rule.
     WorldSplit(
         split_id="seed-only-rejected",
         train_families=tuple(train_families),

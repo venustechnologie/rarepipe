@@ -149,6 +149,20 @@ MVA_DIRECT_EXCLUSION_TERMS: Final[tuple[str, ...]] = (
 )
 
 
+def _recipient_covered(recipient: str, recipients: tuple[str, ...]) -> bool:
+    """Does an approved recipient list cover this address? `@domain` entries cover a whole domain."""
+    return (
+        recipient in recipients
+        or any(r.startswith("@") and recipient.endswith(r) for r in recipients)
+        or "*" in recipients
+    )
+
+
+def _covers(auth: Authorization, request: Request) -> bool:
+    """Is this request inside the sender/recipient envelope a human actually authorized?"""
+    return auth.sender == request.sender.identity and _recipient_covered(request.recipient, auth.recipients)
+
+
 class AuthorizationManager:
     """Manages standing authorizations, opt-outs, intermediaries, and dispatch authorization checks."""
 
@@ -263,15 +277,7 @@ class AuthorizationManager:
                 raise UnsetAuthorizationError(f"referenced authorization '{request.authorization_ref}' does not exist")
         else:
             # Find an active matching standing authorization
-            candidates = [
-                a for a in self._authorizations.values()
-                if a.sender == request.sender.identity
-                and (
-                    request.recipient in a.recipients
-                    or any(r.startswith("@") and request.recipient.endswith(r) for r in a.recipients)
-                    or "*" in a.recipients
-                )
-            ]
+            candidates = [a for a in self._authorizations.values() if _covers(a, request)]
             if not candidates:
                 raise UnsetAuthorizationError(
                     f"no standing authorization found covering sender '{request.sender.identity}' and recipient '{request.recipient}'"
@@ -298,6 +304,15 @@ class AuthorizationManager:
         if request.disclosure_scope and auth.content_refs and request.disclosure_scope not in auth.content_refs:
             raise DisclosureScopeViolation(
                 f"request disclosure scope '{request.disclosure_scope}' is not authorized by {auth.content_refs}"
+            )
+
+        # Naming an authorization does not widen it. A request that cites an authorization by id must
+        # still fall inside the sender and recipients that human approved, or any existing
+        # authorization would become a licence to write to anyone.
+        if not _covers(auth, request):
+            raise AuthorizationError(
+                f"authorization '{auth.id}' covers sender '{auth.sender}' and recipients {auth.recipients}; "
+                f"this request is from '{request.sender.identity}' to '{request.recipient}'"
             )
 
         return auth
