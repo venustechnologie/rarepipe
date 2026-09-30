@@ -152,3 +152,73 @@ def views_family(
 ) -> None:
     """What changed, what it means, what remains unresolved, who owns the next step."""
     _emit(V.family_summary_view(_outbox(workspace, campaign_id)), as_json)
+
+
+# --- T12: evaluation runner, reports, exports, claim index (append only) ---
+
+evaluate_app = typer.Typer(
+    no_args_is_help=True,
+    help="Run network evaluation, generate reports/exports and the submission claim index.",
+)
+app.add_typer(evaluate_app, name="evaluate")
+
+
+@evaluate_app.command("run")
+def evaluate_run(
+    out: Annotated[Path, typer.Option(help="Write the run record JSON here.")],
+    seed: Annotated[int, typer.Option(help="Master seed.")] = 20260930,
+    train_episodes: Annotated[int, typer.Option(help="Train episodes per family.")] = 2,
+    held_out_episodes: Annotated[int, typer.Option(help="Held-out episodes per family.")] = 1,
+) -> None:
+    """Train/tune/evaluate learner + baselines; write digests and provenance."""
+    from rarepipe.stages.network.evaluate import EvaluationConfig, run_evaluation, write_run_record
+
+    cfg = EvaluationConfig(
+        master_seed=seed,
+        train_episodes_per_family=train_episodes,
+        development_episodes_per_family=1 if train_episodes > 0 else 0,
+        held_out_episodes_per_family=held_out_episodes,
+    )
+    path = write_run_record(out, run_evaluation(cfg))
+    typer.echo(f"wrote {path}")
+
+
+@evaluate_app.command("report")
+def evaluate_report(
+    results: Annotated[Path, typer.Argument(help="Evaluation run record JSON.")],
+    out: Annotated[Optional[Path], typer.Option(help="Write markdown report here.")] = None,
+) -> None:
+    """Generate the evaluation narrative from a stored run record (A21)."""
+    from rarepipe.stages.network.report import build_report, render_claim_index_markdown
+
+    run = json.loads(Path(results).read_text())
+    report = build_report(run)
+    text = report.markdown + "\n" + render_claim_index_markdown(report.claim_index)
+    if out is not None:
+        out.write_text(text)
+        typer.echo(f"wrote {out}")
+    else:
+        typer.echo(text)
+
+
+@evaluate_app.command("export")
+def evaluate_export(
+    out: Annotated[Path, typer.Option(help="Public export JSON path.")],
+    results: Annotated[Optional[Path], typer.Option(help="Optional run record to summarise.")] = None,
+    private_terms: Annotated[
+        Optional[Path], typer.Option(help="Newline-separated case-private terms; a hit fails the export."),
+    ] = None,
+) -> None:
+    """Public export with restriction drop + private-term scan (A24, A28)."""
+    from rarepipe.stages.network.report import ExportRejected, write_public_export
+
+    run = json.loads(results.read_text()) if results is not None else None
+    terms = [
+        line.strip() for line in private_terms.read_text().splitlines() if line.strip()
+    ] if private_terms is not None else []
+    try:
+        path = write_public_export(out, run=run, contributions=(), private_terms=terms)
+    except ExportRejected as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    typer.echo(f"wrote {path}")
