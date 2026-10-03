@@ -10,27 +10,38 @@ sys.path.insert(0, str(ROOT / "tools" / "network"))
 from check_branch_reachability import check  # noqa: E402
 
 
-def test_exp01_cannot_fire_its_population_and_adverse_holds():
-    """EXP01 omits cell_death, so four branches that declare they apply to it cannot fire.
+def test_exp01_can_now_fire_the_holds_it_could_not():
+    """EXP01 measures cell_death as of rules 1.2.0, so its adverse and population holds work.
 
-    EXP01 is the experiment that gates PERMIT_DRUG_MECHANISM_PLANNING. A result with every
-    functional endpoint normal but viability and division both falling reads there as a success,
-    because B08, B09, B10 and B16 all require cell_death and the experiment does not measure it.
-
-    This test pins the defect rather than the fix: it documents what is currently true so that
-    adding cell_death to EXP01 — a plan change needing the scientific lead, not an engineer —
-    fails it loudly and gets the test updated deliberately.
+    Before: B08, B09, B10 and B16 all declared they applied to EXP01 and none could fire, so a
+    result with every functional readout normal but viability and division falling read as a
+    success that unlocked drug-mechanism planning.
     """
     report = check()
-    exp01 = {row["branch"]: row for row in report["unreachable"] if row["experiment"] == "EXP01"}
+    assert [row for row in report["unreachable"] if row["experiment"] == "EXP01"] == []
 
-    assert set(exp01) == {"B08", "B09", "B10", "B16"}, sorted(exp01)
-    for branch in exp01.values():
-        assert branch["missing_endpoints"] == ["cell_death"]
 
-    assert "HOLD_RESCUE_CONCLUSION" in exp01["B08"]["actions_that_cannot_fire"]
-    assert "HOLD_PROGRESSION" in exp01["B09"]["actions_that_cannot_fire"]
-    assert "RECORD_POPULATION_CHANGE" in exp01["B16"]["actions_that_cannot_fire"]
+def test_the_result_that_used_to_read_as_a_success_now_holds():
+    """The exact vector from the original finding, end to end through the real engine."""
+    from rarepipe.stages.prospective import fixtures as FX, rules, seed
+    from rarepipe.stages.prospective.model import BaselineRef, Observation
+
+    baseline = BaselineRef(package_path="probe", package_sha256="0" * 64, manifest_entries=0,
+                           manifest_verified=False, stage_runs={}, semantic_digests={})
+    plan = seed.seed_plan(baseline)
+    by_id = {e.id: e for e in plan.endpoints}
+    experiment = next(e for e in plan.experiments if e.id == "EXP01")
+    required = [by_id[i] for i in experiment.endpoints if i in by_id]
+
+    values = dict(FX.EXP01_ALL)
+    values.update(viability="decreased", division_rate="decreased", cell_death="increased")
+    observation = Observation.model_validate(FX.observation("EXP01", values))
+    evaluation = rules.evaluate(observation, experiment.kind, required)
+
+    assert "B09" in evaluation.matches
+    assert "HOLD_PROGRESSION" in evaluation.actions
+    assert "CREATE_SCIENTIFIC_REVIEW" in evaluation.actions
+    assert evaluation.status == "DECISION_REVIEW_REQUIRED"
 
 
 def test_exp03_cannot_test_the_mechanism_it_is_replicating():

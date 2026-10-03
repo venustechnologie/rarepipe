@@ -640,7 +640,7 @@ def test_a27_coherent_positive_branch_terminates_at_review_no_patient_action(tmp
     # Phase 2: EXP03 replicated benefit
     obs_exp03 = FX.observation(
         "EXP03",
-        FX.exp02(sirt2_activity=None, k668_acetylation=None),
+        FX.exp03(sirt2_activity=None, k668_acetylation=None),
         context={"replicated": "yes", "exposure_feasible": "yes", "relevance_review": "yes"},
     )
     proposal_3 = adapter.propose_evidence(obs_exp03, actor=OPS)

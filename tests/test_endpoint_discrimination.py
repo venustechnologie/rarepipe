@@ -37,16 +37,16 @@ def test_exp01_reaches_only_three_decisions_and_two_endpoints_cannot_move_them()
     cell_death, and EXP01 does not measure it. See check_branch_reachability.py.
     """
     exp01 = _by_id(run())["EXP01"]
-    assert exp01["distinct_decisions"] == 3
-    assert exp01["load_bearing_endpoints"] == [
-        "checkpoint_activation", "checkpoint_silencing", "chromosome_alignment",
-        "expression_comparability", "missegregation",
-    ]
+    # Was 3 before cell_death joined EXP01's readouts; the adverse and population holds are now
+    # reachable, which doubles the decisions the experiment can reach.
+    assert exp01["distinct_decisions"] == 6
+    assert "cell_death" in exp01["load_bearing_endpoints"]
+    # viability and division_rate still cannot move an allele-function decision on their own.
     assert "viability" in exp01["inert_for_this_rule_set"]
     assert "division_rate" in exp01["inert_for_this_rule_set"]
 
 
-def test_total_aneuploidy_cannot_influence_any_decision():
+def test_total_aneuploidy_now_changes_the_decision_and_its_ambiguity_is_handled():
     """The disease's defining phenotype is measured by EXP02 and read by no rule.
 
     Aneuploidy is what mosaic variegated aneuploidy *is*. It sits in EXP02's endpoint list and no
@@ -55,11 +55,11 @@ def test_total_aneuploidy_cannot_influence_any_decision():
     informs something other than this decision.
     """
     rules_source = (ROOT / "src/rarepipe/stages/prospective/rules.py").read_text()
-    assert "total_aneuploidy" not in rules_source
+    assert "total_aneuploidy" in rules_source
 
     exp02 = _by_id(run())["EXP02"]
-    assert "total_aneuploidy" in exp02["endpoints_enumerated"]
-    assert exp02["inert_for_this_rule_set"] == ["total_aneuploidy"]
+    assert "total_aneuploidy" in exp02["load_bearing_endpoints"]
+    assert "total_aneuploidy" not in exp02["inert_for_this_rule_set"]
 
 
 def test_a_minimal_set_is_never_smaller_than_the_load_bearing_set():

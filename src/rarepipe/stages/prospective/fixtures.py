@@ -88,13 +88,37 @@ def observation(experiment: str, values: dict[str, str], *, qc: dict | None = No
             "context": context or {}}
 
 
+# cell_death joined EXP01's required readouts in rules 1.2.0: without it B08, B09, B10 and B16 all
+# declared they applied to EXP01 and none could fire, so a result with every function normal but
+# viability and division falling read as a success. Fixtures that omit it are now incomplete, which
+# is the point — such an observation cannot exclude selective loss.
 EXP01_ALL = {"expression_comparability": "matched", "checkpoint_activation": "normal", "checkpoint_silencing": "normal",
              "chromosome_alignment": "normal", "missegregation": "normal", "viability": "unchanged",
-             "division_rate": "unchanged"}
+             "division_rate": "unchanged", "cell_death": "unchanged"}
 EXP02_BASE = {"nad_intracellular": "increased", "bubr1_abundance": "increased", "sirt2_activity": "increased",
               "k668_acetylation": "decreased", "checkpoint_activation": "improved", "checkpoint_silencing": "improved",
               "chromosome_alignment": "improved", "missegregation": "improved", "viability": "unchanged",
-              "cell_death": "unchanged", "division_rate": "unchanged"}
+              "cell_death": "unchanged", "division_rate": "unchanged",
+              # The disease phenotype. It was always in EXP02's endpoint list and always absent
+              # here; no rule read it, so a "complete" observation could omit the measurement that
+              # defines the disease. B17/B18 read it in rules 1.2.0, so the omission now shows.
+              "total_aneuploidy": "decreased"}
+
+
+def exp03(**changes: str) -> dict[str, str]:
+    """EXP03's readouts. It does not measure total_aneuploidy, so that key is dropped.
+
+    Previously EXP03 observations were built from exp02() and the difference was invisible because
+    nothing read aneuploidy. Now that B17/B18 do, reusing the EXP02 base here is rejected by the
+    workflow — correctly, since the key is not an endpoint of EXP03.
+    """
+    out = {k: v for k, v in EXP02_BASE.items() if k != "total_aneuploidy"}
+    for key, value in changes.items():
+        if value is None:
+            out.pop(key, None)
+        else:
+            out[key] = value
+    return out
 
 
 def exp02(**changes: str) -> dict[str, str]:

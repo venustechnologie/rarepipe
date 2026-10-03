@@ -6,6 +6,7 @@ Each test drives the real importer, store, evaluator, review and export path.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -254,7 +255,7 @@ def test_AT11_benefit_at_unresolved_exposure_is_not_translation_ready(tmp_path):
 
 
 def test_AT12_replicated_benefit_creates_only_a_translational_review_task(tmp_path):
-    d, _ = _eval(tmp_path, "EXP03", FX.exp02(sirt2_activity=None, k668_acetylation=None),
+    d, _ = _eval(tmp_path, "EXP03", FX.exp03(sirt2_activity=None, k668_acetylation=None),
                  context={"replicated": "yes", "exposure_feasible": "yes",
                                                           "relevance_review": "yes"})
     assert "B13" in d.matches
@@ -527,3 +528,81 @@ def test_B16_and_a_candidate_signal_cannot_coexist_unreviewed(tmp_path):
 def test_a_clean_result_does_not_trigger_B16(tmp_path):
     d, _ = _eval(tmp_path, "EXP02", FX.exp02())
     assert "B16" not in d.matches and "B10" in d.matches
+
+
+def test_every_declared_branch_is_registered_for_dispatch():
+    """A branch missing from the dispatch order is computed and silently dropped.
+
+    B17 and B18 were added to ACTIONS, BRANCH_TEXT, required_inputs and applies_to, evaluated into
+    the `scientific` dict, and still never fired, because the ordered dispatch list ended at B16.
+    That is the same defect as a branch declaring applies_to an experiment that cannot supply its
+    inputs — declared, reachable-looking, and inert. This closes the second route to it.
+    """
+    from rarepipe.stages.prospective import rules as R
+
+    source = (Path(R.__file__)).read_text()
+    marker = 'order = ["B00"'
+    start = source.index(marker)
+    registered = set(re.findall(r'"(B\d\d)"', source[start:source.index("]", start)]))
+    assert registered == set(R.ACTIONS), (
+        f"dispatch order and ACTIONS disagree: only in ACTIONS "
+        f"{sorted(set(R.ACTIONS) - registered)}, only in order {sorted(registered - set(R.ACTIONS))}"
+    )
+    assert set(R.BRANCH_TEXT) == set(R.ACTIONS)
+    assert {d.branch for d in R.descriptors()} == set(R.ACTIONS)
+
+
+def test_a_falling_aneuploid_fraction_is_not_credited_while_the_population_dies():
+    """B17/B18: a decrease in total aneuploidy is ambiguous on its own.
+
+    It is also exactly what selective loss of aneuploid cells produces, which is H06. The PM's
+    specification was "if aneuploidy decreases, reinforce the rescue hypothesis"; implemented that
+    way it would have reintroduced the confounder B08 exists to catch. Credit requires a
+    population that is not deteriorating.
+    """
+    from rarepipe.stages.prospective import fixtures as FIX, rules as R, seed as SEED
+    from rarepipe.stages.prospective.model import BaselineRef, Observation
+
+    baseline = BaselineRef(package_path="probe", package_sha256="0" * 64, manifest_entries=0,
+                           manifest_verified=False, stage_runs={}, semantic_digests={})
+    plan = SEED.seed_plan(baseline)
+    by_id = {e.id: e for e in plan.endpoints}
+    experiment = next(e for e in plan.experiments if e.id == "EXP02")
+    required = [by_id[i] for i in experiment.endpoints if i in by_id]
+
+    def evaluate(**changes):
+        observation = Observation.model_validate(FIX.observation("EXP02", FIX.exp02(**changes)))
+        return R.evaluate(observation, experiment.kind, required)
+
+    healthy = evaluate(total_aneuploidy="decreased")
+    assert "B17" in healthy.matches
+    assert "RECORD_ANEUPLOIDY_CORRECTION" in healthy.actions
+
+    unchanged = evaluate(total_aneuploidy="unchanged")
+    assert "B17" not in unchanged.matches
+    assert "RECORD_ANEUPLOIDY_CORRECTION" not in unchanged.actions
+
+    dying = evaluate(total_aneuploidy="decreased", cell_death="increased")
+    assert "B18" in dying.matches
+    assert "HOLD_RESCUE_CONCLUSION" in dying.actions
+    assert "INVESTIGATE_H06" in dying.actions
+    assert "RECORD_ANEUPLOIDY_CORRECTION" not in dying.actions
+
+
+def test_an_aneuploidy_decrease_with_unknown_population_asks_before_crediting():
+    from rarepipe.stages.prospective import fixtures as FIX, rules as R, seed as SEED
+    from rarepipe.stages.prospective.model import BaselineRef, Observation
+
+    baseline = BaselineRef(package_path="probe", package_sha256="0" * 64, manifest_entries=0,
+                           manifest_verified=False, stage_runs={}, semantic_digests={})
+    plan = SEED.seed_plan(baseline)
+    by_id = {e.id: e for e in plan.endpoints}
+    experiment = next(e for e in plan.experiments if e.id == "EXP02")
+    required = [by_id[i] for i in experiment.endpoints if i in by_id]
+
+    observation = Observation.model_validate(FIX.observation(
+        "EXP02", FIX.exp02(total_aneuploidy="decreased", cell_death=Knowledge.UNKNOWN)))
+    evaluation = R.evaluate(observation, experiment.kind, required)
+
+    assert "RECORD_ANEUPLOIDY_CORRECTION" not in evaluation.actions
+    assert any("selective loss is excluded" in r for r in evaluation.information_requests)

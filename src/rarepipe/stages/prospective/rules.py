@@ -23,7 +23,7 @@ from rarepipe.stages.prospective.model import (
     RuleDescriptor,
 )
 
-RULES_VERSION = "stage10-rules-1.1.0"
+RULES_VERSION = "stage10-rules-1.2.0"
 Tri = bool | None
 T, F, U = True, False, None
 
@@ -75,6 +75,11 @@ ACTIONS = {
     "B14": ["SHOW_DISAGREEMENT", "REQUIRE_EXPLICIT_INTERPRETATION", "HOLD_RESCUE_CONCLUSION"],
     "B15": ["RECORD_UNMODELLED_OBSERVATION", "CREATE_MODEL_REVISION_TASK"],
     "B16": ["RECORD_POPULATION_CHANGE", "CREATE_EVALUABILITY_REVIEW"],
+    # Only the corroboration. B10 already proposes replication on a functional benefit, and B17
+    # requires that same benefit, so repeating the action here would duplicate it on every firing
+    # and ask for replication of a result already replicated.
+    "B17": ["RECORD_ANEUPLOIDY_CORRECTION"],
+    "B18": ["HOLD_RESCUE_CONCLUSION", "INVESTIGATE_H06"],
 }
 INCOMPATIBLE = {
     "PROPOSE_INDEPENDENT_REPLICATION": {"HOLD_PROGRESSION", "HOLD_RESCUE_CONCLUSION", "QUARANTINE_INTERPRETATION",
@@ -82,6 +87,8 @@ INCOMPATIBLE = {
     "CREATE_TRANSLATIONAL_REVIEW_TASK": {"HOLD_PROGRESSION", "HOLD_TRANSLATIONAL_PROGRESSION",
                                          "HOLD_RESCUE_CONCLUSION", "QUARANTINE_INTERPRETATION"},
     "PERMIT_DRUG_MECHANISM_PLANNING": {"HOLD_PROGRESSION", "QUARANTINE_INTERPRETATION"},
+    "RECORD_ANEUPLOIDY_CORRECTION": {"HOLD_PROGRESSION", "HOLD_RESCUE_CONCLUSION",
+                                     "QUARANTINE_INTERPRETATION"},
 }
 TASK_FOR_ACTION: dict[str, tuple[str, Role, str]] = {
     "RESOLVE_PROVENANCE_OR_ASSAY_ISSUES": ("provenance_resolution", Role.RESEARCH_OPERATIONS,
@@ -148,6 +155,13 @@ BRANCH_TEXT = {
     "B13": "replication and relevance justify further assessment: translational-review task only",
     "B14": "valid results conflict across endpoints: disagreement shown, explicit interpretation required",
     "B15": "valid result fits no modelled branch: recorded as unmodelled, model revision required",
+    "B17": ("the disease phenotype itself improved — total aneuploidy fell — in a population that is not "
+            "deteriorating. This corroborates a rescue reading on the endpoint that defines the disease, and asks "
+            "for independent replication. It is corroboration, not confirmation"),
+    "B18": ("total aneuploidy fell while the population deteriorated. A falling aneuploid fraction is exactly what "
+            "selective loss of aneuploid cells looks like, so this is ambiguous between correction and survivorship "
+            "and the rescue conclusion is held pending H06. Crediting an aneuploidy decrease without reading death, "
+            "division and viability would reintroduce the confounder B08 exists to catch"),
     "B16": ("an established problematic change in the observed population — increased death, reduced division or "
             "reduced viability — whatever the benefit verdict says. It asks for review of what the surviving, "
             "dividing population now represents. It does not by itself declare toxicity or selective loss, and it "
@@ -174,9 +188,14 @@ def descriptors() -> list[RuleDescriptor]:
         "B13": ["context.replicated", "context.exposure_feasible", "context.relevance_review"],
         "B14": [*FUNCTION_KEYS], "B15": ["all of the above"],
         "B16": ["cell_death", "division_rate", "viability"],
+        "B17": ["total_aneuploidy", "cell_death", "division_rate", "viability"],
+        "B18": ["total_aneuploidy", "cell_death", "division_rate", "viability"],
     }
     applies = {"B02": [exp01], "B03": [exp01], "B04": [exp01], "B05": drug, "B06": drug, "B07": drug,
-               "B11": drug, "B12": drug, "B13": [exp03]}
+               "B11": drug, "B12": drug, "B13": [exp03],
+               # total_aneuploidy is measured by EXP02 alone; declaring these for EXP03 would make
+               # them unreachable there, which check_branch_reachability.py would report.
+               "B17": [exp02], "B18": [exp02]}
     return [RuleDescriptor(id=f"R_{b}", version=RULES_VERSION, branch=b, applies_to=applies.get(b, every),
                            required_inputs=required[b], actions=ACTIONS[b], rationale=BRANCH_TEXT[b])
             for b in ACTIONS]
@@ -314,6 +333,17 @@ def evaluate(obs: Observation, kind: ExperimentKind, required: list[EndpointSpec
         # own meaning (improvement accompanied by a problem) and is unchanged; this covers the case where
         # `improved_any` is UNKNOWN, which previously reached B01 alone.
         scientific["B16"] = problematic
+        # The disease phenotype. A decrease is ambiguous on its own: it is also what selective
+        # loss of aneuploid cells produces. B17 credits it only in a population that is not
+        # deteriorating; B18 holds it when the population is.
+        aneuploidy_down = v.eq("total_aneuploidy", "decreased")
+        p["total_aneuploidy_decreased"] = show(aneuploidy_down)
+        scientific["B17"] = and3(aneuploidy_down, not3(problematic), benefit)
+        scientific["B18"] = and3(aneuploidy_down, problematic)
+        if aneuploidy_down is True and problematic is None:
+            ev.information_requests.append(
+                "total aneuploidy fell but death, division or viability is unknown: a falling "
+                "aneuploid fraction cannot be read as correction until selective loss is excluded")
         scientific["B10"] = benefit
         scientific["B11"] = and3(benefit, not3(mechanism))
         scientific["B12"] = and3(benefit, replicated, not3(and3(exposure, relevance)))
@@ -344,8 +374,13 @@ def evaluate(obs: Observation, kind: ExperimentKind, required: list[EndpointSpec
                   else F)
     p["adverse_direction"] = show(adverse)
 
+    # Every branch must appear here or it is computed and silently dropped. B17 and B18 were
+    # added to ACTIONS, BRANCH_TEXT, required and applies, evaluated into `scientific`, and still
+    # never fired because this list ended at B16 — the same shape of defect as a branch declaring
+    # applies_to an experiment that cannot supply its inputs. A test asserts this list covers
+    # ACTIONS exactly.
     order = ["B00", "B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09", "B10", "B11", "B12", "B13",
-             "B14", "B15", "B16"]
+             "B14", "B15", "B16", "B17", "B18"]
     raw_matches = {"B00": b00, "B01": b01, **{k: bool(val) for k, val in scientific.items() if val is True},
                    "B09": adverse is True}
     for b in order:

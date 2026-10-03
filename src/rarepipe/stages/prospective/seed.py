@@ -53,6 +53,7 @@ def endpoints() -> list[EndpointSpec]:
             "arm", denominator="per assessable division"),
         _ep("E01_VIA", "viability", "cell viability", "no loss relative to comparators"),
         _ep("E01_DIV", "division_rate", "division rate", "no reduction relative to comparators"),
+        _ep("E01_DEATH", "cell_death", "cell death", "no increase"),
         _ep("E01_KT", "kinetochore_localization", "kinetochore localization (mechanistic, optional)",
             "comparable to wild type", required=False),
         _ep("E01_PP2A", "pp2a_b56_recruitment", "PP2A-B56 recruitment (mechanistic, optional)",
@@ -140,7 +141,8 @@ def experiments() -> list[ExperimentSpec]:
                          "restored-abundance reference (I909T or L1012P)",
                          "poorly expressed reference (L844F) where suitable — not a known matched-abundance "
                          "loss-of-function control"],
-            endpoints=["E01_EXPR", "E01_ACT", "E01_SIL", "E01_ALN", "E01_MIS", "E01_VIA", "E01_DIV", "E01_KT",
+            endpoints=["E01_EXPR", "E01_ACT", "E01_SIL", "E01_ALN", "E01_MIS", "E01_VIA", "E01_DIV",
+                       "E01_DEATH", "E01_KT",
                        "E01_PP2A"],
             interpretation="If matched abundance is not achieved or established, residual function at matched "
                            "abundance stays unresolved. A partial functional response is not full rescue.",
