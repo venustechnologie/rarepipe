@@ -104,3 +104,53 @@ def test_an_edge_cannot_use_an_undeclared_node():
         CausalChain(chain_id="p", case_ref="P", nodes=("a",),
                     edges=(CausalEdge(source="a", target="ghost", sign=1, mechanism="m",
                                       support=Support.ASSERTED_ONLY),))
+
+
+def test_the_engine_and_sensitivity_share_one_propagation_rule():
+    """Two propagation rules is worse than one wrong one.
+
+    engine.py took the product along a single best route while sensitivity.py summed every route
+    into the target. On niacin -> missegregation they disagreed by a factor of two, which would
+    have made every sensitivity index describe a different model than the distribution it was
+    meant to explain. Both now delegate to CausalChain.propagate; this fails if either forks again.
+    """
+    import numpy as np
+
+    from rarepipe.stages.simulate.engine import _evaluate_best_path
+    from rarepipe.stages.simulate.sensitivity import _response
+
+    chain = mva_chain()
+    values = {p.name: 0.5 for p in chain.unknown_parameters()}
+
+    canonical = chain.propagate(NIACIN, MISSEG, values).magnitude
+    assert _response(chain, MISSEG, values) == pytest.approx(canonical)
+    matrix = {k: np.full(1, v) for k, v in values.items()}
+    assert float(_evaluate_best_path(chain, NIACIN, MISSEG, matrix, 1)[0]) == pytest.approx(
+        canonical
+    )
+
+
+def test_propagation_excludes_contradicted_routes_and_caps_on_contributors():
+    """A falsified route must carry no magnitude, and support may not be borrowed.
+
+    The verdict is capped by the weakest link across *contributing* routes rather than the best
+    one, so an unsupported route that adds magnitude cannot ride on a well-supported route that
+    does none of the work.
+    """
+    chain = mva_chain()
+    effect = chain.propagate(NIACIN, MISSEG, {p.name: 0.5 for p in chain.unknown_parameters()})
+
+    assert effect.origin == "synthetic"
+    assert effect.excluded_contradicted_routes, "the null direct route should be excluded here"
+    assert all("nicotinic_acid_exposure -> bubr1_abundance ->" not in r
+               or r in effect.excluded_contradicted_routes
+               for r in effect.contributing_routes)
+    assert effect.verdict == "ASSERTION_ONLY"
+    assert effect.weakest_link == f"{BUBR1}->{BUBR1_FN}"
+
+
+def test_a_target_with_no_route_is_not_reported_as_an_effect_of_zero():
+    chain = mva_chain()
+    effect = chain.propagate(MISSEG, NIACIN, {})
+    assert effect.verdict == "NO_ROUTE"
+    assert effect.contributing_routes == ()

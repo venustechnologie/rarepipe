@@ -294,48 +294,17 @@ def _evaluate_matrix(
 
 
 def _response(chain: CausalChain, target: str, values: dict[str, float]) -> float:
-    """Signed effect at `target` under unit drive at every root.
+    """Signed effect at `target`, delegated to the chain's single canonical propagation rule.
 
-    Each non-contradicted edge multiplies upstream state by its parameter (drawn or
-    measured) and its sign, then adds into the downstream node. Edges without a
-    parameter contribute a factor of 1. Unknowns are taken from `values`; measured
-    parameters use their recorded value — never a prior midpoint.
+    This module previously carried its own topological propagation because the engine did not
+    exist yet. The two then disagreed by a factor of two on niacin -> missegregation, which would
+    have made this ranking describe a different model than the distributions it explains. Both now
+    call CausalChain.propagate.
     """
-    contradicted = {e.key for e in chain.edges if e.support is Support.CONTRADICTED}
-    incoming: dict[str, int] = {n: 0 for n in chain.nodes}
-    for edge in chain.edges:
-        if edge.key in contradicted:
-            continue
-        incoming[edge.target] = incoming.get(edge.target, 0) + 1
-
-    state = {n: 0.0 for n in chain.nodes}
-    for node in chain.nodes:
-        if incoming.get(node, 0) == 0:
-            state[node] = 1.0
-
-    remaining = {n: incoming.get(n, 0) for n in chain.nodes}
-    ready = [n for n in chain.nodes if remaining[n] == 0]
-    seen = 0
-    while ready:
-        node = ready.pop()
-        seen += 1
-        for edge in chain.out_edges(node):
-            if edge.key in contradicted:
-                continue
-            mult = 1.0
-            if edge.parameter is not None:
-                if edge.parameter.value is not None:
-                    mult = float(edge.parameter.value)
-                else:
-                    mult = float(values[edge.parameter.name])
-            state[edge.target] += state[node] * mult * edge.sign
-            remaining[edge.target] -= 1
-            if remaining[edge.target] == 0:
-                ready.append(edge.target)
-    if seen != len(chain.nodes):
-        # Cycle or only-contradicted connectivity: fall back to best-path product.
-        return _best_path_product(chain, target, values)
-    return float(state[target])
+    source = _drive_source(chain, target)
+    if source is None:
+        return 0.0
+    return chain.propagate(source, target, values).magnitude
 
 
 def _best_path_product(

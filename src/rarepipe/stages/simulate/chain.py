@@ -191,6 +191,20 @@ class PredictionClaim(Immutable):
         return self
 
 
+class PropagatedEffect(Immutable):
+    """A magnitude at a target, with the support that magnitude is entitled to."""
+
+    origin: Literal["synthetic"] = "synthetic"
+    source: str
+    target: str
+    magnitude: float
+    contributing_routes: tuple[str, ...]
+    excluded_contradicted_routes: tuple[str, ...]
+    verdict: str
+    weakest_link: str
+    weakest_support: Support
+
+
 class CausalChain(Immutable):
     """A named set of causal claims over biological states."""
 
@@ -258,6 +272,58 @@ class CausalChain(Immutable):
             ),
             contradicted_alternatives=contradicted,
             caveats=tuple(e.caveat for e in best.edges if e.caveat),
+        )
+
+    def propagate(
+        self, source: str, target: str, values: dict[str, float],
+    ) -> "PropagatedEffect":
+        """The single canonical propagation rule. Both the engine and sensitivity must use this.
+
+        They each had their own, and the two disagreed by a factor of two on
+        niacin -> missegregation: one summed the two routes into that node, the other took the
+        product along one best route. A sensitivity ranking computed under a different model than
+        the distribution it is meant to explain is worse than no ranking, so the rule lives here,
+        once.
+
+        Semantics, chosen deliberately:
+
+        * **Aggregate over routes.** Two mechanisms that both reduce missegregation both count.
+        * **Contradicted edges contribute nothing.** The evidence says that route does not work;
+          giving it magnitude would let a falsified mechanism carry the prediction.
+        * **The verdict is capped by the weakest link across every *contributing* route**, not by
+          the best one. Otherwise an unsupported route could add magnitude while a well-supported
+          route set the verdict — support would be borrowed from a path doing none of the work.
+        """
+        routes = [
+            route for route in self.paths(source, target)
+            if not any(e.support is Support.CONTRADICTED for e in route.edges)
+        ]
+        magnitude = 0.0
+        for route in routes:
+            product = float(route.sign)
+            for edge in route.edges:
+                if edge.parameter is None:
+                    continue
+                if edge.parameter.value is not None:
+                    product *= float(edge.parameter.value)
+                else:
+                    product *= float(values[edge.parameter.name])
+            magnitude += product
+        weakest = None
+        if routes:
+            weakest = min((route.weakest() for route in routes),
+                          key=lambda e: int(STRENGTH[e.support]))
+        return PropagatedEffect(
+            source=source, target=target, magnitude=magnitude,
+            contributing_routes=tuple(" -> ".join(r.nodes) for r in routes),
+            excluded_contradicted_routes=tuple(
+                " -> ".join(r.nodes) for r in self.paths(source, target)
+                if any(e.support is Support.CONTRADICTED for e in r.edges)
+            ),
+            verdict=VERDICT_FOR_STRENGTH[int(STRENGTH[weakest.support])] if weakest
+            else "NO_ROUTE",
+            weakest_link=weakest.key if weakest else "",
+            weakest_support=weakest.support if weakest else Support.ASSERTED_ONLY,
         )
 
     def unknown_parameters(self) -> tuple[Parameter, ...]:

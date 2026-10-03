@@ -18,5 +18,6 @@ from rarepipe.stages.simulate.chain import (  # noqa: F401
     ChainPath,
     Parameter,
     PredictionClaim,
+    PropagatedEffect,
     Support,
 )
