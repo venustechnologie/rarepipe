@@ -1,0 +1,67 @@
+"""Control variables are biological transformations, not drugs.
+
+The compiler first determines what biological change is needed. Only afterwards does a separate
+layer (actuator_registry) ask what physical intervention might implement it. A control here says
+"BubR1 abundance is held at restored", never "give nicotinic acid".
+"""
+from __future__ import annotations
+
+from enum import StrEnum
+
+from pydantic import Field, model_validator
+
+from rarepipe.stages.control.provenance import EpistemicType, Immutable, Provenance
+
+
+class BiologicalControlKind(StrEnum):
+    PROTEIN_ABUNDANCE = "protein_abundance"
+    PROTEIN_STABILITY = "protein_stability"
+    PROTEIN_DEGRADATION = "protein_degradation"
+    ENZYMATIC_ACTIVITY = "enzymatic_activity"
+    LOCALIZATION = "localization"
+    POST_TRANSLATIONAL_MODIFICATION = "post_translational_modification"
+    PROTEIN_PROTEIN_INTERACTION = "protein_protein_interaction"
+    TRANSCRIPTION = "transcription"
+    TRANSLATION = "translation"
+    METABOLITE_CONCENTRATION = "metabolite_concentration"
+    PATHWAY_ACTIVATION = "pathway_activation"
+    PATHWAY_INHIBITION = "pathway_inhibition"
+    FUNCTIONAL_REPLACEMENT = "functional_replacement"
+
+
+class RouteClass(StrEnum):
+    """Repairing the original mechanism is one route among several. The target is the invariant."""
+
+    REPAIR = "repair"
+    STABILIZATION = "stabilization"
+    COMPENSATION = "compensation"
+    BYPASS = "bypass"
+    SUPPRESSION = "suppression"
+    REPLACEMENT = "replacement"
+    REWIRING = "rewiring"
+
+
+class Feasibility(StrEnum):
+    ESTABLISHED = "established"
+    UNASSESSED = "unassessed"
+    INFEASIBLE = "infeasible"
+
+
+class ControlVariable(Immutable):
+    control_id: str = Field(min_length=1)
+    sets: str = Field(min_length=1, description="The state variable this control holds.")
+    to: str = Field(min_length=1)
+    kind: BiologicalControlKind
+    route_class: RouteClass
+    interpretation: str = Field(
+        min_length=20, description="What the transformation is, biologically. Never a drug name.")
+    feasibility: Feasibility
+    feasibility_note: str = Field(min_length=1)
+    provenance: Provenance
+
+    @model_validator(mode="after")
+    def _typed(self):
+        if self.provenance.epistemic_type not in {EpistemicType.CONTROL_VARIABLE,
+                                                  EpistemicType.INFERRED_HYPOTHESIS}:
+            raise ValueError("a control variable carries CONTROL_VARIABLE or INFERRED_HYPOTHESIS provenance")
+        return self

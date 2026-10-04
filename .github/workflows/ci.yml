@@ -34,6 +34,9 @@ jobs:
       - name: Network invariant scan
         run: uv run python tools/network/check_invariants.py
 
+      - name: Control compiler invariant scan
+        run: uv run python tools/network/check_invariants.py --package src/rarepipe/stages/control
+
       # Reports unreachable decision branches. Non-zero while EXP03 cannot supply sirt2_activity
       # and k668_acetylation to B06 and B11, which is a known open finding rather than a
       # regression, so it is recorded without failing the build. Remove `|| true` once EXP03 is

@@ -1,5 +1,16 @@
 # rarepipe
 
+> **Reason with agents. Prove with code.**
+>
+> Agents may propose biological states, mechanisms, alternative routes, models, controls,
+> actuators and experiments. Deterministic mathematical code must evaluate constraints,
+> reachability, consistency, observability, provenance and safety wherever those concepts have
+> formal semantics. Missing biological knowledge must remain an explicit unknown. The system must
+> never manufacture quantitative semantics merely to complete a computation.
+>
+> **We do not ask only what an intervention will do. We specify what biology must do, then solve
+> for how to make it happen.** — see [the control compiler design](docs/control/DESIGN.md)
+
 A reproducible, stage-by-stage pipeline for working toward resolving difficult rare-disease cases.
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.
 
