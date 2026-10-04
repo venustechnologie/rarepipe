@@ -332,3 +332,67 @@ def _best_path_product(
         else:
             effect *= float(values[edge.parameter.name])
     return float(effect)
+
+
+class RankStability(Immutable):
+    """Does the ranking survive doubling the sample?
+
+    `convergence_ok` only ever checked that the draw count exceeded a floor, which is not
+    convergence. Measured properly, this chain's ordering was not stable: the top three changed at
+    every sample size tried between N=128 and N=2048, and at N=2048 even the first-ranked
+    parameter changed. A priority order that reshuffles with the sample size is worse than no
+    order, because it reads as a finding.
+    """
+
+    target: str
+    draws: int
+    doubled_draws: int
+    order_at_draws: tuple[str, ...]
+    order_at_doubled: tuple[str, ...]
+    order_stable: bool
+    top_parameter_stable: bool
+    top_set_stable: bool = Field(
+        description="Whether the same parameters occupy the top half, ignoring their order.",
+    )
+    detail: str
+
+    @model_validator(mode="after")
+    def _flags_follow_from_the_orders(self):
+        if self.order_stable != (self.order_at_draws == self.order_at_doubled):
+            raise ValueError("order_stable must follow from the two orderings")
+        expected_top = bool(self.order_at_draws and self.order_at_doubled
+                            and self.order_at_draws[0] == self.order_at_doubled[0])
+        if self.top_parameter_stable != expected_top:
+            raise ValueError("top_parameter_stable must follow from the two orderings")
+        return self
+
+
+def assess_stability(
+    chain: CausalChain, *, target: str, master_seed: int, draws: int,
+) -> RankStability:
+    """Rank at N and at 2N and compare. Cheap, and it is the check that was missing."""
+    first = rank(chain, target=target, master_seed=master_seed, draws=draws)
+    second = rank(chain, target=target, master_seed=master_seed, draws=draws * 2)
+    order_a = tuple(row.parameter_name for row in first.ranking)
+    order_b = tuple(row.parameter_name for row in second.ranking)
+    half = max(1, len(order_a) // 2)
+    top_set_stable = set(order_a[:half]) == set(order_b[:half])
+    order_stable = order_a == order_b
+    top_stable = bool(order_a and order_b and order_a[0] == order_b[0])
+    if order_stable:
+        detail = (f"the full ordering is unchanged between N={draws} and N={draws * 2}, so the "
+                  "priority order may be reported as an order")
+    elif top_set_stable:
+        detail = (f"the ordering changed between N={draws} and N={draws * 2} but the same "
+                  "parameters occupy the top half. Report them as a set of leading uncertainties, "
+                  "not as a ranked order")
+    else:
+        detail = (f"neither the order nor the leading set survived doubling from N={draws} to "
+                  f"N={draws * 2}. No priority claim is supportable at this sample size; raise it "
+                  "or report the uncertainties unordered")
+    return RankStability(
+        target=target, draws=draws, doubled_draws=draws * 2,
+        order_at_draws=order_a, order_at_doubled=order_b,
+        order_stable=order_stable, top_parameter_stable=top_stable,
+        top_set_stable=top_set_stable, detail=detail,
+    )
