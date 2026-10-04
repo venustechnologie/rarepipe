@@ -44,6 +44,13 @@ jobs:
           uv run python tools/control/compile_mva_synthesis.py
           git diff --exit-code -- docs/control/MVA_ARCHITECTURE_MAP.md
 
+      # Both realization maps are generated from the repository's own evidence inventory, so a
+      # change to the case's causal chain must show up here rather than silently diverge.
+      - name: Realization maps are not stale
+        run: |
+          uv run python tools/control/compile_mva_realization.py
+          git diff --exit-code -- docs/control/MVA_REALIZATION_BYPASS.md docs/control/MVA_REALIZATION_ABUNDANCE.md
+
       # Reports unreachable decision branches. Non-zero while EXP03 cannot supply sirt2_activity
       # and k668_acetylation to B06 and B11, which is a known open finding rather than a
       # regression, so it is recorded without failing the build. Remove `|| true` once EXP03 is

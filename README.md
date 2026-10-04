@@ -17,7 +17,10 @@
 > Biology is the substrate. Genes, proteins, chemistry, drugs and cells are building blocks. The
 > desired functional state is the specification. The compiler's job is to construct a safe
 > physical program that realizes that specification — or to explain exactly why we cannot yet
-> construct one. — see [the synthesis layer design](docs/control/SYNTHESIS_DESIGN.md)
+> construct one. — see [the synthesis layer design](docs/control/SYNTHESIS_DESIGN.md) and
+> [the physical realization layer](docs/control/REALIZATION_DESIGN.md), which asks what real
+> components could implement a required transformation and refuses to answer from anything but
+> evidence the repository already holds
 
 A reproducible, stage-by-stage pipeline for working toward resolving difficult rare-disease cases.
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.

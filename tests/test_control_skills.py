@@ -86,3 +86,21 @@ def test_every_synthesis_proof_gate_and_invariant_is_cited():
         cited = set(re.findall(rf"`{re.escape(path)}::(\w+)`", text))
         missing = sorted(defined - cited)
         assert not missing, f"{path} defines tests the requirements map never cites: {missing}"
+
+
+def test_the_realization_requirements_map_cites_tests_that_exist():
+    text = (ROOT / "docs/control/REALIZATION_REQUIREMENTS.md").read_text()
+    cited = re.findall(r"`(tests/[\w/]+\.py)::(\w+)`", text)
+    assert len(cited) >= 25
+    for path, name in cited:
+        source = (ROOT / path).read_text()
+        assert f"def {name}(" in source, f"{path}::{name} is cited but does not exist"
+
+
+def test_every_realization_gate_is_cited():
+    text = (ROOT / "docs/control/REALIZATION_REQUIREMENTS.md").read_text()
+    path = "tests/test_realization_gates.py"
+    defined = set(re.findall(r"^def (test_\w+)\(", (ROOT / path).read_text(), re.M))
+    cited = set(re.findall(rf"`{re.escape(path)}::(\w+)`", text))
+    missing = sorted(defined - cited)
+    assert not missing, f"{path} defines tests the requirements map never cites: {missing}"
