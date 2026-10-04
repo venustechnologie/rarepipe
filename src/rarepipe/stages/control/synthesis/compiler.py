@@ -181,7 +181,10 @@ class SynthesisReport(Immutable):
             raise ValueError("a synthesis report is a simulated prediction, never an observation")
         if self.no_treatment_recommendation != NO_RECOMMENDATION:
             raise ValueError("the no-recommendation statement is fixed and may not be reworded")
-        clear = [a for a in self.architectures if a.clear]
+        # Both lists. An architecture an agent proposed is evaluated by the same code as one the
+        # search enumerated, so it can carry the result — and then it has to be able to support it.
+        every = self.architectures + self.proposed_architectures
+        clear = [a for a in every if a.clear]
         if self.result is SynthesisResultClass.ARCHITECTURE_SYNTHESIZED and not clear:
             raise ValueError(
                 "ARCHITECTURE_SYNTHESIZED requires an architecture that is robust across every "
@@ -189,19 +192,19 @@ class SynthesisReport(Immutable):
                 "implementation is established; prose cannot supply one")
         if self.result is SynthesisResultClass.SYNTHETIC_ROUTE_FEASIBILITY_UNKNOWN:
             if not any(a.logically_synthesizable and not a.physically_feasible
-                       for a in self.architectures):
+                       for a in every):
                 raise ValueError("SYNTHETIC_ROUTE_FEASIBILITY_UNKNOWN requires a composition that "
                                  "reaches the target and names what cannot yet be built")
         if (self.result is SynthesisResultClass.ARCHITECTURE_INDETERMINATE
                 and not (self.blocking_relationships or self.missing_relationships)):
             raise ValueError("ARCHITECTURE_INDETERMINATE must name what blocks it")
         if (self.result is SynthesisResultClass.NO_ARCHITECTURE_SYNTHESIZED
-                and any(a.works_in for a in self.architectures)):
+                and any(a.works_in for a in every)):
             raise ValueError("a composition reaches the target, so something was synthesized")
         haystack = " ".join([
             self.abstention_reason, self.rescue_scope_statement, self.search_note,
             *(" ".join([a.rescue_scope, a.stability_note, a.order_note, a.feedback_status,
-                        *a.notes, *a.assumptions]) for a in self.architectures),
+                        *a.notes, *a.assumptions]) for a in every),
             *(f.reason for f in self.families),
             *(d.note for d in self.experiment_discriminators),
         ]).lower()

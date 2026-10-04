@@ -295,3 +295,76 @@ def test_i18_a_conflicting_composition_is_refused_rather_than_resolved_by_sort_o
     assert conflicts(registry, (("B_UP", "B_DOWN"),))
     report = run(*T.repair_only())
     assert all(len(set(a.components)) == len(a.components) for a in report.architectures)
+
+
+# The proposal path end to end: an agent imagines, the gate types it, the compiler judges it.
+
+def _gated_architecture(payload):
+    from rarepipe.stages.control.synthesis.architecture import ControlArchitecture
+    decision = gate(Proposal(
+        proposal_id="PR_E2E", skill_id="synthesis-architecture-generator", skill_version="0.1.0",
+        proposer=AGENT, kind=ProposalKind.ARCHITECTURE, payload=payload,
+        rationale="imagined by the generator"))
+    assert decision.accepted, decision.reason
+    assert decision.assigned_epistemic_type is EpistemicType.PROPOSED_ARCHITECTURE
+    return ControlArchitecture(**decision.accepted_object)
+
+
+def test_an_agent_proposal_is_evaluated_by_the_same_code_as_an_enumerated_one():
+    problem, blocks = T.two_needed()
+    architecture = _gated_architecture({
+        "architecture_id": "A_AGENT_PAIR", "family": "pair",
+        "composition": [["B_A", "B_B"]], "composition_mode": "simultaneous",
+        "origin": "synthetic_composition",
+        "rationale": "both components together", "assumptions": ["they act together"]})
+    assert architecture.provenance.epistemic_type is EpistemicType.PROPOSED_ARCHITECTURE
+    report = run(problem, blocks, proposed=(architecture,))
+    assessed = next(a for a in report.proposed_architectures
+                    if a.architecture_id == "A_AGENT_PAIR")
+    assert assessed.logical is LogicalStatus.TARGET_REACHABLE
+    assert assessed.per_model, "a proposal gets the same per-model judgement as any architecture"
+
+
+def test_a_result_carried_only_by_a_proposed_architecture_still_validates():
+    """Regression: the report's own validator must look at both lists.
+
+    When the search is too narrow to find a composition but an agent proposes it, the result is
+    driven by the proposed architecture. A validator that inspected only the enumerated list made
+    the compiler raise instead of reporting — failing in the one case the proposal path exists for.
+    """
+    problem, blocks = T.two_needed()
+    architecture = _gated_architecture({
+        "architecture_id": "A_AGENT_PAIR", "family": "pair",
+        "composition": [["B_A", "B_B"]], "composition_mode": "simultaneous",
+        "origin": "synthetic_composition", "rationale": "the pair a starved search cannot reach",
+        "assumptions": ["they act together"]})
+    report = run(problem, blocks, proposed=(architecture,), max_depth=1, max_per_step=1)
+    assert not report.architectures, "the starved search must find nothing on its own"
+    assert report.result.value == "ARCHITECTURE_SYNTHESIZED"
+    assert [a.clear for a in report.proposed_architectures] == [True]
+
+
+def test_the_compiler_contradicts_a_proposers_own_framing_with_evidence():
+    """An agent may call its composition sequential; whether the order matters is not its call."""
+    problem, blocks = T.two_needed()
+    architecture = _gated_architecture({
+        "architecture_id": "A_AGENT_STAGED", "family": "pair",
+        "composition": [["B_A"], ["B_B"]], "composition_mode": "sequential",
+        "origin": "synthetic_composition", "rationale": "apply one and then the other",
+        "assumptions": ["staging matters"]})
+    assessed = next(a for a in run(problem, blocks, proposed=(architecture,))
+                    .proposed_architectures if a.architecture_id == "A_AGENT_STAGED")
+    assert assessed.works_in
+    assert not assessed.order_is_load_bearing
+    assert "not load-bearing" in assessed.order_note
+
+
+def test_an_architecture_naming_an_unregistered_component_is_refused_before_compiling():
+    problem, blocks = T.two_needed()
+    architecture = _gated_architecture({
+        "architecture_id": "A_AGENT_GHOST", "family": "ghost",
+        "composition": [["B_DOES_NOT_EXIST"]], "composition_mode": "simultaneous",
+        "origin": "synthetic_composition", "rationale": "names a component nobody declared",
+        "assumptions": ["none"]})
+    with pytest.raises(ValidationError, match="unregistered components"):
+        run(problem, blocks, proposed=(architecture,))

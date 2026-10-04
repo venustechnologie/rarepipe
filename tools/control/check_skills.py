@@ -21,8 +21,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-SKILLS = sorted((ROOT / ".claude/skills").glob("control-*/SKILL.md"))
+SKILLS = sorted([*(ROOT / ".claude/skills").glob("control-*/SKILL.md"),
+                 *(ROOT / ".claude/skills").glob("synthesis-*/SKILL.md")])
 CONTROL = ROOT / "src/rarepipe/stages/control"
+SYNTHESIS = CONTROL / "synthesis"
 REQUIRED = ("skill_id", "version", "scope", "required_inputs", "reasoning_checklist", "allowed_tools",
             "forbidden_inferences", "output_schema", "uncertainty_language", "abstention_conditions",
             "validation_hooks", "benchmark_cases", "retention_criterion")
@@ -39,6 +41,7 @@ def vocabulary() -> set[str]:
     layer draws evidence from. A narrower vocabulary flags legitimate references as defects."""
     words: set[str] = set()
     sources = [(p, p.stem) for p in CONTROL.glob("*.py")]
+    sources += [(p, f"synthesis.{p.stem}") for p in SYNTHESIS.glob("*.py")]
     sources += [(p, f"simulate.{p.stem}") for p in SIMULATE.glob("*.py")]
     for path, module in sources:
         words.add(module)
@@ -79,9 +82,26 @@ def vocabulary() -> set[str]:
     for e in p.experiments:
         words.add(e.experiment_id)
         words.update(e.observation.observed)
+    # The synthesis layer's own identifiers: components, families and the policy, so a skill may
+    # name the thing it is reasoning about without the checker calling it invented.
+    from rarepipe.stages.control.synthesis import mva_synthesis
+    sp = mva_synthesis.problem()
+    words.update(b.building_block_id for b in sp.registry.blocks)
+    words.update(f.family_id for f in sp.families)
+    words.update(policy.policy_id for policy in sp.policies)
+    words.update(rule.rule_id for policy in sp.policies for rule in policy.rules)
+    words.update(m.mechanism_id for m in sp.population.mechanisms)
+    words.update(c.process_id for c in sp.population.confounders)
+    words.update(sp.population.population_variables)
     for enum_module in ("control.controls", "control.result_types", "control.provenance",
                         "control.dynamics", "control.actuator_registry", "control.model_registry",
-                        "control.state_space", "control.proposals", "simulate.chain"):
+                        "control.state_space", "control.proposals",
+                        "control.synthesis.kinds", "control.synthesis.compiler",
+                        "control.synthesis.population", "control.synthesis.feedback",
+                        "control.synthesis.building_blocks", "control.synthesis.architecture",
+                        "control.synthesis.experiments", "control.synthesis.requirements",
+                        "control.synthesis.search", "control.synthesis.composition",
+                        "simulate.chain"):
         mod = __import__(f"rarepipe.stages.{enum_module}", fromlist=["x"])
         for name in dir(mod):
             obj = getattr(mod, name)

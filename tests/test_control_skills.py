@@ -1,6 +1,8 @@
 """The control skills must reference only what the compiler defines, and carry nothing forbidden."""
 from __future__ import annotations
 
+import re
+
 import sys
 from pathlib import Path
 
@@ -63,3 +65,24 @@ def test_every_test_the_requirements_map_cites_exists():
     for path, name in cited:
         source = (ROOT / path).read_text()
         assert f"def {name}(" in source, f"{path}::{name} is cited but does not exist"
+
+
+def test_the_synthesis_requirements_map_cites_tests_that_exist():
+    """The traceability map is only worth having if it cannot rot."""
+    text = (ROOT / "docs/control/SYNTHESIS_REQUIREMENTS.md").read_text()
+    cited = re.findall(r"`(tests/[\w/]+\.py)::(\w+)`", text)
+    assert len(cited) >= 40
+    for path, name in cited:
+        source = (ROOT / path).read_text()
+        assert f"def {name}(" in source, f"{path}::{name} is cited but does not exist"
+
+
+def test_every_synthesis_proof_gate_and_invariant_is_cited():
+    """A gate or invariant the map does not mention is one nobody is tracking."""
+    text = (ROOT / "docs/control/SYNTHESIS_REQUIREMENTS.md").read_text()
+    for path in ("tests/test_synthesis_gates.py", "tests/test_synthesis_invariants.py"):
+        source = (ROOT / path).read_text()
+        defined = set(re.findall(r"^def (test_\w+)\(", source, re.M))
+        cited = set(re.findall(rf"`{re.escape(path)}::(\w+)`", text))
+        missing = sorted(defined - cited)
+        assert not missing, f"{path} defines tests the requirements map never cites: {missing}"
