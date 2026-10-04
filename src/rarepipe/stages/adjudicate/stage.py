@@ -139,7 +139,9 @@ def run_adjudication(req: AdjudicateRequest, console: Console | None = None) -> 
     assembly = case["provenance"]["source_case"].get("assembly", "unknown")
     vcf_path = Path(case["execution"].get("source_vcf_path") or "")
     native_dir = req.native_dir or (Path(case["execution"]["native_output_root"]) / req.profile_id.lower())
-    tsv = next(native_dir.glob("*.variants.tsv"), None)
+    # Sorted: glob order is filesystem order, which is neither sorted nor guaranteed stable, so
+    # taking the first match would make which file is adjudicated depend on the directory.
+    tsv = next(iter(sorted(native_dir.glob("*.variants.tsv"))), None)
     if tsv is None:
         raise AdjudicateUsageError("native solver variant output not found; pass --native-dir.")
 
