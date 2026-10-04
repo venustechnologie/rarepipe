@@ -57,11 +57,28 @@ class ControlVariable(Immutable):
         min_length=20, description="What the transformation is, biologically. Never a drug name.")
     feasibility: Feasibility
     feasibility_note: str = Field(min_length=1)
+    released_to: str | None = Field(
+        None, description="The value the variable takes when this control stops being held. "
+                          "Required before withdrawal or feedback release can be evaluated: "
+                          "without it, releasing a control would silently invent a reversion "
+                          "mechanism that nothing in the model provides.")
+    release_rationale: str = ""
     provenance: Provenance
+
+    @property
+    def releasable(self) -> bool:
+        return self.released_to is not None
 
     @model_validator(mode="after")
     def _typed(self):
+        if self.released_to is not None and not self.release_rationale:
+            raise ValueError(
+                f"{self.control_id}: declaring a release value asserts that the variable returns "
+                "there on withdrawal — say what returns it, or stability would rest on an "
+                "unstated mechanism")
         if self.provenance.epistemic_type not in {EpistemicType.CONTROL_VARIABLE,
-                                                  EpistemicType.INFERRED_HYPOTHESIS}:
-            raise ValueError("a control variable carries CONTROL_VARIABLE or INFERRED_HYPOTHESIS provenance")
+                                                  EpistemicType.INFERRED_HYPOTHESIS,
+                                                  EpistemicType.COMPOSED_CONTROL}:
+            raise ValueError("a control variable carries CONTROL_VARIABLE, COMPOSED_CONTROL or "
+                             "INFERRED_HYPOTHESIS provenance")
         return self

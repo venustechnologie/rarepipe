@@ -10,6 +10,14 @@
 >
 > **We do not ask only what an intervention will do. We specify what biology must do, then solve
 > for how to make it happen.** — see [the control compiler design](docs/control/DESIGN.md)
+>
+> **Do not ask biology only what will happen if we perturb it. Ask what biology must do for the
+> desired state to exist, then synthesize a way to make those conditions true.**
+>
+> Biology is the substrate. Genes, proteins, chemistry, drugs and cells are building blocks. The
+> desired functional state is the specification. The compiler's job is to construct a safe
+> physical program that realizes that specification — or to explain exactly why we cannot yet
+> construct one. — see [the synthesis layer design](docs/control/SYNTHESIS_DESIGN.md)
 
 A reproducible, stage-by-stage pipeline for working toward resolving difficult rare-disease cases.
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.

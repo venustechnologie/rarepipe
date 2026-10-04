@@ -26,11 +26,54 @@ class EpistemicType(StrEnum):
     SAFETY_CONSTRAINT = "safety_constraint"
     CONTROL_VARIABLE = "control_variable"
     CONTROL_CAPABILITY = "control_capability"
+    # The synthesis layer. Each names a different kind of claim, so none can stand in for another:
+    # a proposed architecture is not a composed control, and a logical feasibility result is not a
+    # physical one.
+    PROPOSED_ARCHITECTURE = "proposed_architecture"
+    COMPOSED_CONTROL = "composed_control"
+    BUILDING_BLOCK_CAPABILITY = "building_block_capability"
+    SYNTHETIC_RELATIONSHIP = "synthetic_relationship"
+    POPULATION_CONTROL = "population_control"
+    FEEDBACK_POLICY = "feedback_policy"
+    LOGICAL_FEASIBILITY = "logical_feasibility"
+    PHYSICAL_FEASIBILITY = "physical_feasibility"
+    ROBUSTNESS_CLAIM = "robustness_claim"
 
 
 # Types that assert something was measured or published. Each must name what it rests on.
 _NEEDS_REFERENCES = {EpistemicType.OBSERVED_EMPIRICAL, EpistemicType.LITERATURE_EVIDENCE,
                      EpistemicType.EXTRACTED_PARAMETER}
+
+# Types that are products of our own reasoning or arithmetic. None of them becomes an observation
+# by being used, reported, cited internally or restated with more confidence. The only thing that
+# promotes one is an external measurement, and the promotion must cite it.
+DERIVED_TYPES = {EpistemicType.SIMULATED_PREDICTION, EpistemicType.INFERRED_HYPOTHESIS,
+                 EpistemicType.PROPOSED_ARCHITECTURE, EpistemicType.SYNTHETIC_RELATIONSHIP,
+                 EpistemicType.LOGICAL_FEASIBILITY, EpistemicType.ROBUSTNESS_CLAIM,
+                 EpistemicType.COMPOSED_CONTROL, EpistemicType.FEEDBACK_POLICY}
+
+EMPIRICAL_TYPES = {EpistemicType.OBSERVED_EMPIRICAL, EpistemicType.EXTRACTED_PARAMETER}
+
+
+class IllegalPromotion(ValueError):
+    """An attempt to turn a product of reasoning into evidence without measuring anything."""
+
+
+def promote(before: EpistemicType, after: EpistemicType,
+            external_evidence: tuple[str, ...] = ()) -> EpistemicType:
+    """The only way an object's epistemic type may change. Refuses laundering.
+
+    A PROPOSED_ARCHITECTURE cannot become OBSERVED_EMPIRICAL because a compilation succeeded, or
+    because a reviewer found it convincing. It becomes empirical when something outside this
+    software measured it, and the citation travels with the change.
+    """
+    if before == after:
+        return after
+    if after in EMPIRICAL_TYPES and before in DERIVED_TYPES and not external_evidence:
+        raise IllegalPromotion(
+            f"{before.value} cannot become {after.value} without an external measurement to cite; "
+            "a result produced by this software is not evidence for itself")
+    return after
 
 
 class Provenance(Immutable):

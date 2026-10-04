@@ -37,6 +37,13 @@ jobs:
       - name: Control compiler invariant scan
         run: uv run python tools/network/check_invariants.py --package src/rarepipe/stages/control
 
+      # The architecture map is generated. Regenerating it must be a no-op, or the committed
+      # document has drifted away from the code that justifies it.
+      - name: Architecture map is not stale
+        run: |
+          uv run python tools/control/compile_mva_synthesis.py
+          git diff --exit-code -- docs/control/MVA_ARCHITECTURE_MAP.md
+
       # Reports unreachable decision branches. Non-zero while EXP03 cannot supply sirt2_activity
       # and k668_acetylation to B06 and B11, which is a known open finding rather than a
       # regression, so it is recorded without failing the build. Remove `|| true` once EXP03 is

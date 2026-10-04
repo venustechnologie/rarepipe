@@ -23,6 +23,11 @@ from rarepipe.stages.control.provenance import (
     Approval, ApprovalStatus, EpistemicType, Immutable, Provenance,
 )
 from rarepipe.stages.control.result_types import ResultClass
+from rarepipe.stages.control.synthesis.architecture import ControlArchitecture
+from rarepipe.stages.control.synthesis.building_blocks import BuildingBlock
+from rarepipe.stages.control.synthesis.kinds import (
+    LogicalStatus, PhysicalStatus, RobustnessClass, SynthesisResultClass,
+)
 from rarepipe.stages.control.target_constraints import TargetConstraint
 from rarepipe.stages.prospective.model import Actor, ActorType
 
@@ -31,6 +36,8 @@ class ProposalKind(StrEnum):
     RELATIONSHIP = "relationship"
     CONTROL = "control"
     TARGET_CONSTRAINT = "target_constraint"
+    ARCHITECTURE = "architecture"
+    BUILDING_BLOCK = "building_block"
 
 
 class Proposal(Immutable):
@@ -54,7 +61,16 @@ class GateDecision(Immutable):
     accepted_object: dict | None = None
 
 
-_RESULT_WORDS = {r.value for r in ResultClass} | {"CONTROL_SOLUTION_FOUND"}
+# An agent may not state a verdict in any of the vocabularies the compiler owns. Claiming
+# robustness, logical synthesizability or physical feasibility is claiming a result.
+_RESULT_WORDS = (
+    {r.value for r in ResultClass}
+    | {r.value for r in SynthesisResultClass}
+    | {r.value for r in RobustnessClass}
+    | {r.value for r in LogicalStatus}
+    | {r.value for r in PhysicalStatus}
+    | {"CONTROL_SOLUTION_FOUND", "VALID_CONTROL", "LOGICALLY_SYNTHESIZABLE"}
+)
 
 
 def _contains_result_claim(value: Any) -> bool:
@@ -101,6 +117,28 @@ def gate(p: Proposal) -> GateDecision:
             assigned = EpistemicType.INFERRED_HYPOTHESIS
             payload["provenance"] = _provenance(p, assigned)
             obj = ControlVariable(**payload)
+        elif p.kind is ProposalKind.ARCHITECTURE:
+            payload = dict(p.payload)
+            # An architecture an agent imagined is a PROPOSED_ARCHITECTURE and nothing more. The
+            # compiler decides whether it reaches anything; the proposer does not get to say.
+            assigned = (EpistemicType.PROPOSED_ARCHITECTURE if agent
+                        else EpistemicType.COMPOSED_CONTROL)
+            payload["provenance"] = _provenance(p, assigned)
+            obj = ControlArchitecture(**payload)
+        elif p.kind is ProposalKind.BUILDING_BLOCK:
+            payload = dict(p.payload)
+            if agent:
+                if payload.get("feasibility_status") != Feasibility.UNASSESSED.value:
+                    payload["feasibility_status"] = Feasibility.UNASSESSED.value
+                    payload["feasibility_note"] = (
+                        "feasibility asserted by an agent is not accepted; recorded as unassessed")
+                for transformation in payload.get("state_transformations", ()):
+                    if isinstance(transformation, dict) and transformation.get("magnitude_if_known"):
+                        transformation["magnitude_if_known"] = ""
+            assigned = (EpistemicType.INFERRED_HYPOTHESIS if agent
+                        else EpistemicType.BUILDING_BLOCK_CAPABILITY)
+            payload["provenance"] = _provenance(p, assigned)
+            obj = BuildingBlock(**payload)
         elif p.kind is ProposalKind.TARGET_CONSTRAINT:
             payload = dict(p.payload)
             if agent:
