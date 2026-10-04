@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Compile the MVA capability gaps and write the gap report.
+"""Compile the MVA capability gaps against the repository's own corpus only.
+
+This is the baseline the external-evidence phase is measured against, kept runnable so the
+comparison rests on a reproducible compilation rather than on numbers typed into a constant.
 
 Also recompiles both physical realization targets, so a newly grounded capability shows up as a
 change in the compiled architecture rather than as a line in a list of findings.
@@ -20,7 +23,7 @@ OUT = ROOT / "docs/control/MVA_CAPABILITY_GAPS.md"
 
 
 def main() -> int:
-    report = compile_discovery(mva_gaps.problem(), mva_gaps.targets())
+    report = compile_discovery(mva_gaps.repository_only_problem(), mva_gaps.targets())
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(render(report))
     print(f"{OUT.relative_to(ROOT)}: {len(report.gaps)} gaps, "

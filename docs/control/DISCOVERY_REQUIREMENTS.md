@@ -71,6 +71,17 @@ suites; the ones this phase adds or strengthens are below.
 | invariant 4: an agent's hypothesis does not become causality | `tests/test_discovery_gates.py::test_a_mechanism_hypothesis_cannot_claim_to_be_anything_stronger` |
 | invariant 15: changed evidence forces recompilation | `tests/test_discovery_gates.py::test_the_committed_gap_report_is_not_stale` |
 
+## Added by the external-evidence phase
+
+These were added when real sources entered the pipeline and the verdicts became finer-grained. See
+[`EXTERNAL_REQUIREMENTS.md`](EXTERNAL_REQUIREMENTS.md) for that phase's own gates.
+
+| Requirement | Enforced by |
+|---|---|
+| a supporting span that names the forbidden component cannot certify independence | `tests/test_discovery_gates.py::test_gate13_a_span_naming_the_forbidden_component_cannot_certify_independence` |
+| all three independence refusals are exercised by real sources, not merely available | `tests/test_discovery_gates.py::test_gate13_each_independence_problem_actually_occurs_in_the_real_run` |
+| the external source answers the compartment objection and leaves a different one | `tests/test_discovery_gates.py::test_gate14_the_external_source_resolves_the_compartment_objection` |
+
 ## Mutation testing (PRD section 27)
 
 Green tests were not accepted as evidence. Each property the PRD names was broken deliberately and

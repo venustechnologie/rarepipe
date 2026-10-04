@@ -16,9 +16,18 @@ hold a corpus that could support one.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from rarepipe.stages.control.discovery.candidates import MechanismHypothesis
 from rarepipe.stages.control.discovery.compiler import GapProblem
 from rarepipe.stages.control.discovery.gaps import CapabilityGap, RequiredContext
+from rarepipe.stages.control.discovery.external import corpus as C
+from rarepipe.stages.control.discovery.external.citation_audit import audit
+from rarepipe.stages.control.discovery.external.literature import LiteratureProvider
+from rarepipe.stages.control.discovery.external.mva_claims import claims as external_claims
+from rarepipe.stages.control.discovery.external.semantics import (
+    FunctionalSemantics, SemanticsRegistry,
+)
 from rarepipe.stages.control.discovery.providers import (
     CuratedFileProvider, RepositoryProvider,
 )
@@ -27,7 +36,19 @@ from rarepipe.stages.control.realization import mva_realization
 from rarepipe.stages.control.realization.evidence import inventory_from_repo
 from rarepipe.stages.control.realization.kinds import Effect, EpistemicBurden
 
-DISCOVERY_MODEL_VERSION = "mva-discovery-v1"
+DISCOVERY_MODEL_VERSION = "mva-discovery-v2-external"
+CORPUS_VERSION = "mva-external-v1"
+
+# The previous run, with only the repository's own fifteen-claim corpus. Recorded so the headline
+# metric — a change of epistemic state — has something to be measured against. These values are the
+# ones committed in docs/control/MVA_CAPABILITY_GAPS.md.
+BASELINE_RESULTS = {
+    "GAP_A_CHECKPOINT_ACTIVATION_WITHOUT_BUBR1": "ONLY_DEPENDENT_CAPABILITIES_FOUND",
+    "GAP_B_CHECKPOINT_SILENCING_WITHOUT_BUBR1": "ONLY_DEPENDENT_CAPABILITIES_FOUND",
+    "GAP_C_CHROMOSOME_ALIGNMENT_WITHOUT_BUBR1": "ONLY_DEPENDENT_CAPABILITIES_FOUND",
+    "GAP_D_INTRACELLULAR_COFACTOR_ENTRY": "CONTEXT_ONLY_CAPABILITY",
+}
+BASELINE_PROVIDERS = ("repository_inventory", "curated_claims")
 FORBIDDEN = "bubr1_residual_function"
 SYSTEM = "patient-derived cells"
 PROPOSER = "rarepipe discovery compiler, MVA capability gaps (prepared by AI; no human review)"
@@ -142,14 +163,72 @@ def hypotheses() -> tuple[MechanismHypothesis, ...]:
     )
 
 
-def problem() -> GapProblem:
+def semantics() -> SemanticsRegistry:
+    """What `normal` requires, so a reported increase cannot pass as a restored function.
+
+    No `FunctionalEffectMapping` is registered, because none is justified by anything retrieved. That
+    is the whole reason an external claim reporting that something strengthens a signal cannot
+    satisfy a gap asking for the signal to be appropriate.
+    """
+    def spec(variable: str, requires: tuple[str, ...], excludes: tuple[str, ...],
+             rationale: str) -> FunctionalSemantics:
+        return FunctionalSemantics(variable=variable, state="normal", requires=requires,
+                                  excludes=excludes, rationale=rationale)
+    return SemanticsRegistry(semantics=(
+        spec("checkpoint_activation",
+             ("division is held when chromosomes are not yet correctly attached",
+              "the hold is released once attachment is correct"),
+             ("permanent arrest regardless of attachment",
+              "arrest triggered when attachment is already correct",
+              "no arrest when attachment is incorrect"),
+             "a cell prevented from dividing at all would read as maximal activation on a "
+             "level-only representation, and is the loss of the function rather than the function"),
+        spec("checkpoint_silencing",
+             ("the arrest ends once chromosomes are correctly attached",
+              "the arrest does not end before attachment is correct"),
+             ("premature exit despite unattached chromosomes",
+              "failure to exit after correct attachment"),
+             "silencing is timing, not magnitude: exiting early and never exiting are both failures "
+             "that a level-only representation cannot separate"),
+        spec("chromosome_alignment",
+             ("chromosomes reach correct alignment before separation",
+              "alignment is achieved without persistent attachment errors"),
+             ("alignment achieved only by arresting the cell indefinitely",
+              "apparent alignment with uncorrected attachment errors"),
+             "alignment measured at a single moment can be produced by stopping the process rather "
+             "than by completing it"),
+    ))
+
+
+def repository_only_problem() -> GapProblem:
+    """The previous phase's configuration: the repository's own corpus and nothing else.
+
+    Kept runnable so the baseline the headline metric is measured against stays reproducible rather
+    than becoming a number typed into a constant. A test asserts the two agree.
+    """
     inventory = inventory_from_repo()
     control = mva_realization.problem().synthesis.problem
     return GapProblem(
         problem_id="MVA_CAPABILITY_GAPS", case_ref="MVA_001", gaps=gaps(), inventory=inventory,
         space=control.space,
         providers=(RepositoryProvider(inventory), CuratedFileProvider(None)),
-        discovery_model_version=DISCOVERY_MODEL_VERSION, hypotheses=hypotheses())
+        discovery_model_version="mva-discovery-v1", hypotheses=hypotheses())
+
+
+def problem() -> GapProblem:
+    inventory = inventory_from_repo()
+    control = mva_realization.problem().synthesis.problem
+    directory = C.snapshot_path(Path(__file__).resolve().parents[5], CORPUS_VERSION)
+    snapshot = C.load(directory)
+    external = LiteratureProvider(directory, snapshot, external_claims())
+    return GapProblem(
+        problem_id="MVA_CAPABILITY_GAPS", case_ref="MVA_001", gaps=gaps(), inventory=inventory,
+        space=control.space,
+        providers=(RepositoryProvider(inventory), external, CuratedFileProvider(None)),
+        discovery_model_version=DISCOVERY_MODEL_VERSION, hypotheses=hypotheses(),
+        documents=external.documents(), semantics=semantics(),
+        baseline_results=BASELINE_RESULTS, baseline_providers=BASELINE_PROVIDERS,
+        citation_attributions=audit(snapshot, external.documents()))
 
 
 def targets():

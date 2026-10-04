@@ -23,6 +23,10 @@ from __future__ import annotations
 from pydantic import Field
 
 from rarepipe.stages.control.discovery.candidates import CapabilityCandidate
+from rarepipe.stages.control.discovery.external.claims import (
+    CAUSAL_ENOUGH, CausalGrade, ContextVerdict, TransferGap, compartment_verdict,
+)
+from rarepipe.stages.control.discovery.external.semantics import SemanticsRegistry
 from rarepipe.stages.control.discovery.capabilities import (
     GroundedCapability, NotEntitled,
 )
@@ -59,6 +63,12 @@ class CandidateAssessment(Immutable):
     rejections: tuple[RejectionReason, ...] = ()
     ancestry: tuple[str, ...] = ()
     forbidden_hits: tuple[str, ...] = ()
+    transfer_gaps: tuple[TransferGap, ...] = ()
+    causal_grade: CausalGrade | None = None
+    context_verdict: ContextVerdict | None = None
+    independence: str = Field(
+        "", description="How independence from the gap's forbidden dependencies stands. Silence in "
+                        "the sources is recorded as unestablished, never as independence.")
     unsupported_intermediates: tuple[str, ...] = ()
     causal_depth: int = 0
     source_ids: tuple[str, ...] = ()
@@ -84,15 +94,26 @@ def _same(a: str, b: str) -> bool:
     return bool(a) and bool(b) and a.strip().lower() == b.strip().lower()
 
 
-def ancestry(inventory: EvidenceInventory, candidate: CapabilityCandidate) -> set[str]:
-    """Every node upstream of the claimed output, including through the candidate's own assertion."""
+def ancestry(inventory: EvidenceInventory, candidate: CapabilityCandidate,
+             declared: tuple[tuple[str, str], ...] = ()) -> set[str]:
+    """Everything upstream of the output **under this candidate's own mechanism**.
+
+    Not the union of every recorded way to reach the output. The inventory already records that the
+    forbidden component drives these outputs — that is why the gaps exist — so walking upward from
+    the output would find it for every candidate and declare nothing independent, ever. The walk
+    starts from what this mechanism rests on: its declared inputs and the dependencies its own
+    sources state.
+
+    The declared dependencies are what stops the check passing vacuously in the other direction. A
+    newly discovered entity has no ancestry in the inventory at all, so without them any claim about
+    anything unfamiliar would be certified independent by default.
+    """
     parents: dict[str, list[str]] = {}
     for item in inventory.edges:
         parents.setdefault(item.target, []).append(item.source)
-    for source in candidate.required_inputs:
-        parents.setdefault(candidate.claimed_output, []).append(source)
-    seen: set[str] = set()
-    frontier = [candidate.claimed_output]
+    roots = set(candidate.required_inputs) | {dependency for _, dependency in declared}
+    seen: set[str] = set(roots)
+    frontier = list(roots)
     while frontier:
         for parent in parents.get(frontier.pop(), []):
             if parent not in seen:
@@ -114,8 +135,27 @@ def _path(candidate: CapabilityCandidate, hits: tuple[SourceHit, ...]) -> tuple[
     return max(len(hits), 1), gaps
 
 
+def _forbidden_terms(gap: CapabilityGap) -> tuple[str, ...]:
+    """Spellings of the forbidden dependency a source might use. Node name plus its vocabulary."""
+    from rarepipe.stages.control.discovery.external.claims import CandidateClaim  # noqa: F401
+    terms: set[str] = set()
+    for node in gap.forbidden_dependencies:
+        terms.add(node)
+        terms.update(FORBIDDEN_SPELLINGS.get(node, ()))
+    return tuple(sorted(terms))
+
+
+# How a source is likely to name a forbidden node. Explicit, because inferring it from the node name
+# by string munging would both miss spellings and invent matches.
+FORBIDDEN_SPELLINGS: dict[str, tuple[str, ...]] = {
+    "bubr1_residual_function": ("BubR1", "BUBR1", "BUB1B", "Bub1b"),
+}
+
+
 def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, SourceHit],
-           inventory: EvidenceInventory, vocab: Vocabulary) -> CandidateAssessment:
+           inventory: EvidenceInventory, vocab: Vocabulary,
+           documents: dict[str, str] | None = None,
+           semantics: SemanticsRegistry | None = None) -> CandidateAssessment:
     checks: list[MatchResult] = []
     rejections: list[RejectionReason] = []
 
@@ -127,11 +167,12 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
 
     def done(entitlement: CapabilityEntitlement, reason: str, *, levels=(), depth=0,
              cited=(), refs=(), support=Support.ASSERTED_ONLY, anc=(), forbidden=(),
-             intermediates=()) -> CandidateAssessment:
+             intermediates=(), transfer=(), grade=None, independence="") -> CandidateAssessment:
         return CandidateAssessment(
             candidate_id=candidate.candidate_id, gap_id=gap.gap_id, entitlement=entitlement,
             verification=tuple(levels), checks=tuple(checks), rejections=tuple(rejections),
             ancestry=tuple(sorted(anc)), forbidden_hits=tuple(sorted(forbidden)),
+            transfer_gaps=tuple(transfer), causal_grade=grade, independence=independence,
             unsupported_intermediates=tuple(intermediates), causal_depth=depth,
             source_ids=tuple(cited), references=tuple(sorted(set(refs) - {""})),
             support_level=support, reason=reason)
@@ -204,11 +245,60 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
           RejectionReason.DIRECTION_MISMATCH)
     # Consistency with the claim is not the same question as satisfying the gap. A source may say
     # faithfully that something lowers the output; a gap asking for it to be raised is unanswered.
-    satisfies_gap = candidate.claimed_direction is gap.required_direction
-    check("gap_direction", satisfies_gap,
-          f"the gap requires {gap.required_direction.value} and the candidate offers "
-          f"{candidate.claimed_direction.value}",
+    # Where the gap asks for a qualitative state rather than a direction, the direction question is
+    # subsumed by the state question, which refuses for the sharper reason — so the report says
+    # "an increase is not a restored function" instead of saying "wrong direction" twice.
+    state_gap = bool(gap.required_value)
+    satisfies_gap = (candidate.claimed_direction is gap.required_direction) or state_gap
+    check("gap_direction",
+          satisfies_gap,
+          ("the gap asks for a qualitative state, so direction is judged by whether the effect "
+           "constitutes that state" if state_gap else
+           f"the gap requires {gap.required_direction.value} and the candidate offers "
+           f"{candidate.claimed_direction.value}"),
           RejectionReason.DIRECTION_MISMATCH)
+
+    # External-evidence checks. Each applies only where a provider supplied the field, and an
+    # absent field is treated as "not established" rather than as a pass.
+    documents = documents or {}
+    semantics = semantics or SemanticsRegistry()
+    spans_ungrounded: list[str] = []
+    for hit in cited_hits:
+        if not hit.quoted_span:
+            continue
+        text = documents.get(hit.source_id)
+        if text is None:
+            spans_ungrounded.append(f"{hit.source_id} (no stored document to check the span against)")
+        elif " ".join(hit.quoted_span.split()).lower() not in " ".join(text.split()).lower():
+            spans_ungrounded.append(f"{hit.source_id} (the quoted span is not in the stored document)")
+    if any(hit.quoted_span for hit in cited_hits):
+        check("span_grounded", not spans_ungrounded,
+              "; ".join(spans_ungrounded) or "every quoted span appears verbatim in its stored source",
+              RejectionReason.SPAN_NOT_GROUNDED)
+
+    graded = [hit for hit in cited_hits if hit.causal_grade is not None]
+    association_only = tuple(sorted(h.source_id for h in graded
+                                    if h.causal_grade is CausalGrade.ASSOCIATION))
+    if graded:
+        check("causal_grade", not association_only,
+              f"{list(association_only)} are association-level" if association_only
+              else f"grades: {sorted({h.causal_grade.value for h in graded})}",
+              RejectionReason.ASSOCIATION_ONLY)
+
+    state_ok, state_reason = semantics.satisfies(
+        resolved, candidate.claimed_direction, gap.required_value)
+    if gap.required_value:
+        check("effect_constitutes_state", state_ok, state_reason,
+              RejectionReason.EFFECT_IS_NOT_STATE)
+
+    named = tuple(sorted({term for hit in cited_hits
+                          for term in _forbidden_terms(gap)
+                          if hit.quoted_span and term.lower() in hit.quoted_span.lower()}))
+    if gap.forbidden_dependencies:
+        check("forbidden_not_named_in_span", not named,
+              f"the supporting span names {list(named)}, so independence cannot be certified from it"
+              if named else "no supporting span names a forbidden dependency",
+              RejectionReason.FORBIDDEN_NAMED_IN_SPAN)
 
     depth, intermediates = _path(candidate, cited_hits)
     check("chain_complete", not intermediates,
@@ -217,13 +307,56 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
           RejectionReason.UNSUPPORTED_INTERMEDIATE)
 
     # 6. The ancestry check: a bypass that routes back through the forbidden node is not a bypass.
-    anc = ancestry(inventory, candidate)
+    declared_edges = tuple(sorted({(hit.claim_output, dependency)
+                                   for hit in cited_hits
+                                   for dependency in hit.declared_dependencies}))
+    anc = ancestry(inventory, candidate, declared_edges)
     forbidden = tuple(sorted(set(gap.forbidden_dependencies) & anc))
     check("forbidden_dependency", not forbidden,
           f"{list(forbidden)} appear upstream of {resolved} under this mechanism" if forbidden
           else f"none of {list(gap.forbidden_dependencies) or ['nothing forbidden']} appears "
                f"upstream of {resolved}",
           RejectionReason.FORBIDDEN_DEPENDENCY)
+
+    # Independence is a claim that needs a source, not a default. Silence is unestablished.
+    independence = ""
+    if gap.forbidden_dependencies and not forbidden and not named:
+        asserted = {entity.lower() for hit in cited_hits
+                    for entity in hit.asserts_independence_from}
+        wanted = {term.lower() for term in _forbidden_terms(gap)}
+        if asserted & wanted:
+            independence = (f"a retrieved source states the mechanism does not require "
+                            f"{sorted(asserted & wanted)}")
+            check("independence_asserted", True, independence)
+        else:
+            independence = ("no retrieved source states that this mechanism works without "
+                            f"{list(gap.forbidden_dependencies)}; absence of a recorded link is not "
+                            "evidence of independence")
+            check("independence_asserted", False, independence,
+                  RejectionReason.INDEPENDENCE_UNESTABLISHED)
+
+    # Transfer gaps, as objects rather than warnings.
+    gaps_found: list[TransferGap] = []
+    for hit in cited_hits:
+        if hit.lattice is None:
+            continue
+        for dimension in ("species", "cell_type", "tissue", "disease_state", "compartment"):
+            demonstrated = hit.lattice.dimension(dimension)
+            required = {"compartment": gap.required_context.compartment,
+                        "species": "human", "cell_type": gap.required_context.system,
+                        "tissue": "", "disease_state": ""}.get(dimension, "")
+            if not demonstrated or not required:
+                continue
+            if dimension == "compartment":
+                if compartment_verdict(demonstrated, required) in {
+                        ContextVerdict.EXACT_CONTEXT, ContextVerdict.COMPATIBLE_CONTEXT}:
+                    continue
+            elif _same(demonstrated, required):
+                continue
+            gaps_found.append(TransferGap(
+                gap_id=f"TG::{gap.gap_id}::{hit.source_id}::{dimension}", dimension=dimension,
+                demonstrated_in=demonstrated, required=required,
+                missing=f"evidence that the relation holds in {required} as well as {demonstrated}"))
 
     # 7. Context, one dimension at a time.
     mismatches: list[str] = []
@@ -235,6 +368,14 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
         measured = terminal.dimension(dimension)
         if not measured:
             unrecorded.append(dimension)
+            continue
+        if dimension == "compartment":
+            # The transfer rule for compartments is explicit, not string equality: a tissue
+            # measurement of an intracellular metabolite is compatible; whole blood is not.
+            verdict = compartment_verdict(measured, required)
+            if verdict is ContextVerdict.INCOMPATIBLE_CONTEXT:
+                mismatches.append(f"compartment: measured in {measured!r}, required {required!r}")
+                rejections.append(_DIMENSION_REASON[dimension])
             continue
         if not _same(required, measured):
             mismatches.append(f"{dimension}: measured in {measured!r}, required {required!r}")
@@ -269,7 +410,11 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
         levels.append(VerificationLevel.CAPABILITY_ENTITLED_FOR_CONTEXT)
 
     common = dict(levels=levels, depth=depth, cited=cited, refs=refs, support=support, anc=anc,
-                  forbidden=forbidden, intermediates=intermediates)
+                  forbidden=forbidden, intermediates=intermediates,
+                  transfer=tuple(gaps_found), grade=(min((h.causal_grade for h in graded),
+                                                         key=lambda g: _GRADE_RANK[g])
+                                                     if graded else None),
+                  independence=independence)
 
     if unsafe:
         return done(CapabilityEntitlement.EVIDENCE_INSUFFICIENT,
@@ -283,6 +428,23 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
                     f"the gap requires {gap.required_direction.value} and the only claim found "
                     f"offers {candidate.claimed_direction.value}; a faithful source for the "
                     "opposite effect does not answer this gap", **common)
+    if spans_ungrounded:
+        return done(CapabilityEntitlement.EVIDENCE_INSUFFICIENT,
+                    "a quoted span could not be found in its stored source: "
+                    + "; ".join(spans_ungrounded), **common)
+    if association_only:
+        return done(CapabilityEntitlement.EVIDENCE_INSUFFICIENT,
+                    f"{list(association_only)} support an association, and a capability asserting a "
+                    "causal transformation cannot rest on one", **common)
+    if gap.required_value and not state_ok:
+        return done(CapabilityEntitlement.EVIDENCE_INSUFFICIENT, state_reason, **common)
+    if named:
+        return done(CapabilityEntitlement.EVIDENCE_INSUFFICIENT,
+                    f"the text supporting this claim names {list(named)}, which the gap forbids "
+                    "depending on; independence cannot be certified from a span that names it",
+                    **common)
+    if RejectionReason.INDEPENDENCE_UNESTABLISHED in rejections:
+        return done(CapabilityEntitlement.EVIDENCE_INSUFFICIENT, independence, **common)
     if not grounded_in_source:
         failed = [c.validator for c in checks if not c.passed
                   and c.validator in {"entity_match", "input_match", "output_match",
@@ -306,6 +468,9 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
                 "the claim is about this entity, this input, this output and this direction, in the "
                 "required context, with a verified source and no forbidden dependency", **common)
 
+
+_GRADE_RANK = {CausalGrade.ASSOCIATION: 0, CausalGrade.PERTURBATION_SUPPORTED: 1,
+               CausalGrade.MECHANISTIC: 2, CausalGrade.CAUSAL_EXPERIMENTAL: 3}
 
 _SUPPORT_RANK = {Support.CONTRADICTED: 0, Support.ASSERTED_ONLY: 1, Support.COMPUTATIONAL: 2,
                  Support.CLASS_LEVEL: 3, Support.DIFFERENT_COMPARTMENT: 4,

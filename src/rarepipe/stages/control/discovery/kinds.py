@@ -114,3 +114,10 @@ class RejectionReason(StrEnum):
     UNSUPPORTED_INTERMEDIATE = "unsupported_intermediate"
     FORBIDDEN_STATE = "forbidden_state"
     FABRICATED = "fabricated"
+    # External-evidence layer. Each is a distinct way a real source fails to establish a capability.
+    SPAN_NOT_GROUNDED = "span_not_grounded"
+    ASSOCIATION_ONLY = "association_only"
+    EFFECT_IS_NOT_STATE = "effect_is_not_state"
+    FORBIDDEN_NAMED_IN_SPAN = "forbidden_named_in_span"
+    INDEPENDENCE_UNESTABLISHED = "independence_unestablished"
+    SOURCE_NOT_INDEPENDENT = "source_not_independent"

@@ -308,15 +308,48 @@ def test_gate12_an_unverified_citation_caps_the_result_at_conditional():
 
 # ---------------------------------------------------------------- Gates 13-14: the real gaps
 
+BYPASS_REFUSALS = {RejectionReason.FORBIDDEN_DEPENDENCY,
+                   RejectionReason.FORBIDDEN_NAMED_IN_SPAN,
+                   RejectionReason.INDEPENDENCE_UNESTABLISHED}
+
+
 def test_gate13_the_bypass_gaps_run_and_explain_why_they_stay_open():
+    """No bypass survives, and every refusal names which independence problem it is.
+
+    The three gaps do not share a single verdict any more, and that is the point: once real sources
+    are in play, one candidate routes through the forbidden node, one names it in the very text that
+    supports it, and one simply has no source asserting it works without it. Those are three
+    different states of knowledge and the report distinguishes them.
+    """
     report = run(mva_gaps.problem(), mva_gaps.targets())
     bypass = [g for g in report.gaps if "WITHOUT_BUBR1" in g.gap_id]
     assert len(bypass) == 3
     for gap in bypass:
-        assert gap.result is GapResult.ONLY_DEPENDENT_CAPABILITIES_FOUND
+        assert gap.result in {GapResult.ONLY_DEPENDENT_CAPABILITIES_FOUND,
+                              GapResult.NO_GROUNDED_CAPABILITY}
         assert gap.assessments, "a result with no candidate examined would explain nothing"
-        assert all(a.forbidden_hits == ("bubr1_residual_function",) for a in gap.assessments)
+        assert not gap.grounded_capabilities
+        for assessment in gap.assessments:
+            assert set(assessment.rejections) & BYPASS_REFUSALS, (
+                f"{assessment.candidate_id} was refused without naming an independence problem")
         assert gap.reason and gap.universe_inspected
+
+
+def test_gate13_each_independence_problem_actually_occurs_in_the_real_run():
+    """All three refusals are exercised by real sources, not just available in the enum."""
+    report = run(mva_gaps.problem())
+    seen = {r for g in report.gaps for a in g.assessments for r in a.rejections}
+    assert BYPASS_REFUSALS <= seen, f"missing: {sorted(r.value for r in BYPASS_REFUSALS - seen)}"
+
+
+def test_gate13_a_span_naming_the_forbidden_component_cannot_certify_independence():
+    """The CDK4/6 source reaches the checkpoint through the component the gap forbids, and says so."""
+    report = run(mva_gaps.problem())
+    gap = next(g for g in report.gaps if g.gap_id.startswith("GAP_A"))
+    external = next(a for a in gap.assessments if "PPR1083461" in a.candidate_id)
+    assert RejectionReason.FORBIDDEN_NAMED_IN_SPAN in external.rejections
+    assert RejectionReason.FORBIDDEN_DEPENDENCY in external.rejections
+    assert external.causal_grade is not None
 
 
 def test_gate13_the_burden_differs_across_the_three_bypass_gaps():
@@ -333,16 +366,32 @@ def test_gate14_the_cofactor_entry_gap_produces_a_grounded_verdict():
     gap = next(g for g in run(mva_gaps.problem()).gaps
                if g.gap_id == "GAP_D_INTRACELLULAR_COFACTOR_ENTRY")
     assert gap.result is GapResult.CONTEXT_ONLY_CAPABILITY
-    assessment = gap.assessments[0]
-    assert RejectionReason.COMPARTMENT_MISMATCH in assessment.rejections
-    assert not assessment.forbidden_hits, "this gap forbids nothing; it is a chain-closing gap"
+    assert all(not a.forbidden_hits for a in gap.assessments), \
+        "this gap forbids nothing; it is a chain-closing gap"
     assert gap.context_gaps
+
+
+def test_gate14_the_external_source_resolves_the_compartment_objection():
+    """The advance: the open problem changes from the wrong compartment to the wrong tissue.
+
+    The repository's own claim measured the circulating pool, which is why this step was blocked. A
+    retrieved human trial measured the tissue pool. The compartment objection is answered and a
+    different one — the system the measurement was made in — is what remains.
+    """
+    gap = next(g for g in run(mva_gaps.problem()).gaps
+               if g.gap_id == "GAP_D_INTRACELLULAR_COFACTOR_ENTRY")
+    external = next(a for a in gap.assessments if "32386566" in a.candidate_id)
+    internal = next(a for a in gap.assessments if "nad_whole_blood" in a.candidate_id)
+    assert RejectionReason.COMPARTMENT_MISMATCH in internal.rejections
+    assert RejectionReason.COMPARTMENT_MISMATCH not in external.rejections
+    assert RejectionReason.CONTEXT_MISMATCH in external.rejections
+    assert external.causal_grade is not None and external.causal_grade.value == "CAUSAL_EXPERIMENTAL"
 
 
 def test_gate14_the_previous_unknown_became_a_named_context_mismatch():
     """Section 31's metric: the epistemic state of a functional interface moved."""
     report = run(mva_gaps.problem(), mva_gaps.targets())
-    assert any("GAP_D_INTRACELLULAR_COFACTOR_ENTRY: CONTEXT_ONLY_CAPABILITY" in item
+    assert any("GAP_D_INTRACELLULAR_COFACTOR_ENTRY" in item and "CONTEXT_ONLY_CAPABILITY" in item
                for item in report.interfaces_whose_state_changed)
     assert len(report.interfaces_whose_state_changed) == 4
 
@@ -353,7 +402,12 @@ def test_the_real_run_grounds_nothing_and_says_what_universe_was_searched():
     assert report.abstention_reason
     for gap in report.gaps:
         providers = {item["provider"] for item in gap.universe_inspected}
-        assert providers == {"repository_inventory", "curated_claims"}
+        assert providers == {"repository_inventory", "scientific_literature", "curated_claims"}
+        literature = next(i for i in gap.universe_inspected
+                          if i["provider"] == "scientific_literature")
+        assert literature["corpus_size"] > 0, "the external corpus must actually hold documents"
+        assert literature["accounting"]["queries_issued"] > 0
+        assert literature["queries"], "a bounded negative has to say what was asked"
         curated = next(i for i in gap.universe_inspected if i["provider"] == "curated_claims")
         assert curated["corpus_size"] == 0
         assert "not evidence that no such claim exists" in curated["note"]
@@ -438,6 +492,6 @@ def test_the_committed_gap_report_is_not_stale():
     from rarepipe.stages.control.discovery.report import render
     committed = (Path(__file__).resolve().parents[1]
                  / "docs/control/MVA_CAPABILITY_GAPS.md").read_text()
-    assert committed == render(run(mva_gaps.problem(), mva_gaps.targets())), (
+    assert committed == render(run(mva_gaps.repository_only_problem(), mva_gaps.targets())), (
         "docs/control/MVA_CAPABILITY_GAPS.md is stale: run "
         "uv run python tools/control/compile_mva_gaps.py")

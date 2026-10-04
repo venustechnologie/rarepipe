@@ -110,7 +110,9 @@ def wrong_direction():
     """Gate 3: the output matches and the sign is opposite."""
     inv = inventory([edge("dose", "level", effect=Effect.DECREASE)])
     space = S.StateSpace(variables=(S.var("dose", exogenous=True), S.var("level")))
-    return problem([gap(output="level", value="1", direction=Effect.INCREASE)], inv, space=space)
+    # A pure direction gap: it asks for the output to be raised, not for a qualitative state, so
+    # the direction check is the one that has to refuse this.
+    return problem([gap(output="level", value="", direction=Effect.INCREASE)], inv, space=space)
 
 
 def forbidden_dependency():

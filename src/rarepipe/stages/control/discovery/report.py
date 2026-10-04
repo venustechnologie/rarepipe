@@ -20,6 +20,26 @@ def render(report: DiscoveryReport) -> str:
       f"`{report.discovery_model_version}` · digest `{report.content_digest}`")
     w("")
 
+    if report.citation_audit:
+        w("## The repository's own citations, checked against the documents")
+        w("")
+        w("The grounding rule applied backwards. Each citation the case's causal chain rests on was "
+          "retrieved, and the attribution the chain makes to it was checked against the document. "
+          "A document containing none of the terms an attribution is about cannot be evidence for "
+          "it; this cannot confirm an attribution, only show when one cannot hold.")
+        w("")
+        w("| Citation | Chain edge | Verdict | Missing terms |")
+        w("|---|---|---|---|")
+        for item in report.citation_audit:
+            w(f"| `{item.ref}` | `{item.edge_id}` | `{item.verdict.value}` | "
+              f"{', '.join(item.terms_absent) or '—'} |")
+        w("")
+        for item in report.citation_audit:
+            if item.verdict.value != "SUPPORTS_ATTRIBUTION":
+                w(f"- **`{item.ref}`** — retrieved as *{item.title}*. The chain attributes "
+                  f"{item.attributed} to it. {item.consequence}")
+        w("")
+
     w("## The metric")
     w("")
     w("Not papers found, not candidates generated, not capabilities stored: **previously-open "
@@ -31,6 +51,21 @@ def render(report: DiscoveryReport) -> str:
     else:
         w("- none; every gap ends where it began, and each says why")
     w("")
+    if report.gap_deltas:
+        w("Measured against the previous run rather than against nothing. A headline that holds "
+          "while the reasons change is still progress: the open problem has become more specific, "
+          "and that is reported as a different thing from a changed verdict.")
+        w("")
+        w("| Gap | Before | After | Headline moved | Grounds moved |")
+        w("|---|---|---|---|---|")
+        for delta in report.gap_deltas:
+            w(f"| `{delta.gap_id}` | `{delta.before}` | `{delta.after}` | "
+              f"{'**yes**' if delta.headline_changed else 'no'} | "
+              f"{'yes' if delta.grounds_changed else 'no'} |")
+        w("")
+        for delta in report.gap_deltas:
+            w(f"- `{delta.gap_id}`: {delta.note}")
+        w("")
     w(f"**Capabilities grounded:** {len(report.grounded_capabilities)}.")
     if report.abstention_reason:
         w("")
@@ -105,6 +140,13 @@ def render(report: DiscoveryReport) -> str:
                 w(f"    - validity domain: {capability.validity_domain}")
                 for caveat in capability.known_caveats:
                     w(f"    - caveat: {caveat}")
+            w("")
+        if gap.transfer_gaps:
+            w("**Transfer gaps.** Each is an object, not a warning: it can become literature to "
+              "find, an experiment to run, or a blocker.")
+            w("")
+            for item in gap.transfer_gaps:
+                w(f"- {item}")
             w("")
         if gap.remaining_missing_steps:
             w("**Remaining missing steps:**")

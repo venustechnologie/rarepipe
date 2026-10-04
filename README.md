@@ -22,7 +22,10 @@
 > components could implement a required transformation and refuses to answer from anything but
 > evidence the repository already holds, and
 > [capability gap discovery](docs/control/DISCOVERY_DESIGN.md), which turns a missing function into a
-> search specification and lets only deterministic validators decide whether a capability exists
+> search specification and lets only deterministic validators decide whether a capability exists,
+> now against [a real external evidence source](docs/control/EXTERNAL_DESIGN.md) — retrieval is a
+> separate step that freezes a corpus snapshot, and finding a source is never the same as grounding a
+> claim
 
 A reproducible, stage-by-stage pipeline for working toward resolving difficult rare-disease cases.
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.

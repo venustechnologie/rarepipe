@@ -29,17 +29,22 @@ from rarepipe.stages.control.discovery.capabilities import (
 from rarepipe.stages.control.discovery.gaps import CapabilityGap, specification
 from rarepipe.stages.control.discovery.kinds import (
     GAP_MEANING, RESULT_ORDER, CandidateStatus, CapabilityEntitlement, GapResult, RejectionReason,
+    VerificationLevel,
 )
 from rarepipe.stages.control.discovery.providers import (
     CapabilitySourceProvider, ProviderReport, SourceHit, search,
 )
+from rarepipe.stages.control.discovery.external.citation_audit import CitationAudit
+from rarepipe.stages.control.discovery.external.semantics import SemanticsRegistry
 from rarepipe.stages.control.discovery.validators import CandidateAssessment, assess, build
 from rarepipe.stages.control.discovery.vocabulary import Vocabulary, dedup_key, vocabulary
 from rarepipe.stages.control.provenance import EpistemicType, Immutable, Provenance
 from rarepipe.stages.control.realization.compiler import (
     RealizationProblem, compile_realization,
 )
-from rarepipe.stages.control.realization.evidence import EvidenceInventory
+from rarepipe.stages.control.realization.evidence import (
+    ContextRecord, EvidenceEdge, EvidenceInventory,
+)
 from rarepipe.stages.control.realization.kinds import PrimitiveClass
 from rarepipe.stages.control.realization.primitives import (
     Capability, PhysicalPrimitive, PhysicalPrimitiveRegistry,
@@ -70,6 +75,15 @@ class GapProblem:
     discovery_model_version: str
     hypotheses: tuple[MechanismHypothesis, ...] = ()
     agent_candidates: tuple[CapabilityCandidate, ...] = field(default_factory=tuple)
+    documents: dict[str, str] = field(default_factory=dict)
+    semantics: SemanticsRegistry = field(default_factory=lambda: SemanticsRegistry())
+    baseline_results: dict[str, str] = field(
+        default_factory=dict,
+        metadata={"why": "the previous run's result per gap. The headline metric is a change of "
+                         "epistemic state, and a state cannot be seen to change without something "
+                         "to compare it to."})
+    baseline_providers: tuple[str, ...] = ()
+    citation_attributions: tuple[CitationAudit, ...] = ()
 
 
 class RejectedCandidate(Immutable):
@@ -99,6 +113,7 @@ class CapabilityGapReport(Immutable):
     contradictions: tuple[str, ...] = ()
     context_gaps: tuple[str, ...] = ()
     remaining_missing_steps: tuple[str, ...] = ()
+    transfer_gaps: tuple[str, ...] = ()
     newly_grounded_claims: tuple[str, ...] = ()
     architecture_impact: str = ""
     current_known_paths: tuple[str, ...] = ()
@@ -118,6 +133,23 @@ class CapabilityGapReport(Immutable):
         return self
 
 
+class GapDelta(Immutable):
+    """What moved for one gap, against the previous run.
+
+    A headline that stays the same while the reasons change is still progress: the open problem has
+    become more specific. Both are recorded, and neither is presented as the other.
+    """
+
+    gap_id: str
+    before: str
+    after: str
+    headline_changed: bool
+    grounds_changed: bool
+    new_providers: tuple[str, ...] = ()
+    new_candidates: tuple[str, ...] = ()
+    note: str
+
+
 class RecompileDelta(Immutable):
     target: str
     before: str
@@ -135,6 +167,10 @@ class DiscoveryReport(Immutable):
     problem_id: str
     case_ref: str
     gaps: tuple[CapabilityGapReport, ...]
+    gap_deltas: tuple[GapDelta, ...] = ()
+    citation_audit: tuple[CitationAudit, ...] = Field(
+        (), description="The repository's own citations, checked against the retrieved documents. "
+                        "The grounding rule applied backwards.")
     grounded_capabilities: tuple[GroundedCapability, ...] = ()
     recompiles: tuple[RecompileDelta, ...] = ()
     interfaces_whose_state_changed: tuple[str, ...] = Field(
@@ -264,7 +300,9 @@ def compile_gap(problem: GapProblem, gap: CapabilityGap, vocab: Vocabulary) -> C
         seen.add(key)
         candidates.append(candidate)
 
-    assessments = tuple(assess(c, gap, hits, problem.inventory, vocab) for c in candidates)
+    assessments = tuple(assess(c, gap, hits, problem.inventory, vocab,
+                               documents=problem.documents, semantics=problem.semantics)
+                        for c in candidates)
     built: list[GroundedCapability] = []
     for candidate, assessment in zip(candidates, assessments):
         if assessment.can_ground:
@@ -284,7 +322,8 @@ def compile_gap(problem: GapProblem, gap: CapabilityGap, vocab: Vocabulary) -> C
         result_meaning=GAP_MEANING[result],
         universe_inspected=tuple({"provider": r.provider, "corpus_size": r.corpus_size,
                                   "corpus": r.corpus_description, "hits": len(r.hits),
-                                  "note": r.note} for r in reports),
+                                  "note": r.note, "accounting": r.accounting,
+                                  "queries": list(r.queries)} for r in reports),
         candidate_mechanisms_considered=tuple(sorted(
             {h.statement for h in problem.hypotheses if h.gap_id == gap.gap_id}
             | {c.proposed_mechanism for c in candidates})),
@@ -303,6 +342,7 @@ def compile_gap(problem: GapProblem, gap: CapabilityGap, vocab: Vocabulary) -> C
                                    if not c.passed and c.validator.startswith("context")})),
         remaining_missing_steps=tuple(sorted({i for a in assessments
                                               for i in a.unsupported_intermediates})),
+        transfer_gaps=tuple(sorted({g.summary for a in assessments for g in a.transfer_gaps})),
         newly_grounded_claims=tuple(sorted({claim for c in built for claim in c.evidence_claims})),
         current_known_paths=gap.current_known_paths, reason=reason)
 
@@ -347,6 +387,46 @@ def as_primitive(capability: GroundedCapability,
                       f"{capability.entitlement.value} for the required context"))
 
 
+def extended_inventory(target: RealizationProblem,
+                       added: tuple[GroundedCapability, ...]) -> EvidenceInventory:
+    """The realization's evidence inventory, plus the claims the new capabilities rest on.
+
+    A capability grounded from external literature cites source ids the realization's own inventory
+    has never seen, and that inventory refuses a citation it does not hold — correctly, since that
+    check is what stops invented references. So the registry update has to carry the evidence as well
+    as the piece: the grounded claim becomes an edge, with the support level, scope and context the
+    grounding established, and the realization layer then applies its own checks to it unchanged.
+    """
+    edges = list(target.inventory.edges)
+    contexts = list(target.inventory.contexts)
+    known = {edge.edge_id for edge in edges}
+    seen_refs = {record.ref for record in contexts}
+    for capability in added:
+        for claim in capability.evidence_claims:
+            if claim in known:
+                continue
+            known.add(claim)
+            edges.append(EvidenceEdge(
+                edge_id=claim, source=capability.input, target=capability.output,
+                effect=capability.direction,
+                mechanism=f"{capability.mechanism} (grounded for {capability.gap_id})",
+                support=capability.support_level,
+                ref=capability.references[0] if capability.references else "",
+                verified=VerificationLevel.SOURCE_VERIFIED in capability.verification,
+                scope=capability.validity_domain,
+                caveat="; ".join(capability.known_caveats)))
+        reference = capability.references[0] if capability.references else ""
+        if reference and reference not in seen_refs:
+            seen_refs.add(reference)
+            contexts.append(ContextRecord(
+                ref=reference, measured_with=capability.context.agent or "unrecorded",
+                measured_in_compartment=capability.context.compartment,
+                measured_in_system=capability.context.system,
+                transcribed_from=f"grounded capability {capability.capability_id}"))
+    return EvidenceInventory(edges=tuple(sorted(edges, key=lambda e: e.edge_id)),
+                             contexts=tuple(sorted(contexts, key=lambda c: c.ref)))
+
+
 def recompile(target: RealizationProblem, added: tuple[GroundedCapability, ...]) -> RecompileDelta:
     """Update the registry, recompile, and report the delta — including when there is none."""
     before = compile_realization(target)
@@ -360,6 +440,7 @@ def recompile(target: RealizationProblem, added: tuple[GroundedCapability, ...])
     primitives = tuple(as_primitive(c, produced) for c in added)
     updated = RealizationProblem(**{
         **target.model_dump(),
+        "inventory": extended_inventory(target, added).model_dump(),
         "registry": PhysicalPrimitiveRegistry(
             primitives=(*target.registry.primitives, *primitives)).model_dump()})
     after = compile_realization(updated)
@@ -391,12 +472,33 @@ def compile_discovery(problem: GapProblem,
         finished.append(CapabilityGapReport(**{**report.model_dump(),
                                                "architecture_impact": note}))
 
-    # The metric: functional interfaces whose epistemic state moved, in either direction. A gap
-    # that ends anywhere other than "nothing found" has moved; so has a target that recompiled
-    # differently.
+    # The metric: functional interfaces whose epistemic state moved, measured against the previous
+    # run rather than against nothing. A headline change and a change in why the headline holds are
+    # both progress, and they are reported as different things.
+    gap_deltas = []
+    for report in finished:
+        before = problem.baseline_results.get(report.gap_id, "")
+        providers_now = {item["provider"] for item in report.universe_inspected}
+        new_providers = tuple(sorted(providers_now - set(problem.baseline_providers)))
+        new_candidates = tuple(sorted(
+            a.candidate_id for a in report.assessments
+            if any(p in a.candidate_id for p in ("PMID:", "EPMC:")) and new_providers))
+        headline = bool(before) and before != report.result.value
+        grounds = bool(new_providers) and bool(report.assessments)
+        gap_deltas.append(GapDelta(
+            gap_id=report.gap_id, before=before or "not previously compiled",
+            after=report.result.value, headline_changed=headline, grounds_changed=grounds,
+            new_providers=new_providers, new_candidates=new_candidates,
+            note=(f"headline {before} -> {report.result.value}" if headline else
+                  (f"headline unchanged at {report.result.value}; candidates from "
+                   f"{list(new_providers)} were examined and refused for named reasons, so the open "
+                   "problem is more specific than it was" if grounds else
+                   f"unchanged at {report.result.value}"))))
+
     changed = tuple(sorted(
-        [f"{r.gap_id}: {r.result.value}" for r in finished
-         if r.result is not GapResult.NO_GROUNDED_CAPABILITY]
+        [f"{d.gap_id}: {d.before} -> {d.after}" for d in gap_deltas if d.headline_changed]
+        + [f"{d.gap_id}: grounds changed, {d.after} now rests on {list(d.new_providers)}"
+           for d in gap_deltas if d.grounds_changed and not d.headline_changed]
         + [f"{d.target}: {d.before} -> {d.after}" for d in deltas if d.changed]))
 
     return DiscoveryReport(
@@ -404,6 +506,7 @@ def compile_discovery(problem: GapProblem,
         realization_compiler_version="realization-compiler-0.1.0",
         discovery_model_version=problem.discovery_model_version,
         problem_id=problem.problem_id, case_ref=problem.case_ref, gaps=tuple(finished),
+        gap_deltas=tuple(gap_deltas), citation_audit=problem.citation_attributions,
         grounded_capabilities=built, recompiles=deltas,
         interfaces_whose_state_changed=changed,
         abstention_reason=("" if built else

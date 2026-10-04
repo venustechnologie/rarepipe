@@ -25,6 +25,7 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import Field
 
+from rarepipe.stages.control.discovery.external.claims import CausalGrade, ContextLattice
 from rarepipe.stages.control.discovery.gaps import SearchSpecification
 from rarepipe.stages.control.provenance import Immutable
 from rarepipe.stages.control.realization.evidence import EvidenceInventory
@@ -52,6 +53,23 @@ class SourceHit(Immutable):
     caveat: str = ""
     span: str = Field("", description="Where in the source the claim was located.")
 
+    # Set by an external-evidence provider. The inventory provider leaves them at their defaults,
+    # and the validators treat an absent field as "not established" rather than as "fine".
+    claim_id: str = ""
+    quoted_span: str = Field(
+        "", description="Verbatim text from the retrieved document that supports the claim. "
+                        "Checked character for character against the stored source.")
+    document_digest: str = ""
+    document_title: str = ""
+    document_url: str = ""
+    causal_grade: CausalGrade | None = None
+    lattice: ContextLattice | None = None
+    declared_dependencies: tuple[str, ...] = ()
+    asserts_independence_from: tuple[str, ...] = ()
+    limitation: str = ""
+    claimed_state: str = ""
+    measurement: str = ""
+
     def dimension(self, name: str) -> str:
         return {"agent": self.measured_with, "compartment": self.measured_in_compartment,
                 "system": self.measured_in_system}[name]
@@ -68,6 +86,12 @@ class ProviderReport(Immutable):
                         "both are used to resolve a citation, so a chain can be audited rather "
                         "than refused as fabricated.")
     note: str = ""
+    queries: tuple[dict, ...] = Field(
+        (), description="What was asked and what came back, per query, so a negative result is "
+                        "readable as a statement about the search rather than about biology.")
+    accounting: dict = Field(
+        {}, description="Operational counts — sources retrieved, screened, claims extracted. These "
+                        "are process metrics, never scientific success metrics.")
 
 
 @runtime_checkable

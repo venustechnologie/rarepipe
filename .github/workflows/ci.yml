@@ -58,6 +58,13 @@ jobs:
           uv run python tools/control/compile_mva_gaps.py
           git diff --exit-code -- docs/control/MVA_CAPABILITY_GAPS.md
 
+      # Compiled from the committed corpus snapshot, so this needs no network. Retrieval is a
+      # separate, deliberate step; if the snapshot changes, these reports must change with it.
+      - name: External capability reports are not stale
+        run: |
+          uv run python tools/control/compile_mva_external_gaps.py
+          git diff --exit-code -- docs/control/MVA_CAPABILITY_GAPS_EXTERNAL.md docs/control/MVA_CAPABILITY_DISCOVERY_TRACE.md
+
       # Reports unreachable decision branches. Non-zero while EXP03 cannot supply sirt2_activity
       # and k668_acetylation to B06 and B11, which is a known open finding rather than a
       # regression, so it is recorded without failing the build. Remove `|| true` once EXP03 is
