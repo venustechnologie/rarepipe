@@ -51,6 +51,13 @@ jobs:
           uv run python tools/control/compile_mva_realization.py
           git diff --exit-code -- docs/control/MVA_REALIZATION_BYPASS.md docs/control/MVA_REALIZATION_ABUNDANCE.md
 
+      # The gap report's digest covers the gap definitions, the candidates, the grounded evidence
+      # and the recompiled results, so any change to the corpus invalidates the committed report.
+      - name: Capability gap report is not stale
+        run: |
+          uv run python tools/control/compile_mva_gaps.py
+          git diff --exit-code -- docs/control/MVA_CAPABILITY_GAPS.md
+
       # Reports unreachable decision branches. Non-zero while EXP03 cannot supply sirt2_activity
       # and k668_acetylation to B06 and B11, which is a known open finding rather than a
       # regression, so it is recorded without failing the build. Remove `|| true` once EXP03 is

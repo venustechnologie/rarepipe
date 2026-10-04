@@ -24,7 +24,7 @@ from pathlib import Path
 
 from pydantic import Field, model_validator
 
-from rarepipe.stages.control.provenance import Immutable
+from rarepipe.stages.control.provenance import EpistemicType, Immutable, Provenance
 from rarepipe.stages.control.realization.checks import (
     STATUS_ORDER, RealizationAssessment, assess,
 )
@@ -32,7 +32,7 @@ from rarepipe.stages.control.realization.evidence import EvidenceInventory
 from rarepipe.stages.control.realization.kinds import (
     BURDEN_OF_STATUS, REALIZATION_MEANING, EpistemicBurden, RealizationResult,
 )
-from rarepipe.stages.control.realization.mechanisms import MechanisticRealization
+from rarepipe.stages.control.realization.mechanisms import MechanisticRealization, Step
 from rarepipe.stages.control.realization.primitives import PhysicalPrimitiveRegistry
 from rarepipe.stages.control.synthesis.compiler import SynthesisProblem, compile_synthesis
 from rarepipe.stages.control.synthesis.kinds import LogicalStatus
@@ -173,6 +173,41 @@ def _burden_for(problem: RealizationProblem, variable: str) -> tuple[EpistemicBu
             "being replaced")
 
 
+def _synthesised(problem: RealizationProblem, variable: str, value: str
+                 ) -> tuple[MechanisticRealization, ...]:
+    """One-step realizations from registry primitives that act on this variable directly.
+
+    Only used where no realization was declared for the transformation. That is the case a newly
+    grounded capability is supposed to change: a piece that lands on a function nobody had a
+    mechanism for should turn the verdict without anyone hand-writing a chain for it. Where a
+    realization *was* declared, the declared one stands, so this never quietly adds noise beside it.
+    """
+    out: list[MechanisticRealization] = []
+    for primitive_id, capability in problem.registry.affecting(variable):
+        if capability.to is not None and capability.to != value:
+            continue
+        out.append(MechanisticRealization(
+            realization_id=f"MR_AUTO::{primitive_id}::{capability.capability_id}",
+            required_transformation=f"{variable}->{value}", target_variable=variable,
+            target_value=value, required_effect=capability.effect,
+            mechanism=(f"{capability.claim}, composed directly from the registered capability "
+                       f"{capability.capability_id} because no realization was declared for this "
+                       "transformation"),
+            steps=(Step(step_id="S1", uses_primitive=primitive_id,
+                        capability_id=capability.capability_id,
+                        rationale="the registry declares this capability acts on the required "
+                                  "variable, so the compiler composes it rather than reporting no "
+                                  "mechanism at all"),),
+            agent=capability.agent, context_system=problem.required_system,
+            provenance=Provenance(
+                epistemic_type=EpistemicType.BUILDING_BLOCK_CAPABILITY,
+                source=f"composed by the realization compiler from {primitive_id}",
+                proposed_by="rarepipe realization compiler (deterministic composition)",
+                rationale="no realization was declared for this transformation, and the registry "
+                          "holds a capability that acts on it")))
+    return tuple(sorted(out, key=lambda r: r.realization_id))
+
+
 def _missing_capability(problem: RealizationProblem, variable: str) -> str:
     attributed = sorted({e.source for e in problem.inventory.edges_into(variable)})
     declared = sorted({pid for pid, _ in problem.registry.affecting(variable)})
@@ -190,6 +225,8 @@ def _compile_function(problem: RealizationProblem, variable: str, value: str, de
     mine = tuple(sorted((r for r in problem.realizations
                          if r.target_variable == variable and r.target_value == value),
                         key=lambda r: r.realization_id))
+    if not mine:
+        mine = _synthesised(problem, variable, value)
     if not mine:
         return FunctionOutcome(
             function=function, variable=variable, value=value, burden=burden,

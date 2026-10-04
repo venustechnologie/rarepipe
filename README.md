@@ -20,7 +20,9 @@
 > construct one. — see [the synthesis layer design](docs/control/SYNTHESIS_DESIGN.md) and
 > [the physical realization layer](docs/control/REALIZATION_DESIGN.md), which asks what real
 > components could implement a required transformation and refuses to answer from anything but
-> evidence the repository already holds
+> evidence the repository already holds, and
+> [capability gap discovery](docs/control/DISCOVERY_DESIGN.md), which turns a missing function into a
+> search specification and lets only deterministic validators decide whether a capability exists
 
 A reproducible, stage-by-stage pipeline for working toward resolving difficult rare-disease cases.
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.

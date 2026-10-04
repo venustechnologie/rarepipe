@@ -38,6 +38,10 @@ class EpistemicType(StrEnum):
     LOGICAL_FEASIBILITY = "logical_feasibility"
     PHYSICAL_FEASIBILITY = "physical_feasibility"
     ROBUSTNESS_CLAIM = "robustness_claim"
+    # Assigned by the deterministic capability builder and by nothing else. The proposals gate
+    # refuses to assign it, so an agent cannot produce a grounded capability by proposing one.
+    GROUNDED_CAPABILITY = "grounded_capability"
+    MECHANISM_HYPOTHESIS = "mechanism_hypothesis"
 
 
 # Types that assert something was measured or published. Each must name what it rests on.
@@ -50,7 +54,19 @@ _NEEDS_REFERENCES = {EpistemicType.OBSERVED_EMPIRICAL, EpistemicType.LITERATURE_
 DERIVED_TYPES = {EpistemicType.SIMULATED_PREDICTION, EpistemicType.INFERRED_HYPOTHESIS,
                  EpistemicType.PROPOSED_ARCHITECTURE, EpistemicType.SYNTHETIC_RELATIONSHIP,
                  EpistemicType.LOGICAL_FEASIBILITY, EpistemicType.ROBUSTNESS_CLAIM,
-                 EpistemicType.COMPOSED_CONTROL, EpistemicType.FEEDBACK_POLICY}
+                 EpistemicType.COMPOSED_CONTROL, EpistemicType.FEEDBACK_POLICY,
+                 EpistemicType.MECHANISM_HYPOTHESIS}
+
+# Types the gate never *assigns*, whoever submits a proposal. Claiming one of these is recorded for
+# audit and otherwise ignored: the proposal's content is still validated and typed down to what it
+# actually is, which keeps an honest proposal with a wrong label from being thrown away.
+GATE_NEVER_ASSIGNS = {EpistemicType.GROUNDED_CAPABILITY, EpistemicType.OBSERVED_EMPIRICAL,
+                      EpistemicType.EXTRACTED_PARAMETER}
+
+# The one type whose claim is refused outright rather than ignored. A grounded capability is the
+# output of the deterministic validators, so a proposal asking to be one is asking to skip them —
+# there is no content to salvage from that request.
+GATE_REFUSES_CLAIM = {EpistemicType.GROUNDED_CAPABILITY}
 
 EMPIRICAL_TYPES = {EpistemicType.OBSERVED_EMPIRICAL, EpistemicType.EXTRACTED_PARAMETER}
 

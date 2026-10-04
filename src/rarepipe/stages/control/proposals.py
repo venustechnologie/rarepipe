@@ -20,7 +20,8 @@ from pydantic import Field, ValidationError
 from rarepipe.stages.control.controls import ControlVariable, Feasibility
 from rarepipe.stages.control.dynamics import Relationship, RelationshipKind
 from rarepipe.stages.control.provenance import (
-    Approval, ApprovalStatus, EpistemicType, Immutable, Provenance,
+    GATE_NEVER_ASSIGNS, GATE_REFUSES_CLAIM, Approval, ApprovalStatus, EpistemicType, Immutable,
+    Provenance,
 )
 from rarepipe.stages.control.result_types import ResultClass
 from rarepipe.stages.control.synthesis.architecture import ControlArchitecture
@@ -88,12 +89,17 @@ def _reject(p: Proposal, reason: str) -> GateDecision:
 
 
 def _provenance(p: Proposal, kind: EpistemicType, **extra) -> dict:
+    if kind in GATE_NEVER_ASSIGNS:  # pragma: no cover — guarded by construction
+        raise AssertionError(f"the gate may never assign {kind.value}")
     return Provenance(epistemic_type=kind, source=f"{p.skill_id} v{p.skill_version} proposal {p.proposal_id}",
                       proposed_by=f"{p.proposer.actor_type.value}:{p.proposer.identity}",
                       references=p.references, rationale=p.rationale, **extra).model_dump()
 
 
 def gate(p: Proposal) -> GateDecision:
+    if p.claimed_epistemic_type in GATE_REFUSES_CLAIM:
+        return _reject(p, f"no proposal may be a {p.claimed_epistemic_type.value}: it is produced "
+                          "by the deterministic validators, so it cannot also be submitted to them")
     if _contains_result_claim(p.payload):
         return _reject(p, "a proposal cannot carry a result class; only the compiler produces one, "
                           "and never from prose")
