@@ -60,3 +60,8 @@ node_modules/
 # tasks.json
 # tasks/ 
 .m5inputs/
+
+# Research inputs derived from full-text articles. The committed literature snapshot is titles and
+# abstracts only; full texts and the verbatim quotes extracted from them stay with the controlled
+# case work and are never redistributed through this repo, which becomes public.
+research/
