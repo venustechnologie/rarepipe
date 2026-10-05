@@ -236,6 +236,33 @@ def dominators(d: dict) -> set[str]:
     return dominators_for(d, goal(d))
 
 
+def campaign_cover(d: dict, branches: frozenset[str]) -> tuple[list[str], list[str]]:
+    """The fewest campaigns that cover a route's branches, plus any branch no campaign covers.
+
+    Branch nodes are units of ignorance; campaigns are units of work. Counting branches alone
+    overstates how many experiments a route needs, because one set of observations can settle several.
+    Brute-forced over the declared campaigns — there are a handful, and an exact answer beats a
+    heuristic nobody can check. No time, cost or probability is involved.
+    """
+    camps = d.get("campaigns") or []
+    by_id = {c["id"]: frozenset(c["resolves"]) & branches for c in camps}
+    useful = {k: v for k, v in by_id.items() if v}
+    covered_any = frozenset().union(*useful.values()) if useful else frozenset()
+    uncovered = sorted(branches - covered_any)
+    best: list[str] | None = None
+    ids = sorted(useful)
+    for size in range(len(ids) + 1):
+        from itertools import combinations
+        for combo in combinations(ids, size):
+            got = frozenset().union(*(useful[c] for c in combo)) if combo else frozenset()
+            if got >= covered_any:
+                best = list(combo)
+                break
+        if best is not None:
+            break
+    return (best or []), uncovered
+
+
 def gaps(d: dict) -> dict[str, list[dict]]:
     """Edges grouped by label, which is what the PRD's per-route gap counts are built from."""
     by: dict[str, list[dict]] = {}
@@ -340,6 +367,56 @@ def render(d: dict) -> str:
     A("need checkpoint competence for reasons other than fidelity\" — and that is now the one")
     A("unavoidable branch on the functional target.")
     A("")
+    A("## Campaigns: units of work, not units of ignorance")
+    A("")
+    A("A branch is something unknown; a campaign is a set of observations that can legitimately be")
+    A("collected together. Counting branches alone overstates how many experiments a route needs.")
+    A("")
+    A("| campaign | resolves | needs | question |")
+    A("|---|---|---|---|")
+    for c in (d.get("campaigns") or []):
+        A(f"| `{c['id']}` | {', '.join('`' + x + '`' for x in c['resolves'])} | {c['requires']} "
+          f"| {' '.join(c['question'].split())} |")
+    A("")
+    if d.get("campaign_note"):
+        A(" ".join(d["campaign_note"].split()))
+        A("")
+    A("| destination | unresolved branches | campaigns needed | not covered by any campaign |")
+    A("|---|---|---|---|")
+    for dest in ("CANONICAL_CELLULAR_STATE", G, U):
+        if dest not in nodes:
+            continue
+        c = cost(d).get(dest)
+        if c is None:
+            A(f"| `{dest}` | unreachable | — | — |")
+            continue
+        cov, unc = campaign_cover(d, c)
+        A(f"| `{dest}` | {len(c)}: " + ", ".join("`" + x + "`" for x in sorted(c))
+          + f" | {len(cov) + len(unc)}: " + ", ".join("`" + x + "`" for x in cov + unc)
+          + " | " + (", ".join("`" + x + "`" for x in unc) or "none") + " |")
+    A("")
+    A("## Priorities, reported separately")
+    A("")
+    A("The two families are not competing for one slot, so they get one line each.")
+    A("")
+    A("- **Best next F1 experiment: `CHAR01`.** Unavoidable for the abundance family, upstream of every")
+    A("  other F1 branch, cheapest, and needs no patient material. Not demoted by anything below.")
+    A("- **Best current functional-bypass candidate: `FLUX01`.** It resolves two branches in one set of")
+    A("  observations, needs only a human cell line, and targets the terminal endpoint directly rather")
+    A("  than a canonical intermediate.")
+    A("")
+    fc = cost(d).get(G)
+    if fc is not None:
+        cov, unc = campaign_cover(d, fc)
+        blocked = [x for x in unc if nodes[x].get("requires") != "CELL_MODEL"]
+        A("**Do not read the campaign count as an experiment count.** The functional route is")
+        A(f"{len(cov)} runnable campaign(s) — {', '.join('`' + x + '`' for x in cov) or 'none'} — plus")
+        A(f"{len(blocked)} gate(s) that no cell experiment can answer: "
+          + ", ".join(f"`{x}` ({nodes[x].get('requires')})" for x in blocked) + ".")
+        A("")
+        A("That asymmetry is the current state of the non-canonical route: the biology it needs is one")
+        A("experiment away, and the risk question it needs is not in a dish at all.")
+        A("")
     A("## Where the route map says to look first")
     A("")
     if base is None:

@@ -42,8 +42,8 @@ computed beside the functional one.
 | destination | distance | unavoidable branches | `BYPASS_ACT` an unavoidable gate? |
 |---|---|---|---|
 | `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | none | no |
-| `FUNCTIONAL_CELLULAR_TARGET` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | `ACT_SAFETY01` | no |
-| `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `DEP_FLUX`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | no |
+| `FUNCTIONAL_CELLULAR_TARGET` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | none | no |
+| `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `DEP_FLUX`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | no |
 
 **`BYPASS_ACT` is not an unavoidable gate to either cell-level destination.** Checkpoint
 activation is therefore a route-specific requirement and a mechanistic diagnostic, not a
@@ -56,6 +56,43 @@ tumours by a route the missegregation endpoint cannot see, and this disorder alr
 embryonal tumour risk. So the question is not "must the checkpoint signal" but "does this case
 need checkpoint competence for reasons other than fidelity" — and that is now the one
 unavoidable branch on the functional target.
+
+## Campaigns: units of work, not units of ignorance
+
+A branch is something unknown; a campaign is a set of observations that can legitimately be
+collected together. Counting branches alone overstates how many experiments a route needs.
+
+| campaign | resolves | needs | question |
+|---|---|---|---|
+| `FLUX01` | `DEP_FLUX`, `SAFE01` | CELL_MODEL | Does manipulation of poleward flux reduce chromosome missegregation in a BubR1-limiting human-cell state while preserving viability, cell death and division? |
+| `CHAR01` | `CHAR01` | CELL_MODEL | Does this exact allele destabilise the protein at all? |
+| `STAB01` | `STAB01`, `SAFE02` | CELL_MODEL | Can a misfolding kinase-domain BubR1 missense protein be stabilised in a human cell, and does the manipulation preserve the population? |
+| `TRIP13_01` | `DEP_TRIP13`, `SAFE01` | CELL_MODEL | Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit in a BubR1-limiting state without degrading activation, and does the population survive it? |
+
+SAFE01 appears in two campaigns because it is component-specific: whichever campaign introduces a component establishes safety for that component and no other.
+
+| destination | unresolved branches | campaigns needed | not covered by any campaign |
+|---|---|---|---|
+| `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4: `FLUX01`, `TRIP13_01`, `BYPASS_ACT`, `COMPOSITE_VALID` | `BYPASS_ACT`, `COMPOSITE_VALID` |
+| `FUNCTIONAL_CELLULAR_TARGET` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 2: `FLUX01`, `ACT_SAFETY01` | `ACT_SAFETY01` |
+| `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `DEP_FLUX`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | 6: `FLUX01`, `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` |
+
+## Priorities, reported separately
+
+The two families are not competing for one slot, so they get one line each.
+
+- **Best next F1 experiment: `CHAR01`.** Unavoidable for the abundance family, upstream of every
+  other F1 branch, cheapest, and needs no patient material. Not demoted by anything below.
+- **Best current functional-bypass candidate: `FLUX01`.** It resolves two branches in one set of
+  observations, needs only a human cell line, and targets the terminal endpoint directly rather
+  than a canonical intermediate.
+
+**Do not read the campaign count as an experiment count.** The functional route is
+1 runnable campaign(s) — `FLUX01` — plus
+1 gate(s) that no cell experiment can answer: `ACT_SAFETY01` (ORGANISM_MODEL).
+
+That asymmetry is the current state of the non-canonical route: the biology it needs is one
+experiment away, and the risk question it needs is not in a dish at all.
 
 ## Where the route map says to look first
 
@@ -77,7 +114,8 @@ Runnable measurements on that route: **3 of 3**.
 
 Unavoidable experiments — every route from the case state to the target passes through these:
 
-- **`ACT_SAFETY01`** — Is checkpoint competence required for this case on tumour-predisposition grounds, independently of per-division missegregation?
+
+- none: no single branch gates every route
 
 Distance to target from each branch's best admissible outcome, counting unresolved branch nodes
 still required. Fewer is closer; the set is shown because routes share experiments and summing
@@ -96,12 +134,12 @@ Distances are to `FUNCTIONAL_CELLULAR_TARGET` unless stated otherwise.
 | `SAFE01` | runnable measurement | CELL_MODEL | `preserved` | 2: `ACT_SAFETY01`, `DEP_FLUX` | 2 |
 | `SAFE02` | runnable measurement | CELL_MODEL | `preserved` | 2: `ACT_SAFETY01`, `DEP_FLUX` | 2 |
 | `EXPRVAL01` | runnable measurement | CELL_MODEL | `construct_limited` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
-| `COMPOSITE_VALID` | runnable measurement | CELL_MODEL | `system_validated` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
+| `COMPOSITE_VALID` | runnable measurement | CELL_MODEL | `system_validated` | 2: `DEP_FLUX`, `SAFE01` | 2 |
 | `DEP_KIF18A` | runnable measurement | CELL_MODEL | `independent_of_bubr1` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
 | `DEP_FLUX` | runnable measurement | CELL_MODEL | `independent_of_bubr1` | 2: `ACT_SAFETY01`, `SAFE01` | 2 |
 | `DEP_TRIP13` | runnable measurement | CELL_MODEL | `independent_and_specific` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
-| `BYPASS_ACT` | component discovery | CELL_MODEL | `grounded_component_found` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
-| `ACT_SAFETY01` | runnable measurement | CELL_MODEL | `not_required_for_this_state` | 2: `DEP_FLUX`, `SAFE01` | 2 |
+| `BYPASS_ACT` | component discovery | CELL_MODEL | `grounded_component_found` | 2: `DEP_FLUX`, `SAFE01` | 2 |
+| `ACT_SAFETY01` | runnable measurement | ORGANISM_MODEL | `not_required_for_this_state` | 2: `DEP_FLUX`, `SAFE01` | 2 |
 | `XSCALE01` | runnable measurement | TISSUE_MODEL | `fraction_falls` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
 | `IRREV01` | runnable measurement | ORGANISM_MODEL | `prospective_component_exists` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
 | `XSCALE02` | runnable measurement | ORGANISM_MODEL | `course_modified` | 3: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` | 3 |
@@ -237,7 +275,7 @@ Does the assembled composite system actually lower chromosome missegregation whi
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `system_validated` | `S_COMPOSITE_VALIDATED` (state) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
+| `system_validated` | `S_COMPOSITE_VALIDATED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
 | `functions_conflict` | `T_COMPOSITE_CONFLICT` (`NO_KNOWN_CONTINUATION`) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
 | `no_improvement` | `T_COMPOSITE_NULL` (`NO_KNOWN_CONTINUATION`) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
 | `insufficient` | `T_COMPOSITE_REPEAT` (`BOUNDED_FRONTIER`) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
@@ -287,7 +325,7 @@ Is there a physically realisable way to supply checkpoint activation independent
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `grounded_component_found` | `S_ACT_SUPPLIED` (state) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
+| `grounded_component_found` | `S_ACT_SUPPLIED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
 | `no_component` | `T_ACT_NO_ACTUATOR` (`NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
 
 ### `ACT_SAFETY01`
@@ -299,7 +337,7 @@ Is checkpoint competence required for this case on tumour-predisposition grounds
 | outcome | leads to | route state from there |
 |---|---|---|
 | `not_required_for_this_state` | `S_CHECKPOINT_RISK_RESOLVED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `checkpoint_competence_required` | `T_ACT_IS_REQUIRED` (`NO_KNOWN_CONTINUATION`) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
+| `checkpoint_competence_required` | `S_ACT_COMPETENCE_REQUIRED` (state) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
 | `unestablished` | `T_ACT_RISK_FRONTIER` (`BOUNDED_FRONTIER`) | 3 still unresolved: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01` |
 
 ### `XSCALE01`
@@ -356,9 +394,9 @@ Does the manipulation avoid organism-level harm?
 |---|---|---|
 | `GROUNDED` | 32 | traversed directly; no branch created |
 | `CONTEXT_TRANSFER_REQUIRED` | 2 | the relation holds somewhere else and the transfer is unestablished |
-| `EXPERIMENTAL_UNKNOWN` | 22 | a branch node; outcomes enumerated above |
-| `PHYSICAL_ACTUATOR_MISSING` | 4 | the requirement is grounded and no component is known to supply it |
-| `CONCEPTUALLY_SUFFICIENT_ONLY` | 5 | sufficient in model; not a physical claim |
+| `EXPERIMENTAL_UNKNOWN` | 23 | a branch node; outcomes enumerated above |
+| `PHYSICAL_ACTUATOR_MISSING` | 5 | the requirement is grounded and no component is known to supply it |
+| `CONCEPTUALLY_SUFFICIENT_ONLY` | 7 | sufficient in model; not a physical claim |
 | `UNSAFE` | 0 | closed on safety grounds |
 
 **`PHYSICAL_ACTUATOR_MISSING` transitions:**
@@ -366,6 +404,7 @@ Does the manipulation avoid organism-level harm?
 - `S_MISSEGREGATION` → `BYPASS_ACT` — No named candidate survived function-first discovery for checkpoint activation; available from the current state and independent of EXP01's result
 - `S_MATCHED_ACHIEVABLE` → `STAB01` — Ectopic matching is a laboratory condition, not a control the case can hold. A physical actuator is required and none is grounded
 - `B_MULTI_DEFECT` → `BYPASS_ACT`
+- `S_ACT_COMPETENCE_REQUIRED` → `BYPASS_ACT` — Reopens component discovery for checkpoint activation — and only this result authorises reopening it
 - `T_EXP01_CEILING` → `STAB01` — Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?
 
 **`CONTEXT_TRANSFER_REQUIRED` transitions:**
@@ -406,6 +445,8 @@ edge and opens another branch".
 - *re-entry:* `B_TURNOVER_ONLY` → `STAB01` — Re-enters STAB01 on the folding-capacity arm (P1-R) rather than the degradative arm. A deliberate loop: the same branch node asked of a different arm
 - *family transition:* `S_PROTEIN_CEILING` → `C_KIF18A` — Bypass remains available
 - *family transition:* `S_NOT_EXPRESSIBLE` → `C_KIF18A` — Bypass remains available as an alternative continuation
+- *re-entry:* `S_ACT_COMPETENCE_REQUIRED` → `BYPASS_ACT` — Reopens component discovery for checkpoint activation — and only this result authorises reopening it
+- *re-entry:* `S_ACT_COMPETENCE_REQUIRED` → `CHAR01` — The abundance family supplies checkpoint competence through BubR1 itself, so it re-enters at its own first experiment
 - *family transition:* `T_NO_ACTUATOR` → `C_KIF18A` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
 - *family transition:* `T_EXP01_CEILING` → `STAB01` — Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?
 
@@ -465,7 +506,7 @@ graph TD
   FUNCTIONAL_CELLULAR_TARGET[/"FUNCTIONAL_CELLULAR_TARGET"/]
   S_FLUX_LOWERS_MIS["S_FLUX_LOWERS_MIS"]
   ACT_SAFETY01{{"ACT_SAFETY01"}}
-  T_ACT_IS_REQUIRED(("T_ACT_IS_REQUIRED<br/>NO_KNOWN_CONTINUATION"))
+  S_ACT_COMPETENCE_REQUIRED["S_ACT_COMPETENCE_REQUIRED"]
   T_ACT_RISK_FRONTIER(("T_ACT_RISK_FRONTIER<br/>BOUNDED_FRONTIER"))
   S_TISSUE_FRACTION_FALLS["S_TISSUE_FRACTION_FALLS"]
   S_CLINICAL_MODIFIED["S_CLINICAL_MODIFIED"]
@@ -567,7 +608,7 @@ graph TD
   BYPASS_ACT -->|grounded_component_found| S_ACT_SUPPLIED
   BYPASS_ACT -->|no_component| T_ACT_NO_ACTUATOR
   ACT_SAFETY01 -->|not_required_for_this_state| S_CHECKPOINT_RISK_RESOLVED
-  ACT_SAFETY01 -->|checkpoint_competence_required| T_ACT_IS_REQUIRED
+  ACT_SAFETY01 -->|checkpoint_competence_required| S_ACT_COMPETENCE_REQUIRED
   ACT_SAFETY01 -->|unestablished| T_ACT_RISK_FRONTIER
   XSCALE01 -->|fraction_falls| S_TISSUE_FRACTION_FALLS
   XSCALE01 -->|no_aggregate| T_NO_TISSUE_EFFECT
@@ -634,6 +675,10 @@ graph TD
   S_MIS_LOWERED -->|GROUNDED| FUNCTIONAL_CELLULAR_TARGET
   S_POP_SAFE_ANY -->|GROUNDED| FUNCTIONAL_CELLULAR_TARGET
   S_CHECKPOINT_RISK_RESOLVED -->|GROUNDED| FUNCTIONAL_CELLULAR_TARGET
+  S_ACT_COMPETENCE_REQUIRED -.->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ACT
+  S_ACT_COMPETENCE_REQUIRED -.->|EXPERIMENTAL_UNKNOWN| CHAR01
+  S_ACT_SUPPLIED -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_CHECKPOINT_RISK_RESOLVED
+  CANONICAL_CELLULAR_STATE -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_CHECKPOINT_RISK_RESOLVED
   FUNCTIONAL_CELLULAR_TARGET -->|EXPERIMENTAL_UNKNOWN| XSCALE01
   FUNCTIONAL_CELLULAR_TARGET -->|EXPERIMENTAL_UNKNOWN| IRREV01
   FUNCTIONAL_CELLULAR_TARGET -->|EXPERIMENTAL_UNKNOWN| SAFE_ORG
@@ -748,12 +793,12 @@ thing this map was built to stop.
 
 | needs | branches | meaning |
 |---|---|---|
-| `CELL_MODEL` | `ACT_SAFETY01`, `BYPASS_ACT`, `CHAR01`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_KIF18A`, `DEP_TRIP13`, `EXP01`, `EXPRVAL01`, `FUNCVAL01`, `SAFE01`, `SAFE02`, `STAB01`, `STAB02` | runnable now — a human cell line and standard assays |
+| `CELL_MODEL` | `BYPASS_ACT`, `CHAR01`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_KIF18A`, `DEP_TRIP13`, `EXP01`, `EXPRVAL01`, `FUNCVAL01`, `SAFE01`, `SAFE02`, `STAB01`, `STAB02` | runnable now — a human cell line and standard assays |
 | `TISSUE_MODEL` | `XSCALE01` | needs a tissue-level model that does not exist for this case |
-| `ORGANISM_MODEL` | `IRREV01`, `SAFE_ORG`, `XSCALE02` | needs organism-level or longitudinal data |
+| `ORGANISM_MODEL` | `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE02` | needs organism-level or longitudinal data |
 | `GOVERNANCE_ABSENT` | `XFER01` | blocked by governance, not biology: no patient material is available and none may be acquired |
 
-14 of 19 branches need nothing but a cell line. Of those, 3 sit on the shortest route to `FUNCTIONAL_CELLULAR_TARGET`: `ACT_SAFETY01`, `DEP_FLUX`, `SAFE01`.
+13 of 19 branches need nothing but a cell line. Of those, 2 sit on the shortest route to `FUNCTIONAL_CELLULAR_TARGET`: `DEP_FLUX`, `SAFE01`.
 
 `CHAR01` remains the first bench experiment on the abundance family: cheapest, upstream of every
 other F1 branch, and no patient material.

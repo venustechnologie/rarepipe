@@ -74,6 +74,48 @@ target_audit:
       checkpoint competence could leave that liability untouched, and the missegregation endpoint
       would not see it. Whether checkpoint competence is required for this case on those grounds is
       itself unresolved, so it enters as a branch rather than as an assumption either way."
+# ---------------------------------------------------------------- experimental campaigns
+# Branch nodes are units of ignorance; campaigns are units of work. Several branches can be resolved
+# by one set of observations, and counting branches alone overstates how many experiments a route
+# needs. Nothing here invents time, cost or probability — a campaign is just a declared grouping of
+# observations that can legitimately be collected together.
+campaigns:
+  - id: FLUX01
+    question: "Does manipulation of poleward flux reduce chromosome missegregation in a BubR1-limiting
+      human-cell state while preserving viability, cell death and division?"
+    resolves: [DEP_FLUX, SAFE01]
+    requires: CELL_MODEL
+    component: "poleward flux, perturbed as in PMID:39541344 — low-dose taxol, or HAUS8 or NuMA codepletion"
+    primary_endpoints: [missegregation, viability, cell_death, division_rate]
+    diagnostics: [chromosome_alignment, checkpoint_activation, checkpoint_silencing]
+    diagnostics_note: "Alignment, activation and silencing are recorded as mechanistic diagnostics, not
+      success criteria. A route that lowers missegregation with the population preserved is not failed
+      for leaving the canonical trajectory unreproduced — that is the target audit's whole point."
+    bubr1_state_required: "limiting, not absent — the regime no published experiment has used, and the
+      reason DEP_FLUX cannot be resolved from the literature"
+  - id: CHAR01
+    question: "Does this exact allele destabilise the protein at all?"
+    resolves: [CHAR01]
+    requires: CELL_MODEL
+    note: "First experiment on the abundance family. Upstream of every other F1 branch and needs no
+      patient material."
+  - id: STAB01
+    question: "Can a misfolding kinase-domain BubR1 missense protein be stabilised in a human cell, and
+      does the manipulation preserve the population?"
+    resolves: [STAB01, SAFE02]
+    requires: CELL_MODEL
+    note: "The stabilisation protocol already collects cell-state readouts (viability, death, division)
+      in the same experiments, so the manipulation's own safety is not a separate campaign."
+  - id: TRIP13_01
+    question: "Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit in a BubR1-limiting
+      state without degrading activation, and does the population survive it?"
+    resolves: [DEP_TRIP13, SAFE01]
+    requires: CELL_MODEL
+    component: "TRIP13 with APC15"
+    note: "Resolves SAFE01 only for this component. Population safety is manipulation-specific, so a
+      different bypass component needs its own observation."
+campaign_note: "SAFE01 appears in two campaigns because it is component-specific: whichever campaign
+  introduces a component establishes safety for that component and no other."
 requires_vocabulary: [CELL_MODEL, TISSUE_MODEL, ORGANISM_MODEL, GOVERNANCE_ABSENT]
 label_vocabulary: [GROUNDED, CONTEXT_TRANSFER_REQUIRED, EXPERIMENTAL_UNKNOWN,
                    PHYSICAL_ACTUATOR_MISSING, CONCEPTUALLY_SUFFICIENT_ONLY, UNSAFE]
@@ -308,14 +350,24 @@ nodes:
   - id: ACT_SAFETY01
     kind: branch
     resolves_by: MEASUREMENT
-    requires: CELL_MODEL
+    requires: ORGANISM_MODEL
     label: "Is checkpoint competence required for this case on tumour-predisposition grounds, independently of per-division missegregation?"
     why_unresolved: "Checkpoint deficiency predisposes to tumours by a route the missegregation endpoint does not measure, and this disorder already carries embryonal tumour risk. Nothing establishes whether a euploid-but-checkpoint-deficient state carries that liability, so it is asked rather than assumed either way."
+    executability_adjudication:
+      question_1: "Do existing experiments establish that tumour risk is causally independent of chromosome fidelity?"
+      answer_1: "NO. The human syndromes couple the two rather than separating them — biallelic MAD1L1 mutation gives aneuploidy with high tumour susceptibility, and biallelic MAD2L1BP (p31comet) mutation gives mosaic aneuploidy with juvenile granulosa cell tumour — and aneuploidy is the proposed mechanism in both. In mice, checkpoint and p53 deficiencies cooperate for tumorigenesis, so the path to tumours is context-dependent rather than a direct checkpoint-to-tumour link. Nobody has shown a checkpoint-deficient but euploid state that is tumour-prone."
+      evidence_1: ["PMID:36322655", "PMID:37796616", "PMID:19065665", "PMID:19546858"]
+      question_2: "Is there a validated cell-level surrogate that could answer it?"
+      answer_2: "NO. Tumour susceptibility in this literature is an organism-level, long-timescale outcome measured in mouse cohorts or human syndromes. Transformation assays exist but none is validated as a predictor of predisposition for this question."
+      consequence: "Reclassified from CELL_MODEL to ORGANISM_MODEL and retained as an unresolved risk gate. A negative cell assay must not be promoted to 'checkpoint competence is not required for tumour risk'."
+      what_would_make_it_answerable: "If the tumour risk in these syndromes is mediated by aneuploidy, then a route that lowers missegregation addresses the mechanism and checkpoint competence per se is not required. If the risk has a checkpoint-independent arm, it is. That is the causal-independence question, and it is now sharply framed rather than resolved."
     outcomes:
       not_required_for_this_state: S_CHECKPOINT_RISK_RESOLVED
-      checkpoint_competence_required: T_ACT_IS_REQUIRED
+      checkpoint_competence_required: S_ACT_COMPETENCE_REQUIRED
       unestablished: T_ACT_RISK_FRONTIER
-  - {id: T_ACT_IS_REQUIRED, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Checkpoint competence is required on predisposition grounds: the functional target collapses back onto the canonical state and BYPASS_ACT is a real gate after all"}
+  # A result that makes checkpoint competence necessary creates a new requirement; it does not end
+  # the reasoning. Two families can supply it, and both stay open.
+  - {id: S_ACT_COMPETENCE_REQUIRED, kind: state, label: "Checkpoint competence is required on predisposition grounds: the functional target gains a conjunct and the activation question becomes a real gate, to be supplied by either family"}
   - {id: T_ACT_RISK_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Whether checkpoint competence is needed on predisposition grounds is unestablished; the question is specified and unasked"}
   # ---------- beyond the cell: the scales this map previously stopped short of ----------
   - {id: S_TISSUE_FRACTION_FALLS, kind: state, label: "The aneuploid cell fraction falls in a tissue relevant to this child's phenotype"}
@@ -498,6 +550,10 @@ edges:
   - {from: S_MIS_LOWERED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
   - {from: S_POP_SAFE_ANY, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
   - {from: S_CHECKPOINT_RISK_RESOLVED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
+  - {from: S_ACT_COMPETENCE_REQUIRED, to: BYPASS_ACT, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "Reopens component discovery for checkpoint activation — and only this result authorises reopening it"}
+  - {from: S_ACT_COMPETENCE_REQUIRED, to: CHAR01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "The abundance family supplies checkpoint competence through BubR1 itself, so it re-enters at its own first experiment"}
+  - {from: S_ACT_SUPPLIED, to: S_CHECKPOINT_RISK_RESOLVED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Supplying activation satisfies the risk gate by meeting the requirement rather than by showing it unnecessary"}
+  - {from: CANONICAL_CELLULAR_STATE, to: S_CHECKPOINT_RISK_RESOLVED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "The canonical state includes checkpoint competence, so it satisfies the gate by meeting it"}
   - {from: FUNCTIONAL_CELLULAR_TARGET, to: XSCALE01, label: EXPERIMENTAL_UNKNOWN, note: "Per-division fidelity to tissue aneuploid fraction"}
   - {from: FUNCTIONAL_CELLULAR_TARGET, to: IRREV01, label: EXPERIMENTAL_UNKNOWN, note: "How much of the phenotype is still ahead of the child"}
   - {from: FUNCTIONAL_CELLULAR_TARGET, to: SAFE_ORG, label: EXPERIMENTAL_UNKNOWN, note: "Organism-level safety of whatever actuator got here"}

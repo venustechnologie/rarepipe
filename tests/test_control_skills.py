@@ -471,8 +471,17 @@ def test_activation_is_route_specific_rather_than_a_universal_gate():
     for dest in ("CANONICAL_CELLULAR_STATE", M.goal(d)):
         assert "BYPASS_ACT" not in M.dominators_for(d, dest), (
             f"BYPASS_ACT gates {dest}; if that is now true the audit verdict on T_ACT must be revisited")
-    assert "ACT_SAFETY01" in M.dominators_for(d, M.goal(d)), (
-        "the checkpoint-risk question must be unavoidable on the functional target")
+    # The risk conjunct cannot be bypassed, but the branch that asks about it can be: once a result
+    # makes checkpoint competence necessary, supplying competence satisfies the conjunct by meeting
+    # the requirement instead of by showing it unnecessary. So the right invariant is on the conjunct,
+    # not on the branch — asserting branch dominance here would forbid that continuation.
+    nodes = {n["id"]: n for n in d["nodes"]}
+    assert "S_CHECKPOINT_RISK_RESOLVED" in nodes[M.goal(d)]["of"]
+    satisfiers = {e["from"] for e in d["edges"] if e["to"] == "S_CHECKPOINT_RISK_RESOLVED"}
+    satisfiers |= {b["id"] for b in d["nodes"] if b["kind"] == "branch"
+                   and "S_CHECKPOINT_RISK_RESOLVED" in (b.get("outcomes") or {}).values()}
+    assert "ACT_SAFETY01" in satisfiers, "the risk question must be one way to satisfy the conjunct"
+    assert len(satisfiers) > 1, "supplying competence must also satisfy it, or item 1's fix is undone"
 
 
 def test_every_branch_says_what_it_needs_to_be_run():
@@ -491,3 +500,59 @@ def test_every_branch_says_what_it_needs_to_be_run():
 
 def nodes_requiring(d, req):
     return [n["id"] for n in d["nodes"] if n["kind"] == "branch" and n.get("requires") == req]
+
+
+def test_a_new_requirement_does_not_terminate_reasoning():
+    """ACT_SAFETY01 returning "competence required" creates a requirement, not a dead end.
+
+    Terminating there would have the map stop reasoning at the moment it learned something: the
+    result says a conjunct is needed, and two families can supply it. Both must stay reachable.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    act = next(n for n in d["nodes"] if n["id"] == "ACT_SAFETY01")
+    landing = act["outcomes"]["checkpoint_competence_required"]
+    assert nodes[landing]["kind"] != "terminal", f"{landing} terminates a result that opens a requirement"
+    onward = {e["to"] for e in d["edges"] if e["from"] == landing}
+    assert "BYPASS_ACT" in onward, "the bypass route to checkpoint competence must reopen"
+    assert onward - {"BYPASS_ACT"}, "the abundance family must also remain a way to supply competence"
+
+
+def test_the_checkpoint_risk_gate_is_not_answerable_in_a_dish():
+    """Its executability class must follow the adjudication, not convenience.
+
+    No validated cell-level surrogate for tumour predisposition was found, and the human syndromes
+    couple aneuploidy with tumour susceptibility rather than separating them. Leaving this as
+    CELL_MODEL would let a negative cell assay be promoted to "checkpoint competence is not required
+    for tumour risk", which the evidence does not support.
+    """
+    M, d = _route_map()
+    act = next(n for n in d["nodes"] if n["id"] == "ACT_SAFETY01")
+    assert act["requires"] != "CELL_MODEL", "a cell assay cannot settle organism-level tumour risk"
+    adj = act.get("executability_adjudication")
+    assert adj, "the reclassification must record the adjudication that justifies it"
+    assert adj["answer_1"].startswith("NO") and adj["answer_2"].startswith("NO")
+    assert adj.get("evidence_1"), "the adjudication must cite what it rests on"
+
+
+def test_campaigns_cover_fewer_units_than_branches_without_hiding_any():
+    """A campaign groups observations; it must not make a branch disappear.
+
+    The point is that one set of observations can settle several unknowns, so the campaign count is
+    lower than the branch count. The risk is that grouping quietly drops a branch nobody can run, so
+    every branch on a route is either covered by a campaign or reported as uncovered.
+    """
+    M, d = _route_map()
+    for c in d["campaigns"]:
+        assert c["requires"] in set(d["requires_vocabulary"])
+        for b in c["resolves"]:
+            assert any(n["id"] == b and n["kind"] == "branch" for n in d["nodes"]), f"{c['id']} -> {b}"
+    route = M.cost(d)[M.goal(d)]
+    covered, uncovered = M.campaign_cover(d, route)
+    resolved = {b for cid in covered for c in d["campaigns"] if c["id"] == cid for b in c["resolves"]}
+    assert (resolved | set(uncovered)) >= route, "a branch on the route is neither covered nor reported"
+    assert len(covered) + len(uncovered) <= len(route), "grouping must not increase the unit count"
+    assert "FLUX01" in {c["id"] for c in d["campaigns"]}
+    flux = next(c for c in d["campaigns"] if c["id"] == "FLUX01")
+    assert set(flux["resolves"]) == {"DEP_FLUX", "SAFE01"}
+    assert flux.get("diagnostics"), "alignment, activation and silencing must be kept as diagnostics"
