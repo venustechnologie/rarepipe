@@ -96,6 +96,20 @@ def validate(d: dict) -> list[str]:
         if n["kind"] in ("state", "all_of") and not out_edges.get(n["id"]):
             problems.append(f"{n['id']}: a {n['kind']} node with no outgoing transition is a dead end, not a terminal")
 
+    for c in (d.get("campaigns") or []):
+        for name, mapping in (c.get("outcomes") or {}).items():
+            for bid, outcome in mapping.items():
+                if bid not in nodes or nodes[bid]["kind"] != "branch":
+                    problems.append(f"campaign {c['id']} outcome {name}: {bid} is not a branch")
+                elif outcome not in (nodes[bid].get("outcomes") or {}):
+                    problems.append(f"campaign {c['id']} outcome {name}: {bid} has no outcome "
+                                    f"{outcome!r}")
+        if c.get("outcomes"):
+            touched = {b for m in c["outcomes"].values() for b in m}
+            missing = set(c["resolves"]) - touched
+            if missing:
+                problems.append(f"campaign {c['id']}: declares joint outcomes that never decide "
+                                f"{sorted(missing)}, so a branch it claims to resolve is left open")
     problems += cycles(d, nodes, out_edges)
     return problems
 
@@ -164,9 +178,13 @@ def frontier(d: dict, *, known: set[str] | None = None, drop: str | None = None,
             # A branch returns exactly one result. Its other outcomes are not merely uncosted, they
             # are unavailable — without this, a negative result never closes the family it rules out.
             outcomes = {k: v for k, v in outcomes.items() if k == decided[n["id"]]}
+        # A decided branch has been run: restricting it to one outcome is not enough, it must also
+        # stop counting as unresolved work, or "what remains after this result" keeps charging for
+        # the experiment that produced the result.
+        charge = n["id"] not in decided
         for target in outcomes.values():
             if target in nodes:
-                incoming[target].append((n["id"], True))      # traversing a branch costs that branch
+                incoming[target].append((n["id"], charge))
     for e in d["edges"]:
         if e["from"] not in nodes or e["to"] not in nodes or nodes[e["from"]]["kind"] == "branch":
             continue                                           # a branch leaves only by its outcomes
@@ -261,6 +279,24 @@ def campaign_cover(d: dict, branches: frozenset[str]) -> tuple[list[str], list[s
         if best is not None:
             break
     return (best or []), uncovered
+
+
+def blocking_outcomes(d: dict, dest: str) -> list[tuple[str, str]]:
+    """Single branch outcomes that make `dest` unreachable.
+
+    Conditional reachability says a destination is reachable if the branches fall a particular way.
+    Robust reachability asks whether any single admissible result can close it. Empty list means
+    robust; otherwise these are the results that end it, which is the honest thing to report instead
+    of a probability nobody has.
+    """
+    out = []
+    for b in d["nodes"]:
+        if b["kind"] != "branch":
+            continue
+        for name in (b.get("outcomes") or {}):
+            if cost(d, decided={b["id"]: name}).get(dest) is None:
+                out.append((b["id"], name))
+    return sorted(out)
 
 
 def gaps(d: dict) -> dict[str, list[dict]]:
@@ -395,15 +431,74 @@ def render(d: dict) -> str:
           + f" | {len(cov) + len(unc)}: " + ", ".join("`" + x + "`" for x in cov + unc)
           + " | " + (", ".join("`" + x + "`" for x in unc) or "none") + " |")
     A("")
+    A("## Reachability: conditional and robust")
+    A("")
+    A("Conditional reachability is whether a destination is reachable if the branches fall a particular")
+    A("way. Robust reachability asks whether any single admissible result can close it. No probability")
+    A("is attached to either, and none is available.")
+    A("")
+    A("| destination | conditional | robust | single results that close it |")
+    A("|---|---|---|---|")
+    for dest in ("CANONICAL_CELLULAR_STATE", G, U):
+        if dest not in nodes:
+            continue
+        c = cost(d).get(dest)
+        blockers = blocking_outcomes(d, dest)
+        cond = "no" if c is None else (f"yes, {len(c)} branch(es)")
+        rob = "**yes**" if (c is not None and not blockers) else "no"
+        shown = ", ".join(f"`{b}`=`{o}`" for b, o in blockers[:6]) or "none"
+        if len(blockers) > 6:
+            shown += f", and {len(blockers) - 6} more"
+        A(f"| `{dest}` | {cond} | {rob} | {shown} |")
+    A("")
+    A("## Every FLUX01 result, decided in advance")
+    A("")
+    flux = next((c for c in (d.get("campaigns") or []) if c["id"] == "FLUX01"), None)
+    if flux and flux.get("outcomes"):
+        A("A campaign resolves two branches at once, so its results are joint ones. Each is mapped to")
+        A("the branch outcomes it implies, and the continuation is computed rather than waited for.")
+        A("")
+        A("| FLUX01 result | cell state after it | organism target after it | what happens next |")
+        A("|---|---|---|---|")
+        NEXT = {
+         "lower_missegregation_population_preserved":
+            "the cell-level functional state is reached by a non-canonical route; the risk gate "
+            "`ACT_SAFETY01` becomes live and the tissue scale opens",
+         "lower_missegregation_population_harmed":
+            "`SAFE01` closes on safety grounds; no benefit verdict overrides it, and the flux "
+            "component is out as a route whatever it did to missegregation",
+         "no_reduction":
+            "flux is not the controllable physics for this state; `C_KIF18A` remains the other named "
+            "alignment candidate and the abundance family is untouched",
+         "effect_requires_residual_bubr1":
+            "the bypass premise fails for this component — it is not independent of the protein it "
+            "was meant to work around",
+         "insufficient_or_invalid":
+            "nothing moves; the named validity gate is repeated at BubR1-limiting",
+        }
+        for name, mapping in flux["outcomes"].items():
+            c_cell = cost(d, decided=mapping).get(G)
+            c_org = cost(d, decided=mapping).get(U) if U else None
+            def show(x):
+                if x is None:
+                    return "**closed**"
+                return "**reached**" if not x else f"{len(x)} left"
+            A(f"| `{name}` | {show(c_cell)} | {show(c_org)} | {NEXT.get(name, '')} |")
+        A("")
     A("## Priorities, reported separately")
     A("")
     A("The two families are not competing for one slot, so they get one line each.")
     A("")
-    A("- **Best next F1 experiment: `CHAR01`.** Unavoidable for the abundance family, upstream of every")
-    A("  other F1 branch, cheapest, and needs no patient material. Not demoted by anything below.")
-    A("- **Best current functional-bypass candidate: `FLUX01`.** It resolves two branches in one set of")
-    A("  observations, needs only a human cell line, and targets the terminal endpoint directly rather")
-    A("  than a canonical intermediate.")
+    A("- **Global non-canonical experiment: `FLUX01`** — `FLUX01_EXECUTION_PACKET.md`. Resolves both")
+    A("  branches on the shortest route to the cell-level functional state, in one set of observations,")
+    A("  in a human cell line, against the terminal endpoint rather than a canonical intermediate.")
+    A("- **First abundance-family experiment: `CHAR01`** — `CHAR01_EXECUTION_PACKET.md`. Unavoidable")
+    A("  for F1, upstream of every other F1 branch, cheapest, no patient material.")
+    A("")
+    A("**Neither replaces the other.** They ask different questions: `CHAR01` asks whether the")
+    A("destabilised-protein premise is true for this allele at all, and `FLUX01` asks whether that")
+    A("repair can be skipped by correcting chromosome fidelity through other physics. A negative on")
+    A("one does not settle the other, and they share no equipment-level dependency.")
     A("")
     fc = cost(d).get(G)
     if fc is not None:

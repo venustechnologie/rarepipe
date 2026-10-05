@@ -9,7 +9,7 @@ case_ref: MVA_001
 # to the next biological scale rather than stopping at a cell.
 target:
   id: FUNCTIONAL_CELLULAR_TARGET
-  conjunction: [T_MIS, T_VIA, T_DIV, T_DEATH, T_ACT_RISK]
+  conjunction: [T_MIS, T_VIA, T_DIV, T_DEATH]
   canonical_state: CANONICAL_CELLULAR_STATE
   canonical_conjunction: [T_ALIGN, T_ACT, T_SIL, T_MIS, T_VIA, T_DIV, T_DEATH]
   components:
@@ -20,7 +20,8 @@ target:
     T_VIA:    preserved viability
     T_DIV:    preserved division
     T_DEATH:  no increase in cell death
-    T_ACT_RISK: "checkpoint-competence risk resolved — see the audit"
+# T_ACT_RISK is no longer a cellular conjunct. It is a required gate on organism-level advancement;
+# see target_audit.T_ACT_RISK and ORGANISM_TARGET.
 
 # ---------------------------------------------------------------- target semantics audit
 # The question: is each endpoint experimentally established as universally necessary for the desired
@@ -67,7 +68,13 @@ target_audit:
       silence means prolonged arrest, which shows up as death, lost division or slippage."
     retained_as: "route-specific requirement for any route that restores checkpoint signalling"
   T_ACT_RISK:
-    verdict: TERMINAL_SAFETY_REQUIREMENT
+    verdict: ORGANISM_ADVANCEMENT_RISK_GATE
+    scale_correction: "Previously a conjunct of the cellular target, which was a scale error: tumour
+      predisposition is not a property of a cell's mitotic phenotype and has no validated cellular
+      surrogate, so requiring it to define the cell state made a cellular claim depend on
+      organism-level knowledge. It is now a required gate before organism-level advancement. The gate
+      is preserved in full — nothing may advance past the cell without it — so this is a scale
+      correction, not a relaxation of safety."
     basis: "The strongest objection to reclassifying T_ACT, kept rather than argued away. Checkpoint
       deficiency is a tumour-predisposition mechanism independently of per-division missegregation,
       and this disorder already carries embryonal tumour risk. A route that reached euploidy without
@@ -93,6 +100,19 @@ campaigns:
       for leaving the canonical trajectory unreproduced — that is the target audit's whole point."
     bubr1_state_required: "limiting, not absent — the regime no published experiment has used, and the
       reason DEP_FLUX cannot be resolved from the literature"
+    # Item 6: every admissible joint result, decided in advance. A campaign resolves two branches at
+    # once, so its outcomes are joint ones, and each is mapped to the branch outcomes it implies.
+    outcomes:
+      lower_missegregation_population_preserved:
+        {DEP_FLUX: independent_of_bubr1, SAFE01: preserved}
+      lower_missegregation_population_harmed:
+        {DEP_FLUX: independent_of_bubr1, SAFE01: harm}
+      no_reduction:
+        {DEP_FLUX: no_reduction}
+      effect_requires_residual_bubr1:
+        {DEP_FLUX: requires_bubr1}
+      insufficient_or_invalid:
+        {DEP_FLUX: unestablished, SAFE01: insufficient}
   - id: CHAR01
     question: "Does this exact allele destabilise the protein at all?"
     resolves: [CHAR01]
@@ -309,6 +329,7 @@ nodes:
     why_unresolved: "Full-text adjudication: BubR1 appears zero times in 454 sentences, so dependency is wholly unaddressed and silence is not independence. What the full text does add is a positive mechanistic argument — by targeting poleward flux, chromosome alignment is affected independently of kinetochore attachment status, which is the axis BubR1 acts on — plus three mechanistically independent perturbations (low-dose taxol, HAUS8 or NuMA codepletion) that rescued misalignment, lagging chromosomes and micronuclei in human RPE-1 and in OVKATE cells, and a stated predictor of when it works (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven, which is the transfer this case needs."
     outcomes:
       independent_of_bubr1: S_FLUX_LOWERS_MIS
+      no_reduction:         S_FLUX_NOT_THE_LEVER
       requires_bubr1:       T_FLUX_DEPENDENT
       unestablished:        T_FLUX_FRONTIER
 
@@ -344,7 +365,7 @@ nodes:
   - {id: S_MIS_LOWERED, kind: state, label: "Chromosome missegregation is low, by whatever route produced it"}
   - {id: S_POP_SAFE_ANY, kind: state, label: "The manipulation that got here has its own population safety established"}
   - {id: S_CHECKPOINT_RISK_RESOLVED, kind: state, label: "The tumour-predisposition consequence of checkpoint competence is resolved for this case"}
-  - {id: FUNCTIONAL_CELLULAR_TARGET, kind: all_of, of: [S_MIS_LOWERED, S_POP_SAFE_ANY, S_CHECKPOINT_RISK_RESOLVED], label: "Functional cell-level target: low missegregation with the population preserved and the checkpoint-risk question resolved, by any physically valid route"}
+  - {id: FUNCTIONAL_CELLULAR_TARGET, kind: all_of, of: [S_MIS_LOWERED, S_POP_SAFE_ANY], label: "Functional cell-level target: low missegregation with the population preserved and the checkpoint-risk question resolved, by any physically valid route"}
   - {id: S_FLUX_LOWERS_MIS, kind: state, label: "Modifying poleward flux lowers missegregation in a BubR1-limited background"}
 
   - id: ACT_SAFETY01
@@ -377,7 +398,7 @@ nodes:
   # the mere possibility of one.
   - {id: S_PROSPECTIVE_EXISTS, kind: state, label: "Part of the phenotype is still ahead of the child and therefore addressable in principle"}
   - {id: S_ORG_SAFE, kind: state, label: "No organism-level harm from the manipulation"}
-  - {id: ORGANISM_TARGET, kind: all_of, of: [S_CLINICAL_MODIFIED, S_ORG_SAFE, S_PROSPECTIVE_EXISTS], label: "Organism-level target: clinical course modified without organism-level harm"}
+  - {id: ORGANISM_TARGET, kind: all_of, of: [S_CLINICAL_MODIFIED, S_ORG_SAFE, S_PROSPECTIVE_EXISTS, S_CHECKPOINT_RISK_RESOLVED], label: "Organism-level target: clinical course modified without organism-level harm"}
   - {id: T_ORGANISM_REACHED, kind: terminal, terminal: TARGET_REACHED_IN_MODEL, label: "Organism-level target reached in model"}
   - {id: T_NO_TISSUE_EFFECT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Per-cell fidelity improved without the tissue aneuploid fraction falling: the cell-level gain does not aggregate"}
   - {id: T_TISSUE_UNTESTABLE, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "No tissue-level readout is available for this child: a governance boundary, since no sampling is authorised and there is no recontact"}
@@ -454,6 +475,9 @@ nodes:
   - {id: T_CENPE_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "CENP-E cannot supply alignment independently of BubR1: closed by evidence, not by an empty search"}
   - {id: T_KIF18A_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "KIF18A's alignment role requires BubR1"}
   - {id: T_KIF18A_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "KIF18A dependency unestablished: the experiment is specified and unrun"}
+  # Engaged and ineffective is a different result from dependent or untested, and it continues:
+  # flux is not the lever in this state, which leaves the other alignment candidate and F1.
+  - {id: S_FLUX_NOT_THE_LEVER, kind: state, label: "The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state"}
   - {id: T_FLUX_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The flux effect requires BubR1"}
   - {id: T_FLUX_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Flux dependency unestablished: the experiment is specified and unrun"}
   - {id: T_TRIP13_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "TRIP13-driven exit requires BubR1"}
@@ -541,15 +565,16 @@ edges:
   # Reaching the cell-level state is not the disease being addressed. Three separate questions follow,
   # and the third bounds the other two whatever they return.
   - {from: CANONICAL_CELLULAR_STATE, to: S_MIS_LOWERED, label: GROUNDED, note: "The canonical trajectory entails the terminal state; it is one route to it, not the definition of it"}
-  - {from: CANONICAL_CELLULAR_STATE, to: ACT_SAFETY01, label: EXPERIMENTAL_UNKNOWN, note: "Even the canonical route must answer this, though for it the answer is expected to be trivial"}
+  - {from: S_FLUX_NOT_THE_LEVER, to: C_KIF18A, label: GROUNDED, reentry: true, note: "The other named alignment candidate remains"}
+  - {from: S_FLUX_NOT_THE_LEVER, to: CHAR01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "And the abundance family is untouched by a flux null"}
   - {from: S_FLUX_LOWERS_MIS, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "The flux work measures lagging chromosomes and micronuclei directly — the terminal endpoint, not a canonical intermediate", evidence: ["PMID:39541344"]}
   - {from: S_FLUX_LOWERS_MIS, to: S_ALIGN_SUPPLIED, label: GROUNDED, note: "It also supplies alignment, which the canonical state still needs"}
-  - {from: S_FLUX_LOWERS_MIS, to: ACT_SAFETY01, label: EXPERIMENTAL_UNKNOWN}
   - {from: S_POP_SAFE_F1B, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
   - {from: S_POP_SAFE_F2, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
   - {from: S_MIS_LOWERED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
   - {from: S_POP_SAFE_ANY, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
-  - {from: S_CHECKPOINT_RISK_RESOLVED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
+  - {from: S_CHECKPOINT_RISK_RESOLVED, to: ORGANISM_TARGET, label: GROUNDED, note: "AND-node member: the risk gate sits on organism advancement, not on the cell state"}
+  - {from: FUNCTIONAL_CELLULAR_TARGET, to: ACT_SAFETY01, label: EXPERIMENTAL_UNKNOWN, note: "Reaching the cell state is what makes the organism-risk question live; it is not what answers it"}
   - {from: S_ACT_COMPETENCE_REQUIRED, to: BYPASS_ACT, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "Reopens component discovery for checkpoint activation — and only this result authorises reopening it"}
   - {from: S_ACT_COMPETENCE_REQUIRED, to: CHAR01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "The abundance family supplies checkpoint competence through BubR1 itself, so it re-enters at its own first experiment"}
   - {from: S_ACT_SUPPLIED, to: S_CHECKPOINT_RISK_RESOLVED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Supplying activation satisfies the risk gate by meeting the requirement rather than by showing it unnecessary"}

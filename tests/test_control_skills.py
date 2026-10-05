@@ -460,8 +460,14 @@ def test_the_functional_target_is_modality_agnostic_but_not_a_loophole():
     assert "CANONICAL_CELLULAR_STATE" in nodes, "the canonical state must still be computed"
     functional = nodes[M.goal(d)]
     assert "S_POP_SAFE_ANY" in functional["of"], "the functional target must still require safety"
-    assert "S_CHECKPOINT_RISK_RESOLVED" in functional["of"], (
-        "reclassifying T_ACT must leave its tumour-predisposition question in the target, not drop it")
+    # The tumour-risk gate is preserved, but at the right scale. It is not a property of a cell's
+    # mitotic phenotype and has no validated cellular surrogate, so requiring it to define the cell
+    # state made a cellular claim depend on organism-level knowledge. It gates organism advancement
+    # instead — still mandatory, which is what stops the reclassification being a relaxation.
+    assert "S_CHECKPOINT_RISK_RESOLVED" not in functional["of"], (
+        "organism-level tumour-risk knowledge must not be a conjunct of the cellular phenotype")
+    assert "S_CHECKPOINT_RISK_RESOLVED" in nodes[M.ultimate(d)]["of"], (
+        "the risk gate must still be required before organism-level advancement, not dropped")
     assert M.cost(d).get("CANONICAL_CELLULAR_STATE") is not None
 
 
@@ -476,7 +482,7 @@ def test_activation_is_route_specific_rather_than_a_universal_gate():
     # the requirement instead of by showing it unnecessary. So the right invariant is on the conjunct,
     # not on the branch — asserting branch dominance here would forbid that continuation.
     nodes = {n["id"]: n for n in d["nodes"]}
-    assert "S_CHECKPOINT_RISK_RESOLVED" in nodes[M.goal(d)]["of"]
+    assert "S_CHECKPOINT_RISK_RESOLVED" in nodes[M.ultimate(d)]["of"]
     satisfiers = {e["from"] for e in d["edges"] if e["to"] == "S_CHECKPOINT_RISK_RESOLVED"}
     satisfiers |= {b["id"] for b in d["nodes"] if b["kind"] == "branch"
                    and "S_CHECKPOINT_RISK_RESOLVED" in (b.get("outcomes") or {}).values()}
@@ -556,3 +562,47 @@ def test_campaigns_cover_fewer_units_than_branches_without_hiding_any():
     flux = next(c for c in d["campaigns"] if c["id"] == "FLUX01")
     assert set(flux["resolves"]) == {"DEP_FLUX", "SAFE01"}
     assert flux.get("diagnostics"), "alignment, activation and silencing must be kept as diagnostics"
+
+
+def test_a_decided_branch_stops_counting_as_unresolved_work():
+    """"What remains after this result" must not keep charging for the experiment that produced it.
+
+    Restricting a decided branch to one outcome is not enough; it has also been run. Without this the
+    favourable FLUX01 result reported the cell-level state as two branches away when it is reached.
+    """
+    M, d = _route_map()
+    flux = next(c for c in d["campaigns"] if c["id"] == "FLUX01")
+    good = flux["outcomes"]["lower_missegregation_population_preserved"]
+    after = M.cost(d, decided=good).get(M.goal(d))
+    assert after is not None and not after, (
+        f"the favourable result should reach the cell-level state; {sorted(after or [])} still charged")
+
+
+def test_the_execution_packets_exist_and_defer_decisions_to_the_map():
+    """Packets are bench documents. Decision authority stays in one place.
+
+    Two packets each restating the outcome rules would let them drift apart, and the map is where the
+    continuations are computed.
+    """
+    for name, campaign in (("FLUX01_EXECUTION_PACKET.md", "FLUX01"),
+                           ("CHAR01_EXECUTION_PACKET.md", "CHAR01")):
+        text = (ROOT / "docs/control" / name).read_text()
+        assert "MVA_CONTINGENT_ROUTE_MAP.md" in text, f"{name} must defer to the map"
+        assert "no new decision machinery" in text.lower() or \
+               "adds no decision machinery" in text.lower(), f"{name}"
+        M, d = _route_map()
+        declared = next((c for c in d["campaigns"] if c["id"] == campaign), None)
+        assert declared, f"{campaign} is not a declared campaign"
+        for outcome in (declared.get("outcomes") or {}):
+            assert outcome in text, f"{name} does not carry the declared result {outcome!r}"
+
+
+def test_robust_and_conditional_reachability_are_distinguished():
+    """A destination no single result can close is a different claim from one that needs luck."""
+    M, d = _route_map()
+    cell, organism = M.goal(d), M.ultimate(d)
+    assert M.cost(d)[cell] is not None, "the cell-level state must be conditionally reachable"
+    assert not M.blocking_outcomes(d, cell), (
+        "no single admissible result should close the cell-level state")
+    assert M.blocking_outcomes(d, organism), (
+        "the organism target is only conditionally reachable; if nothing closes it the map is too kind")
