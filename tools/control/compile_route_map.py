@@ -143,6 +143,41 @@ def validate(d: dict) -> list[str]:
                     f"{n['id']} carries a mechanistic intermediate to the terminal endpoint via "
                     f"{name!r} without declaring what it establishes")
 
+    # ---- invariant: a terminal endpoint may not backfill a canonical mechanism ----
+    # The forward direction was already enforced. The reverse is the same error read backwards:
+    # reaching the endpoint says nothing about which mechanism delivered it, least of all in a state
+    # several candidates converge on.
+    for e in d["edges"]:
+        src, dst = nodes.get(e["from"]) or {}, nodes.get(e["to"]) or {}
+        if src.get("state_class") == "TERMINAL_ENDPOINT" and \
+                dst.get("state_class") == "MECHANISTIC_INTERMEDIATE" and \
+                not e.get("establishing_measurement"):
+            problems.append(
+                f"edge {e['from']}->{e['to']}: endpoint achievement may not backfill a canonical "
+                "mechanism. Lowering missegregation does not establish that alignment was supplied, "
+                "and this state is reached by routes that never measure it")
+
+    # ---- invariant: a shared retry node must preserve control-variable identity ----
+    for n in d["nodes"]:
+        if n["kind"] != "branch" or not n.get("preserves_variable_identity"):
+            continue
+        mapping = n.get("actuator_retry_map") or {}
+        if not mapping:
+            problems.append(f"{n['id']}: claims to preserve variable identity with no retry map")
+            continue
+        for cv, outcome in mapping.items():
+            if cv not in (d.get("control_variables") or {}):
+                problems.append(f"{n['id']}: retry map names unknown control variable {cv}")
+            if outcome not in (n.get("outcomes") or {}):
+                problems.append(f"{n['id']}: retry map points at missing outcome {outcome!r}")
+        incoming = [e["from"] for e in d["edges"] if e["to"] == n["id"]]
+        for src in incoming:
+            cv = (nodes.get(src) or {}).get("closes_for")
+            if cv and cv not in mapping:
+                problems.append(
+                    f"{n['id']}: {src} closes an actuator of {cv}, which the retry map does not "
+                    "cover, so a working alternate actuator would resolve into the wrong biology")
+
     # ---- invariant: positive efficacy is neutral with respect to independence ----
     for n in d["nodes"]:
         if n["kind"] != "branch":
@@ -483,17 +518,32 @@ def render(d: dict) -> str:
     A("and a renderer, not a new compiler layer: the existing machinery represents causal chains and")
     A("per-experiment decision rules, neither of which branches on admissible experimental outcome.")
     A("")
-    A("The question this answers is not what EXP01 will return. It is what we would do next under every")
-    A("admissible result, how much of each resulting route is already known, and which ignorance is worth")
-    A("removing first. No probabilities appear anywhere, because none is grounded.")
+    A("This is a city, not a route. It records every biological state the case can be in, every")
+    A("experiment or observation that moves between them, every admissible outcome of each, and where")
+    A("reasoning genuinely runs out. It does not say where to act: that is a downstream question, and")
+    A("the views that answer it are in an appendix. No probabilities appear anywhere, because none is")
+    A("grounded, and no leaf exists merely because reasoning stopped after an experiment.")
     A("")
     S("target")
-    A("## The target")
+    A("## Two cell-level states, and they are not the same thing")
     A("")
-    A("A biological state, never \"normal BUB1B\". All seven must hold at once:")
+    A("Both are computed throughout, and conflating them was the error the target audit fixed.")
     A("")
-    for k, v in d["target"]["components"].items():
-        A(f"- `{k}` — {v}")
+    A(f"**`{G}`** — the terminal state actually wanted, open to any physically valid route:")
+    A("")
+    for k in d["target"]["conjunction"]:
+        A(f"- `{k}` — {d['target']['components'][k]}")
+    A("")
+    A(f"**`{d['target']['canonical_state']}`** — the full trajectory a normal cell takes, which is one")
+    A("route to that state rather than the definition of it:")
+    A("")
+    for k in d["target"]["canonical_conjunction"]:
+        A(f"- `{k}` — {d['target']['components'][k]}")
+    A("")
+    A("The difference is the whole point. A synthetic route that safely produces faithful segregation")
+    A("is not failed for leaving the canonical BubR1 trajectory unreproduced; the endpoints it skips")
+    A("are retained as mechanistic diagnostics, and the audit below records why each was reclassified.")
+    A("Neither state is the disease: the organism scale is further out and carries its own unknowns.")
     A("")
     S("target")
     A("## Target semantics audit")
@@ -508,16 +558,14 @@ def render(d: dict) -> str:
     for k, v in (d.get("target_audit") or {}).items():
         A(f"| `{k}` | `{v['verdict']}` | {v.get('retained_as', 'target conjunct')} |")
     A("")
-    A("| destination | distance | unavoidable branches | `BYPASS_ACT` an unavoidable gate? |")
-    A("|---|---|---|---|")
+    A("| destination | is `BYPASS_ACT` an unavoidable gate? |")
+    A("|---|---|")
     for dest in ("CANONICAL_CELLULAR_STATE", G, U):
-        if dest not in nodes:
-            continue
-        c = cost(d).get(dest)
-        dom = dominators_for(d, dest)
-        dist = "unreachable" if c is None else f"{len(c)}: " + ", ".join("`" + x + "`" for x in sorted(c))
-        A(f"| `{dest}` | {dist} | {', '.join('`' + x + '`' for x in sorted(dom)) or 'none'} "
-          f"| {'**yes**' if 'BYPASS_ACT' in dom else 'no'} |")
+        if dest in nodes:
+            A(f"| `{dest}` | {'**yes**' if 'BYPASS_ACT' in dominators_for(d, dest) else 'no'} |")
+    A("")
+    A("Distances and unavoidable-branch counts for each destination are in the appendix; the finding")
+    A("that matters here is semantic rather than numeric.")
     A("")
     A("**`BYPASS_ACT` is not an unavoidable gate to either cell-level destination.** Checkpoint")
     A("activation is therefore a route-specific requirement and a mechanistic diagnostic, not a")
@@ -585,6 +633,41 @@ def render(d: dict) -> str:
                 problems.append(
                     f"{n['id']} carries a mechanistic intermediate to the terminal endpoint via "
                     f"{name!r} without declaring what it establishes")
+
+    # ---- invariant: a terminal endpoint may not backfill a canonical mechanism ----
+    # The forward direction was already enforced. The reverse is the same error read backwards:
+    # reaching the endpoint says nothing about which mechanism delivered it, least of all in a state
+    # several candidates converge on.
+    for e in d["edges"]:
+        src, dst = nodes.get(e["from"]) or {}, nodes.get(e["to"]) or {}
+        if src.get("state_class") == "TERMINAL_ENDPOINT" and \
+                dst.get("state_class") == "MECHANISTIC_INTERMEDIATE" and \
+                not e.get("establishing_measurement"):
+            problems.append(
+                f"edge {e['from']}->{e['to']}: endpoint achievement may not backfill a canonical "
+                "mechanism. Lowering missegregation does not establish that alignment was supplied, "
+                "and this state is reached by routes that never measure it")
+
+    # ---- invariant: a shared retry node must preserve control-variable identity ----
+    for n in d["nodes"]:
+        if n["kind"] != "branch" or not n.get("preserves_variable_identity"):
+            continue
+        mapping = n.get("actuator_retry_map") or {}
+        if not mapping:
+            problems.append(f"{n['id']}: claims to preserve variable identity with no retry map")
+            continue
+        for cv, outcome in mapping.items():
+            if cv not in (d.get("control_variables") or {}):
+                problems.append(f"{n['id']}: retry map names unknown control variable {cv}")
+            if outcome not in (n.get("outcomes") or {}):
+                problems.append(f"{n['id']}: retry map points at missing outcome {outcome!r}")
+        incoming = [e["from"] for e in d["edges"] if e["to"] == n["id"]]
+        for src in incoming:
+            cv = (nodes.get(src) or {}).get("closes_for")
+            if cv and cv not in mapping:
+                problems.append(
+                    f"{n['id']}: {src} closes an actuator of {cv}, which the retry map does not "
+                    "cover, so a working alternate actuator would resolve into the wrong biology")
 
     # ---- invariant: positive efficacy is neutral with respect to independence ----
     for n in d["nodes"]:

@@ -372,11 +372,21 @@ def test_absence_of_a_known_bubr1_link_is_never_recorded_as_independence():
     branch that offered only independent/dependent would force silence into one of them.
     """
     M, d = _route_map()
-    dep = [n for n in d["nodes"] if n["kind"] == "branch" and n["id"].startswith("DEP_")]
+    # Selected semantically, not by name prefix. DEP_CLONAL_DYNAMICS is a DEP_* branch about
+    # population growth rates, where BubR1 dependency is not the question being asked; requiring it to
+    # carry a dependency outcome would be the naming convention driving the biology.
+    dep = [n for n in d["nodes"] if n["kind"] == "branch"
+           and "bubr1" in (n.get("label") or "").lower()
+           and ("independent" in (n.get("label") or "").lower()
+                or "exploit" in (n.get("label") or "").lower())]
     assert dep, "no dependency adjudication branches found"
     for n in dep:
         outcomes = set(n["outcomes"])
-        assert "unestablished" in outcomes, f"{n['id']} cannot record an untested dependency"
+        # Either token serves: `unestablished` where the experiment ran and did not settle dependency,
+        # `insufficient` where it was not valid to read. What matters is that silence has somewhere to
+        # go other than independent-or-dependent.
+        assert outcomes & {"unestablished", "insufficient"}, (
+            f"{n['id']} cannot record a dependency it failed to settle")
         # Matched on meaning, not on a name prefix: DEP_FLUX now distinguishes a benefit that
         # *exploits* residual BubR1 (a compensatory route) from one that vanishes without it, and a
         # prefix check would have forced those two very different results to share a label.
@@ -919,3 +929,92 @@ def test_the_canonical_artifact_leads_with_the_city_not_the_shortest_route():
     for moved in ("Where the route map says to look first", "Priorities, reported separately",
                   "Reachability"):
         assert moved in appendix, f"{moved!r} must live in the appendix, not the canonical artifact"
+
+
+def test_a_shared_retry_node_preserves_control_variable_identity():
+    """Merge repeated question shapes, not biological semantics.
+
+    NEXT_ACTUATOR01 asks the same question for every variable — does another actuator move it — so
+    one node is right. But its success had a single landing, which meant a cohesion actuator working
+    resolved into a generic improvement and an alignment actuator working resolved into the same
+    place. The shape is shared; the biology each variable produces is not.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    retry = next(n for n in d["nodes"] if n.get("preserves_variable_identity"))
+    mapping = retry["actuator_retry_map"]
+    assert len(set(mapping.values())) >= 3, "a single landing is the error this invariant exists for"
+    for cv, outcome in mapping.items():
+        assert cv in d["control_variables"], cv
+        assert outcome in retry["outcomes"], outcome
+    landings = {retry["outcomes"][o] for o in set(mapping.values())}
+    assert len({nodes[l].get("state_class", "SYSTEM") for l in landings}) >= 2, (
+        "the landings must differ in kind, not just in name")
+    for e in d["edges"]:
+        if e["to"] != retry["id"]:
+            continue
+        cv = nodes[e["from"]].get("closes_for")
+        if cv:
+            assert cv in mapping, f"{e['from']} closes an actuator of {cv}, uncovered by the retry map"
+
+
+def test_a_terminal_endpoint_cannot_backfill_a_canonical_mechanism():
+    """The reverse of the forward invariant, and the same error read backwards.
+
+    Two edges carried "missegregation is lower" back into "alignment is supplied". Reaching the
+    endpoint says nothing about which mechanism delivered it, least of all in a state six candidates
+    converge on. Both directions now need an establishing measurement.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    term = {n["id"] for n in d["nodes"] if n.get("state_class") == "TERMINAL_ENDPOINT"}
+    inter = {n["id"] for n in d["nodes"] if n.get("state_class") == "MECHANISTIC_INTERMEDIATE"}
+    assert term and inter
+    for e in d["edges"]:
+        if e["from"] in term and e["to"] in inter:
+            assert e.get("establishing_measurement"), (
+                f"edge {e['from']}->{e['to']} backfills a mechanism from an endpoint")
+        if e["from"] in inter and e["to"] in term:
+            assert e.get("establishing_measurement"), f"edge {e['from']}->{e['to']}"
+    assert not M.validate(d)
+
+
+def test_the_last_three_frontiers_were_re_audited_not_accepted():
+    """Each was a different kind of thing wearing the word "scientific".
+
+    One was governance-bounded ("any assessable measure" is bounded by what may be observed, not by
+    what is knowable). One was an unexpanded variable — a tissue fraction is a ratio, so it moves when
+    either population's growth or loss moves, and the map had modelled it purely as aggregated
+    per-division fidelity. One was a missing context dimension: every assay here is mitotic,
+    single-lineage and adult-derived.
+    """
+    M, d = _route_map()
+    ids = {n["id"] for n in d["nodes"]}
+    kinds = {n["id"]: n.get("terminal") for n in d["nodes"] if n["kind"] == "terminal"}
+    assert kinds.get("T_CLINICAL_LINK_ABSENT") == "GOVERNANCE_BLOCKED", (
+        "unauthorised is not unlinked")
+    assert "T_AGGREGATION_UNEXPLAINED" not in ids and "S_AGGREGATION_UNEXPLAINED" in ids
+    assert "T_PHENOTYPE_UNLOCATED" not in ids and "S_PHENOTYPE_UNLOCATED" in ids
+    assert "CV_CLONAL_DYNAMICS" in d["control_variables"], (
+        "the variable the aggregation frontier was hiding must be named")
+    c = M.cost(d)
+    for b in ("DEP_CLONAL_DYNAMICS", "NONMITOTIC01"):
+        assert c.get(b) is not None, f"{b} unreachable"
+    # exactly one of the three survived as a genuine frontier, and it is a contradiction
+    survivor = next(n for n in d["nodes"] if n["id"] == "T_AGGREGATION_IRRECONCILABLE")
+    assert survivor["terminal"] == "DECLARED_SCIENTIFIC_FRONTIER"
+    assert survivor["closes"] == "NO_NEXT_STEP"
+
+
+def test_the_opening_does_not_sell_a_route():
+    """Framing is a claim about purpose. The document should open on the city."""
+    M, d = _route_map()
+    text = M.render(d)
+    opening = text.split("## ")[0]
+    for banned in ("worth removing first", "shortest", "highest leverage", "look first", "priority"):
+        assert banned not in opening.lower(), f"route-selection language in the opening: {banned!r}"
+    assert "city, not a route" in opening
+    head = text.split("# The city")[0]
+    assert "distance" not in head.lower() or "appendix" in head.lower(), (
+        "a distance table before the city reintroduces route selection as the frame")
+    assert "FUNCTIONAL_CELLULAR_TARGET" in head and "CANONICAL_CELLULAR_STATE" in head

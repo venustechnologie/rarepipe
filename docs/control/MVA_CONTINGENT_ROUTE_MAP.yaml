@@ -242,6 +242,13 @@ control_variables:
       than a missegregation count. Whether the terminal endpoint T_MIS and the measured hallmark are
       the same quantity is recorded below as an open question, not assumed."
     intrinsically_unsafe: NOT_ESTABLISHED
+  CV_CLONAL_DYNAMICS:
+    state_variable: "relative proliferation and loss rates of euploid versus aneuploid populations"
+    actuators_identified_not_tried: [differential_growth_conditions, selective_pressure]
+    note: "Named by re-auditing T_AGGREGATION_UNEXPLAINED. A tissue fraction is a ratio, so it moves
+      when either population's growth or death rate moves — and the map had modelled it purely as an
+      aggregate of per-division fidelity, which is why a null there read as a contradiction."
+    intrinsically_unsafe: NOT_ESTABLISHED
   CV_ANEUPLOID_CELL_FRACTION:
     state_variable: "fraction of aneuploid cells in a population or tissue"
     actuators_identified_not_tried: [cell_competition, lineage_specific_elimination]
@@ -813,7 +820,7 @@ nodes:
     why_unresolved: "Per-division fidelity improving without the tissue fraction falling means the fraction is set by something else. That is a different control variable, and it is the F4 one."
     outcomes:
       selection_dominates:    CV_CLEARANCE_ENTRY
-      fidelity_dominates:     T_AGGREGATION_UNEXPLAINED
+      fidelity_dominates:     S_AGGREGATION_UNEXPLAINED
       insufficient:           T_XSCALE03_REPEAT
 
   # new genuine terminals from the expansion
@@ -844,9 +851,14 @@ nodes:
   - {id: T_CLEAR_DEPLETES, kind: terminal, terminal: UNSAFE, label: "Selective elimination lowers the aneuploid fraction by depleting the population: the confounder B08 and B18 exist to catch, arriving as the mechanism rather than as an artefact"}
   - {id: T_CLEAR_NULL, kind: terminal, closes: CONTEXT, closes_for: CV_ANEUPLOID_CELL_FRACTION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No selective elimination of aneuploid cells is inducible in this context"}
   - {id: T_CLEAR01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_CLINICAL_LINK_ABSENT, kind: terminal, closes: CONTEXT, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No clinical feature is linked to aneuploid burden on any assessable measure"}
+  # Re-audited: "on any ASSESSABLE measure" is bounded by what this project may observe, not by what
+  # is knowable. A governance boundary wearing the word scientific.
+  - {id: T_CLINICAL_LINK_ABSENT, kind: terminal, closes: CONTEXT, terminal: GOVERNANCE_BLOCKED, label: "No clinical feature is linked to aneuploid burden on any measure this project may assess. The limit is what may be observed in this child, not what is knowable: unauthorised is not unlinked"}
   - {id: T_CLIN02_BLOCKED, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Not assessable: no intervention or longitudinal observation in this child is authorised"}
-  - {id: T_AGGREGATION_UNEXPLAINED, kind: terminal, closes: NO_NEXT_STEP, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Fidelity dominates and the tissue fraction still does not fall: the discrepancy has no identified next experiment"}
+  # Re-audited and retired. "Per-cell fidelity improved and the tissue fraction did not fall" is not a
+  # frontier; it names a variable the map had no node for. A tissue fraction is set by division
+  # fidelity AND by the relative proliferation and loss of the two populations.
+  - {id: S_AGGREGATION_UNEXPLAINED, kind: state, state_class: KNOWLEDGE, label: "Fidelity improved and the tissue fraction did not fall: something other than per-division error rate is setting the fraction"}
   - {id: T_XSCALE03_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
 
   # ================= new control variables, each with its own candidate and adjudication =================
@@ -1086,11 +1098,26 @@ nodes:
     requires: CELL_MODEL
     label: "Does another actuator of the same control variable move it, where the one tested did not?"
     why_unresolved: "One shared node rather than one per variable, because the question has the same shape every time: a null on an actuator closes that actuator. Every control variable in this map has more than one identified actuator, and none has had them all tried."
+    preserves_variable_identity: true
+    identity_note: "The question structure is shared; the biology is not. A working alternate actuator
+      returns to the state its own variable produces — an alignment actuator returns to alignment, an
+      abundance actuator to abundance — never to a generic improvement. Merging the shapes was right;
+      merging the landings would have let a cohesion null resolve into an alignment claim."
+    actuator_retry_map:
+      CV_CHROMOSOME_ALIGNMENT: alignment_actuator_works
+      CV_CHECKPOINT_SILENCING: silencing_actuator_works
+      CV_BUBR1_ABUNDANCE: abundance_actuator_works
+      CV_CELL_SIZE: error_rate_actuator_works
+      CV_ATTACHMENT_TURNOVER: error_rate_actuator_works
+      CV_COHESION_PROTECTION: error_rate_actuator_works
     outcomes:
-      another_actuator_works:        S_MIS_LOWERED_VIA_ALTERNATE
-      all_actuators_exhausted:       S_CV_CLOSED_ON_EVIDENCE
-      unestablished:                 T_NEXT_ACTUATOR_FRONTIER
-  - {id: S_MIS_LOWERED_VIA_ALTERNATE, kind: state, state_class: SYSTEM, label: "Missegregation is lowered by an alternative actuator or configuration after the first one failed; dependency is still untested"}
+      alignment_actuator_works:  S_ALIGN_IMPROVED_COMPENSATORY
+      silencing_actuator_works:  S_SIL_SUPPLIED
+      abundance_actuator_works:  S_REF_STABILISABLE
+      error_rate_actuator_works: S_MIS_LOWERED_VIA_ALTERNATE
+      all_actuators_exhausted:   S_CV_CLOSED_ON_EVIDENCE
+      unestablished:             T_NEXT_ACTUATOR_FRONTIER
+  - {id: S_MIS_LOWERED_VIA_ALTERNATE, kind: state, state_class: SYSTEM, label: "Missegregation is lowered by an alternative actuator of an error-rate variable, or by an alternative configuration, after the first one failed; dependency is still untested"}
   - {id: S_CV_CLOSED_ON_EVIDENCE, kind: state, state_class: KNOWLEDGE, label: "Every identified actuator of this control variable has been tried with engagement validated and none moved it: the variable, not an actuator, is now closed on evidence"}
 
   - id: NEXT_CONFIG01
@@ -1155,7 +1182,7 @@ nodes:
     why_unresolved: "Every experiment in this map replaces one allele. The child has two, and the truncating one contributes little full-length protein but is not nothing. An interaction would be invisible to every single-allele design here."
     outcomes:
       combination_defect:    S_DEFECT_IS_COMPOSITE
-      no_interaction:        T_PHENOTYPE_UNLOCATED
+      no_interaction:        S_PHENOTYPE_UNLOCATED
       unestablished:         T_GENOTYPE_FRONTIER
 
   # ================= neighbourhood: tissue and organism =================
@@ -1207,12 +1234,45 @@ nodes:
 
   - {id: T_FUNCDEF_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Which function is defective is unestablished; the panel is specified and unrun"}
   - {id: T_CONSTRUCT_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Construct fidelity unestablished: repeat with the controls named"}
-  - {id: T_PHENOTYPE_UNLOCATED, kind: terminal, closes: NO_NEXT_STEP, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Abundance normal, no single-allele defect, no allele interaction, and a faithful construct: the phenotype is not located by any assay this map contains, and no next experiment is currently identifiable"}
+  # Re-audited and retired. Every assay in this map is mitotic, in one cell type, in adult-derived
+  # cells. A phenotype those cannot see is a statement about the assays' context, not about biology.
+  - {id: S_PHENOTYPE_UNLOCATED, kind: state, state_class: KNOWLEDGE, label: "Abundance normal, no single-allele defect, no allele interaction, faithful construct: the phenotype is outside what a mitotic single-lineage adult-derived assay can see"}
   - {id: T_GENOTYPE_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Allele interaction unestablished; the two-allele design is specified and unrun"}
   - {id: T_DELIVERY_ABSENT, kind: terminal, closes: ACTUATOR, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "No route reaches the relevant lineages for this actuator. Actuator-scoped: a different actuator may have a different delivery profile"}
   - {id: T_DELIVERY_BLOCKED, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Delivery is not assessable: no intervention in this child is authorised"}
   - {id: T_LINEAGE_WEIGHT_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "The burden-to-feature mapping is unestablished and needs organism-level data this project does not hold"}
   - {id: T_WINDOW_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "The developmental window is unestablished; natural-history data would settle it"}
+
+  # ---- the variable T_AGGREGATION_UNEXPLAINED was hiding ----
+  - id: DEP_CLONAL_DYNAMICS
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: TISSUE_MODEL
+    label: "Is the tissue aneuploid fraction set by the relative proliferation and loss of euploid versus aneuploid populations rather than by the per-division error rate?"
+    why_unresolved: "The map modelled the fraction as an aggregate of per-division fidelity. A fraction is a ratio, and a ratio moves when either population's growth or death rate moves. Nothing here measured those, which is why improving fidelity without moving the fraction looked like a contradiction instead of a missing variable."
+    outcomes:
+      clonal_dynamics_dominate: CV_CLEARANCE_ENTRY
+      fidelity_dominates_after_all: T_AGGREGATION_IRRECONCILABLE
+      unestablished:            T_CLONAL_FRONTIER
+
+  # ---- the context dimension T_PHENOTYPE_UNLOCATED was hiding ----
+  - id: NONMITOTIC01
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does the allele impair a non-mitotic role, which a mitotic assay would not see?"
+    why_unresolved: "BubR1 is studied here only in mitosis, and every readout in this map is a mitotic one. A defect outside mitosis is invisible by construction, not by evidence."
+    outcomes:
+      non_mitotic_defect_found: S_DEFECT_IS_COMPOSITE
+      mitotic_only:             S_PHENOTYPE_NEEDS_CONTEXT
+      unestablished:            T_NONMITOTIC_FRONTIER
+  - {id: S_PHENOTYPE_NEEDS_CONTEXT, kind: state, state_class: KNOWLEDGE, label: "The allele's effect is mitotic and still unseen in these cells: what remains is the context dimensions — lineage and developmental state — rather than another mitotic assay"}
+
+  - {id: T_AGGREGATION_IRRECONCILABLE, kind: terminal, closes: NO_NEXT_STEP, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Clonal dynamics do not explain it and fidelity does dominate, yet the fraction does not move: a contradiction between two measurements with no identified next experiment. The one genuine scientific frontier of the three re-audited"}
+  - {id: T_CLONAL_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Population growth and loss rates not measured: repeat with both populations tracked"}
+  - {id: T_NONMITOTIC_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Non-mitotic roles not assayed; the question is specified and unrun"}
 
 edges:
   # forward reachability from the case state
@@ -1295,9 +1355,7 @@ edges:
   - {from: S_FLUX_NOT_THE_LEVER, to: C_KIF18A, label: GROUNDED, reentry: true, note: "The other named alignment candidate remains"}
   - {from: S_FLUX_NOT_THE_LEVER, to: CHAR01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "And the abundance family is untouched by a flux null"}
   - {from: S_MIS_LOWERED_COMPENSATORY, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reaches the terminal endpoint by exploiting residual function rather than replacing it; the functional target does not ask which", evidence: ["PMID:39541344"]}
-  - {from: S_MIS_LOWERED_COMPENSATORY, to: S_ALIGN_SUPPLIED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "It supplies alignment compensatorily, which the canonical state would still have to account for"}
   - {from: S_MIS_LOWERED_INDEPENDENT, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "The flux work measures lagging chromosomes and micronuclei directly — the terminal endpoint, not a canonical intermediate", evidence: ["PMID:39541344"]}
-  - {from: S_MIS_LOWERED_INDEPENDENT, to: S_ALIGN_SUPPLIED, label: GROUNDED, note: "It also supplies alignment, which the canonical state still needs"}
   - {from: S_POP_SAFE_F1B, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
   - {from: S_POP_SAFE_F2, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
   - {from: S_MIS_LOWERED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
@@ -1358,6 +1416,10 @@ edges:
   - {from: C_CELL_SIZE, to: DEP_CELL_SIZE, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_ATTACH_TURNOVER, to: DEP_ATTACH_TURNOVER, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_COHESION, to: DEP_COHESION, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_AGGREGATION_UNEXPLAINED, to: DEP_CLONAL_DYNAMICS, label: EXPERIMENTAL_UNKNOWN, note: "The variable the frontier was hiding"}
+  - {from: S_PHENOTYPE_UNLOCATED, to: NONMITOTIC01, label: EXPERIMENTAL_UNKNOWN, note: "A mitotic assay cannot see a non-mitotic defect"}
+  - {from: S_PHENOTYPE_NEEDS_CONTEXT, to: XFER_LINEAGE, label: CONTEXT_TRANSFER_REQUIRED, reentry: true, note: "What is left is context, not another mitotic assay"}
+
   # ---- the not_destabilised district ----
   - {from: S_ABUNDANCE_NORMAL, to: FUNCDEF01, label: EXPERIMENTAL_UNKNOWN, note: "Abundance normal means the abundance family does not apply; which function is broken becomes the question"}
   - {from: S_DEFECT_IS_ACTIVATION, to: ACT02, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "Activation must be supplied or compensated, not stabilised"}
@@ -1398,6 +1460,12 @@ edges:
   - {from: S_COMBINATION_CLOSED, to: CV_CLEARANCE_ENTRY, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true}
   - {from: S_ALIGN_IMPROVED_COMPENSATORY, to: MIS_MEASURE01, label: EXPERIMENTAL_UNKNOWN, note: "The step from a canonical intermediate to the terminal endpoint is a measurement, not an entailment"}
   - {from: S_MIS_LOWERED_DEPENDENCY_UNTESTED, to: DEPTEST01, label: EXPERIMENTAL_UNKNOWN, note: "Efficacy shown; dependency is a separate design"}
+  # Component safety is reachable from whichever component got here, not only from the alignment arm.
+  # Deleting the endpoint-to-alignment backfill exposed this: SAFE01 had been reachable only through
+  # S_ALIGN_SUPPLIED, so an error-rate route had no way to establish its own population safety without
+  # first claiming an alignment it never measured. Safety is per component and every component needs it.
+  - {from: S_MIS_LOWERED_INDEPENDENT, to: SAFE01, label: EXPERIMENTAL_UNKNOWN, note: "Whatever component lowered missegregation needs its own population safety established"}
+  - {from: S_MIS_LOWERED_COMPENSATORY, to: SAFE01, label: EXPERIMENTAL_UNKNOWN, note: "A compensatory component needs its own safety record too"}
   - {from: S_MIS_LOWERED_VIA_ALTERNATE, to: DEPTEST01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "The alternative actuator faces the same dependency question the first one did"}
   - {from: S_INTERMEDIATE_DECOUPLED, to: LIMFN01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "If alignment is not the limiting quantity here, which one is?"}
   - {from: S_PCS_DECOUPLED, to: CLINLINK01, label: EXPERIMENTAL_UNKNOWN, note: "Decoupling in a dish forces the clinical question, which the dish cannot answer"}
@@ -1407,6 +1475,10 @@ edges:
   - {from: S_MISSEGREGATION, to: COUPLING01, label: EXPERIMENTAL_UNKNOWN, note: "Available from the current state: the endpoint choice is auditable before any route is run"}
   - {from: S_ENDPOINT_IS_PCS, to: C_COHESION, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true, note: "A cohesion endpoint makes the cohesion variable the primary one rather than an alternative"}
   # ---- cross-family combinations, entered from the states that motivate them ----
+  # Deleted: two edges carried "missegregation is lower" back into "alignment is supplied". Reaching
+  # the terminal endpoint says nothing about which mechanism delivered it, and these states are now
+  # reached by six candidates between them, most of which never measure alignment. The reverse
+  # direction is as unlicensed as the forward one.
   - {from: S_COMPOSITE_COMPENSATORY, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reaches the terminal endpoint by a mixed route, which the functional target permits"}
   - {from: S_COMPOSITE_COMPENSATORY, to: XFER_LINEAGE, label: CONTEXT_TRANSFER_REQUIRED}
   - {from: S_MIS_LOWERED_COMPENSATORY, to: COMBO_F2_F3, label: EXPERIMENTAL_UNKNOWN, note: "A compensatory route does not preclude supplying a second function"}
