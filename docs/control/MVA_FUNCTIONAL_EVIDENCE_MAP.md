@@ -3,12 +3,24 @@
 Case MVA_001. This is a case evidence artifact, not a new ontology. It records the experiments one
 paper performed, what each one can carry, and what it cannot.
 
-The experiments are stored as case data in `research/experiments/pmid_20516114.yaml` (the research
-directory that travels with the controlled case work, not this repo — the repo's literature snapshot
-is titles and abstracts only). Seventeen records, every readout a verbatim quote that
-`rarepipe.stages.mechanism.experiments.load_experiments()` re-finds in the stored document before the
-file is accepted. The verdicts below are computed by the existing `assess()`; none of them is typed
-in by hand.
+The canonical artifact is `research/experiments/PMID_20516114.yaml` in the research directory that
+travels with the controlled case work — sixteen records, `VX_0001`–`VX_0016`, already present and
+load-bearing: `VX_0007` and `VX_0008` are the evidence refs H01 cites in `prospective/seed.py`. A
+prior session had already recovered this paper's full text into the corpus
+(`corpus_refresh: abstract_only -> full_text_recovered`). The verdicts below are what the existing
+`assess()` computes over that artifact in run `RUN_20261005T142213Z_dd4b1e`; none is typed in by hand.
+
+This document was written from an independent re-extraction of the same paper (seventeen records),
+which agrees with the canonical artifact on every decisive point and differs in two ways worth
+recording. It **adds** `386X` and `483X`, which the canonical artifact does not carry — 483X is the
+mirror image of Y155C and is the cleanest demonstration that alignment and checkpoint are separable.
+It also **credits more alleles as restored-abundance tests**: the canonical encoding marks Q921H,
+R550Q, Y155C and 731X as `ectopic_at_or_above_wild_type` with `function_at_restored_abundance` left at
+`not_tested`, because the paper never titrated those stable proteins — it only expressed them. That
+conservative reading is the authoritative one, and it yields the sharper result: under it just **one**
+functional endpoint was measured at restored abundance, so three are missing rather than two. Where the
+two readings differ, the canonical one is quoted here. The repo's own literature snapshot stays titles
+and abstracts only, so neither file is committed.
 
 Source: Suijkerbuijk, van Osch, Bos, Hanks, Rahman, Kops, *Cancer Research* 2010 (PMID:20516114,
 PMC2887387). Full text retrieved from NCBI PMC under its stated text-mining licence and held with the
@@ -101,13 +113,21 @@ class level and exact-allele level separately. Run with a probe residue in each 
 than ten residues from every published variant, so each probe grades as same-region and never as an
 exact or nearby match:
 
-| probe region | class level | restored-abundance alleles in that region | endpoints measured there | endpoints **not** measured there | exact allele | decision |
+The real annotation puts this child's missense allele in the **protein kinase domain**, and the
+computed result for the case is the first row:
+
+| input | class level | restored-abundance alleles | measured there | **not** measured there | exact allele | decision |
 |---|---|---|---|---|---|---|
-| TPR (62–226) | `mixed` | Y155C (partial) | checkpoint activation, alignment | silencing, segregation | `insufficient` | `INSUFFICIENT` |
-| central (227–765) | `function_persists` | R550Q | checkpoint activation, alignment | silencing, segregation | `insufficient` | `INSUFFICIENT` |
-| kinase (766–1050) | `function_persists` | I909T, L1012P, Q921H | checkpoint activation, segregation | silencing, **alignment** | `insufficient` | `INSUFFICIENT` |
+| **the case, canonical artifact** | `function_persists` | I909T, L1012P | checkpoint activation | silencing, segregation, alignment | `insufficient` | `INSUFFICIENT` |
+| probe: TPR (62–226) | `mixed` | Y155C (partial) | checkpoint activation, alignment | silencing, segregation | `insufficient` | `INSUFFICIENT` |
+| probe: central (227–765) | `function_persists` | R550Q | checkpoint activation, alignment | silencing, segregation | `insufficient` | `INSUFFICIENT` |
+| probe: kinase (766–1050) | `function_persists` | I909T, L1012P, Q921H | checkpoint activation, segregation | silencing, alignment | `insufficient` | `INSUFFICIENT` |
 | no annotation available | `insufficient` | — | — | — | `insufficient` | `INSUFFICIENT` |
 
-The region moves the class-level reading a long way. It moves the decision not at all, because no
-experiment in the corpus expressed any one child's exact substitution at matched abundance. Sharing a
-domain is suggestive; it is not a measurement.
+The probe rows are the re-extraction's bolder encoding, run before the annotation was available; they
+are kept because of what they show. The region moves the class-level reading a long way and moves the
+decision not at all — `INSUFFICIENT` in every region, under either encoding, because no experiment in
+the corpus expressed any one child's exact substitution at matched abundance. Sharing a domain is
+suggestive; it is not a measurement. At claim level the same gap reads `MC_0005` (variant class)
+`PARTIALLY_SUPPORTED` on 103 establishing records against `MC_0006` (exact variant) `UNRESOLVED` on
+zero.
