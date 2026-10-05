@@ -257,3 +257,89 @@ def test_the_recommendation_guard_still_catches_an_actual_recommendation():
     assert flags("We recommend raising BubR1 abundance in the patient.")
     assert not flags("It does not say that niacin should be given to this child.")
     assert not flags("Nothing here means a chaperone perturbation should be administered.")
+
+
+# ------------------------------------------------- the contingent route map
+
+def _route_map():
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "tools" / "control"))
+    import compile_route_map as M
+    return M, M.load()
+
+
+def test_the_route_map_is_structurally_valid():
+    M, d = _route_map()
+    assert not M.validate(d)
+
+
+def test_no_unknown_is_a_terminal_state():
+    """The PRD's load-bearing rule: an unresolved node enumerates outcomes and continues from each.
+
+    A branch that terminated would be the system saying "here is an unknown" — which is the behaviour
+    this map exists to replace.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    for n in d["nodes"]:
+        if n["kind"] != "branch":
+            continue
+        assert len(n.get("outcomes") or {}) >= 2, f"{n['id']} does not enumerate admissible outcomes"
+        for name, target in n["outcomes"].items():
+            t = nodes[target]
+            if t["kind"] == "terminal":
+                assert t["terminal"] in set(d["terminal_vocabulary"]), f"{n['id']}/{name}"
+                assert t["terminal"] != "UNKNOWN"
+            else:
+                assert t["kind"] in ("state", "all_of", "branch"), f"{n['id']}/{name}"
+
+
+def test_every_branch_declares_whether_it_is_a_measurement_or_a_discovery():
+    """Counting branches alone prices a western blot and an undiscovered component the same.
+
+    The distinction decides which route is actually shorter, so it is declared data rather than
+    inferred from incoming edge labels — inference got BYPASS_ALIGN wrong when one incidental edge
+    carried a different label.
+    """
+    M, d = _route_map()
+    allowed = set(d["resolves_by_vocabulary"])
+    for n in d["nodes"]:
+        if n["kind"] == "branch":
+            assert n.get("resolves_by") in allowed, f"{n['id']}: {n.get('resolves_by')!r}"
+
+
+def test_a_decided_branch_closes_the_outcomes_it_did_not_return():
+    """A branch returns one result, so the alternatives become unavailable, not merely uncosted.
+
+    Without this the abundance family never closes on a persistent functional defect, and the map
+    would report a route that the result had already ruled out.
+    """
+    M, d = _route_map()
+    open_f1 = M.cost(d, known={"S_FUNCTION_OK"}, decided={"EXP01": "full_function"})["F1_COMPLETE"]
+    shut_f1 = M.cost(d, known={"B_MULTI_DEFECT"}, decided={"EXP01": "multiple_defects"})["F1_COMPLETE"]
+    assert open_f1 is not None, "full function should leave the abundance family open"
+    assert shut_f1 is None, "multiple defects should close the abundance family as a complete solution"
+
+
+def test_the_frontier_keeps_sets_that_make_a_conjunction_cheap():
+    """Per-node minimisation is not optimal across an AND node, so a frontier is kept, not one set.
+
+    Two conjuncts can share an experiment; keeping only each node's smallest set can discard the one
+    that makes the union cheap and then the reported distance is an overestimate.
+    """
+    M, d = _route_map()
+    f = M.frontier(d)
+    target = M.cost(d)["TARGET"]
+    assert target is not None
+    for nid, sets in f.items():
+        for a in sets:
+            for b in sets:
+                if a is not b:
+                    assert not (a < b), f"{nid}: frontier kept {sorted(b)}, a superset of {sorted(a)}"
+
+
+def test_the_committed_route_map_document_is_not_stale():
+    M, d = _route_map()
+    committed = (ROOT / "docs/control/MVA_CONTINGENT_ROUTE_MAP.md").read_text()
+    assert committed == M.render(d), ("docs/control/MVA_CONTINGENT_ROUTE_MAP.md is stale: run "
+                                      "uv run python tools/control/compile_route_map.py")

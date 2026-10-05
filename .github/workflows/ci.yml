@@ -81,3 +81,7 @@ jobs:
 
       - name: Endpoint discrimination
         run: uv run python tools/network/endpoint_discrimination.py
+
+      - name: Contingent route map is valid and not stale
+        run: |
+          uv run python tools/control/compile_route_map.py --check
