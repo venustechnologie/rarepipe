@@ -207,6 +207,31 @@ control_variables:
     state_variable: "time from alignment to anaphase onset"
     actuators_identified_not_tried: [TRIP13_APC15, UBR5]
     evidence: ["PMID:30341343", "PMID:35217622"]
+  CV_CELL_SIZE:
+    state_variable: "cell volume at mitotic entry"
+    actuators_identified_not_tried: [cell_cycle_length, CDK4_6_state]
+    evidence: ["PMID:PPR1045515"]
+    note: "Cell enlargement causes mitotic errors and aneuploidy in cells that evade senescence after
+      CDK4/6 inhibition. Entirely outside the kinetochore axis BubR1 sits on, which is what makes it a
+      candidate rather than a confounder."
+    intrinsically_unsafe: NOT_ESTABLISHED
+  CV_ATTACHMENT_TURNOVER:
+    state_variable: "kinetochore-microtubule attachment turnover, the rate at which errors are corrected"
+    actuators_identified_not_tried: [MCAK_Kif2C_centromeric_activity, Astrin_PP1, Aurora_B_gradient]
+    evidence: ["PMID:42256274", "PMID:34853300"]
+    note: "MCAK/Kif2C centromeric activity level tunes k-fibre turnover, and an Astrin-PP1 against
+      Cyclin-B-CDK1 counteraction protects attachments. This is the variable LIMFN01 would most likely
+      name if a composite of alignment, activation and silencing changed nothing."
+    intrinsically_unsafe: NOT_ESTABLISHED
+  CV_COHESION_PROTECTION:
+    state_variable: "sister chromatid cohesion at centromeres"
+    actuators_identified_not_tried: [SGO1_protection, ATRX_centromeric_role]
+    evidence: ["PMID:40437074", "PMID:30464155"]
+    note: "The case-relevant one, and the map had no node for it. Premature chromatid separation is the
+      cytogenetic hallmark actually scored in these patients, and PCS is a cohesion phenotype rather
+      than a missegregation count. Whether the terminal endpoint T_MIS and the measured hallmark are
+      the same quantity is recorded below as an open question, not assumed."
+    intrinsically_unsafe: NOT_ESTABLISHED
   CV_ANEUPLOID_CELL_FRACTION:
     state_variable: "fraction of aneuploid cells in a population or tissue"
     actuators_identified_not_tried: [cell_competition, lineage_specific_elimination]
@@ -404,8 +429,8 @@ nodes:
     classification_not_success: "Independence is a mechanistic classification, not a success criterion. The functional target requires low missegregation with the population preserved; it does not require that the route avoid BubR1. A benefit that depends on residual BubR1 is a compensatory route rather than a failed bypass, and it only closes if the benefit disappears in the limiting regime this case actually occupies."
     why_unresolved: "Full-text adjudication: BubR1 appears zero times in 454 sentences, so dependency is wholly unaddressed and silence is not independence. What the full text does add is a positive mechanistic argument — by targeting poleward flux, chromosome alignment is affected independently of kinetochore attachment status, which is the axis BubR1 acts on — plus three mechanistically independent perturbations (low-dose taxol, HAUS8 or NuMA codepletion) that rescued misalignment, lagging chromosomes and micronuclei in human RPE-1 and in OVKATE cells, and a stated predictor of when it works (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven, which is the transfer this case needs."
     outcomes:
-      independent_of_bubr1:              S_FLUX_LOWERS_MIS
-      benefit_requires_residual_bubr1:   S_FLUX_COMPENSATORY
+      independent_of_bubr1:              S_MIS_LOWERED_INDEPENDENT
+      benefit_requires_residual_bubr1:   S_MIS_LOWERED_COMPENSATORY
       benefit_absent_in_limiting_regime: S_FLUX_NEEDS_MORE_BUBR1
       no_reduction:                      S_FLUX_NOT_THE_LEVER
       unestablished:                     T_FLUX_FRONTIER
@@ -443,7 +468,7 @@ nodes:
   - {id: S_POP_SAFE_ANY, kind: state, label: "The manipulation that got here has its own population safety established"}
   - {id: S_CHECKPOINT_RISK_RESOLVED, kind: state, label: "The tumour-predisposition consequence of checkpoint competence is resolved for this case"}
   - {id: FUNCTIONAL_CELLULAR_TARGET, kind: all_of, of: [S_MIS_LOWERED, S_POP_SAFE_ANY], label: "Functional cell-level target: low missegregation with the population preserved and the checkpoint-risk question resolved, by any physically valid route"}
-  - {id: S_FLUX_LOWERS_MIS, kind: state, label: "Modifying poleward flux lowers missegregation in a BubR1-limited background"}
+  - {id: S_MIS_LOWERED_INDEPENDENT, kind: state, label: "Missegregation is lowered in a BubR1-limiting state by a route that does not require the protein: the convergence state every independent candidate arrives at"}
 
   - id: ACT_SAFETY01
     kind: branch
@@ -557,7 +582,7 @@ nodes:
   # The third strategy, between repairing the protein and routing around it: exploit the residual
   # function that is there and change a different physical process. The functional target never
   # required BubR1-independence, so this reaches it exactly as a bypass would.
-  - {id: S_FLUX_COMPENSATORY, kind: state, label: "Flux manipulation lowers missegregation with the population preserved, and the benefit depends on residual BubR1: a compensatory route — residual function exploited, a different physical process altered"}
+  - {id: S_MIS_LOWERED_COMPENSATORY, kind: state, label: "Missegregation is lowered with the population preserved, and the benefit depends on residual BubR1: the F3 convergence state — residual function exploited, another physical process altered"}
   - {id: S_FLUX_NOT_THE_LEVER, kind: state, label: "The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state"}
   - {id: S_FLUX_NEEDS_MORE_BUBR1, kind: state, label: "The flux benefit is present in replete cells and absent at the limiting end: it needs more BubR1 than this case has"}
   - {id: T_FLUX_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Flux dependency unestablished: the experiment is specified and unrun"}
@@ -592,7 +617,7 @@ nodes:
     label: "Does raising CENP-E activity improve alignment at the residual BubR1 this case has, exploiting the dependency rather than being blocked by it?"
     why_unresolved: "CENP-E needs BubR1 for its congression function, which closes it as a replacement and opens it as an F3 candidate: if the residual protein is enough to support a boosted CENP-E, the dependency is a lever instead of an obstacle. No experiment has tried it at limiting BubR1."
     outcomes:
-      improves_at_residual_bubr1: S_FLUX_COMPENSATORY
+      improves_at_residual_bubr1: S_MIS_LOWERED_COMPENSATORY
       needs_more_bubr1:           S_FLUX_NEEDS_MORE_BUBR1
       no_improvement:             T_CENPE_F3_NULL
       insufficient:               T_CENPE_F3_REPEAT
@@ -604,7 +629,7 @@ nodes:
     label: "Does modulating KIF18A improve alignment at residual BubR1?"
     why_unresolved: "Same shape as CENP-E, and KIF18A is the better-handled of the two. Its congression role runs through CENP-E and therefore through BubR1, which makes it compensatory rather than independent, and the flux work already uses KIF18A depletion as the state it rescues."
     outcomes:
-      improves_at_residual_bubr1: S_FLUX_COMPENSATORY
+      improves_at_residual_bubr1: S_MIS_LOWERED_COMPENSATORY
       worsens_alignment:          S_FLUX_NOT_THE_LEVER
       no_improvement:             T_KIF18A_F3_NULL
       insufficient:               T_KIF18A_F3_REPEAT
@@ -616,7 +641,7 @@ nodes:
     label: "Does a partial abundance gain plus flux modification reach the functional state where neither does alone?"
     why_unresolved: "A benefit that needs more BubR1 than the case has is not a closed route if abundance can be raised a little. F1 and F3 were treated as alternatives; in combination the abundance requirement of the flux benefit may be met without full restoration. Untested in either direction."
     outcomes:
-      combination_sufficient: S_FLUX_COMPENSATORY
+      combination_sufficient: S_MIS_LOWERED_COMPENSATORY
       still_insufficient:     T_COMBO_INSUFFICIENT
       combination_harmful:    T_UNSAFE_COMBO
       insufficient:           T_COMBO_REPEAT
@@ -775,6 +800,154 @@ nodes:
   - {id: T_AGGREGATION_UNEXPLAINED, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Fidelity dominates and the tissue fraction still does not fall: the discrepancy has no identified next experiment"}
   - {id: T_XSCALE03_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
 
+  # ================= new control variables, each with its own candidate and adjudication =================
+  - {id: C_CELL_SIZE, kind: state, label: "Cell volume at mitotic entry: enlargement causes mitotic errors and aneuploidy, on an axis entirely outside the kinetochore"}
+  - {id: C_ATTACH_TURNOVER, kind: state, label: "Attachment turnover: MCAK/Kif2C centromeric activity tunes k-fibre turnover, which is the rate at which attachment errors are corrected"}
+  - {id: C_COHESION, kind: state, label: "Centromeric cohesion: the phenotype actually scored in these patients is premature chromatid separation, which is a cohesion readout"}
+
+  - id: DEP_CELL_SIZE
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does reducing cell volume at mitotic entry lower missegregation in a BubR1-limiting state, and is the effect independent of residual BubR1?"
+    why_unresolved: "The causal claim is made in cells evading senescence after CDK4/6 inhibition, not at limiting BubR1, and nothing connects the two. The variable is attractive precisely because it is off the kinetochore axis, which also means no published experiment has reason to have tested it here."
+    evidence: ["PMID:PPR1045515"]
+    outcomes:
+      independent_of_bubr1:              S_MIS_LOWERED_INDEPENDENT
+      benefit_requires_residual_bubr1:   S_MIS_LOWERED_COMPENSATORY
+      no_reduction:                      T_CELL_SIZE_NULL
+      unestablished:                     T_CELL_SIZE_FRONTIER
+
+  - id: DEP_ATTACH_TURNOVER
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does tuning attachment turnover lower missegregation at limiting BubR1?"
+    why_unresolved: "BubR1 works through PP2A-B56 on the same attachments, so this variable may not be independent of it — but it has its own actuators and its own readouts, and the dependency has never been tested. It is also the variable LIMFN01 would reach for."
+    evidence: ["PMID:42256274", "PMID:34853300"]
+    outcomes:
+      independent_of_bubr1:              S_MIS_LOWERED_INDEPENDENT
+      benefit_requires_residual_bubr1:   S_MIS_LOWERED_COMPENSATORY
+      no_reduction:                      T_TURNOVER_NULL
+      unestablished:                     T_TURNOVER_FRONTIER
+
+  - id: DEP_COHESION
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does strengthening centromeric cohesion reduce premature chromatid separation and missegregation at limiting BubR1?"
+    why_unresolved: "No route in this map addressed cohesion, although PCS is the hallmark scored in these patients. Whether BubR1 insufficiency produces PCS through cohesion loss or through checkpoint failure is itself unresolved, and the two imply different routes."
+    evidence: ["PMID:40437074", "PMID:30464155"]
+    outcomes:
+      pcs_and_missegregation_fall:        S_MIS_LOWERED_INDEPENDENT
+      benefit_requires_residual_bubr1:    S_MIS_LOWERED_COMPENSATORY
+      pcs_falls_missegregation_unchanged: S_PCS_DECOUPLED
+      no_effect:                          T_COHESION_NULL
+      unestablished:                      T_COHESION_FRONTIER
+  - {id: S_COMPOSITE_COMPENSATORY, kind: state, label: "One function supplied and another compensated: a mixed composite that reaches the terminal endpoint without reproducing any single canonical route"}
+  - {id: S_PCS_DECOUPLED, kind: state, label: "Premature chromatid separation falls and missegregation does not: the hallmark scored in patients and the endpoint this map targets are different quantities, and which one the phenotype tracks becomes the question"}
+
+  - id: ENDPOINT01
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Which quantity does the clinical phenotype track — premature chromatid separation, or chromosome missegregation per division?"
+    why_unresolved: "The map chose missegregation as the terminal cellular endpoint. The cytogenetics that diagnose these patients score PCS. If they dissociate, a route optimised for one may not move the other, and the target audit never examined this because both were assumed to be the same defect seen from two angles."
+    outcomes:
+      same_quantity:          S_MIS_LOWERED_INDEPENDENT
+      pcs_is_the_tracker:     S_ENDPOINT_IS_PCS
+      missegregation_tracks:  S_MIS_LOWERED_INDEPENDENT
+      unestablished:          T_ENDPOINT_FRONTIER
+  - {id: S_ENDPOINT_IS_PCS, kind: state, label: "The phenotype tracks premature chromatid separation: the cellular target needs a cohesion endpoint that the current conjunction does not contain"}
+
+  # ================= cross-family combinations =================
+  - id: COMBO_F1_F2
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does a partial abundance gain plus an independently supplied function reach the state where neither does alone?"
+    why_unresolved: "The families were enumerated as alternatives. A supplied function may need less of it when some residual protein is restored, and a partial restoration may need less supplied function. Neither direction is tested."
+    outcomes:
+      combination_sufficient: S_MIS_LOWERED_COMPENSATORY
+      still_insufficient:     T_F1F2_INSUFFICIENT
+      combination_harmful:    T_UNSAFE_COMBO
+      unestablished:          T_F1F2_FRONTIER
+  - id: COMBO_F2_F3
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does supplying one function while compensating another through a different physical process reach the state?"
+    why_unresolved: "The functions are separable, so a composite need not supply all of them the same way. A supplied alignment component plus a compensatory silencing route is untested, as is the converse."
+    outcomes:
+      combination_sufficient: S_COMPOSITE_COMPENSATORY
+      functions_conflict:     S_COMPOSITE_CONFLICTED
+      still_insufficient:     T_F2F3_INSUFFICIENT
+      unestablished:          T_F2F3_FRONTIER
+  - id: COMBO_F3_F4
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: TISSUE_MODEL
+    label: "Does lowering the error rate while promoting clearance of cells that already carry errors move the tissue fraction where neither does alone?"
+    why_unresolved: "Clearance alone depletes a population that keeps generating errors; error reduction alone leaves the established burden. Together the arithmetic is different, and nothing has run them together."
+    outcomes:
+      combination_sufficient:   S_TISSUE_FRACTION_FALLS
+      population_depleted:      T_CLEAR_DEPLETES
+      still_insufficient:       T_F3F4_INSUFFICIENT
+      unestablished:            T_F3F4_FRONTIER
+  - id: COMBO_F1_F4
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: TISSUE_MODEL
+    label: "Does partial protein restoration plus clearance of already-aneuploid cells move the tissue fraction?"
+    why_unresolved: "Same arithmetic as F3+F4 with a different error-reduction mechanism, and it is the only combination that touches both the prospective and the established burden."
+    outcomes:
+      combination_sufficient: S_TISSUE_FRACTION_FALLS
+      population_depleted:    T_CLEAR_DEPLETES
+      still_insufficient:     T_F1F4_INSUFFICIENT
+      unestablished:          T_F1F4_FRONTIER
+
+  # ================= context boundaries, by lattice dimension =================
+  - id: XFER_LINEAGE
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does the effect hold in a lineage relevant to this child's phenotype, rather than in a cancer line?"
+    why_unresolved: "Every result in this map comes from HeLa, U2OS or RPE-1. The phenotype is multi-system, so the relevant lineage is not one cell type, and iPSC-derived lineages are a route that needs no patient material."
+    outcomes:
+      holds_in_relevant_lineage: S_XFER_OK
+      lineage_specific_failure:  S_LINEAGE_DEPENDENT
+      unestablished:             T_XFER_LINEAGE_FRONTIER
+  - {id: S_LINEAGE_DEPENDENT, kind: state, label: "The effect is lineage-dependent: it works in some relevant lineages and not others, which makes tissue selectivity a design variable rather than a confound"}
+  - id: XFER_DEVSTATE
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: TISSUE_MODEL
+    label: "Does the effect hold in a developmental state resembling when the burden is laid down?"
+    why_unresolved: "The burden is largely developmental and the experiments are in adult-derived, transformed or immortalised cells. Developmental state is a lattice dimension the map has carried as a single undifferentiated transfer question."
+    outcomes:
+      holds_developmentally: S_XFER_OK
+      adult_only:            S_DEV_WINDOW_MISSED
+      unestablished:         T_XFER_DEV_FRONTIER
+  - {id: S_DEV_WINDOW_MISSED, kind: state, label: "The effect holds only in adult-like states: the developmental window in which the burden accrues is not addressable by this route, which bounds it to the prospective component"}
+
+  - {id: T_CELL_SIZE_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Cell volume does not move missegregation in this state"}
+  - {id: T_CELL_SIZE_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_TURNOVER_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Attachment turnover does not move missegregation in this state"}
+  - {id: T_TURNOVER_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_COHESION_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Cohesion protection moves neither PCS nor missegregation here"}
+  - {id: T_COHESION_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_ENDPOINT_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Which quantity the phenotype tracks is unestablished; the comparison is specified and unrun"}
+  - {id: T_F1F2_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial repair plus a supplied function is still insufficient"}
+  - {id: T_F1F2_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_F2F3_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Supply plus compensation is still insufficient"}
+  - {id: T_F2F3_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_F3F4_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Error reduction plus clearance does not move the tissue fraction"}
+  - {id: T_F3F4_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_F1F4_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial repair plus clearance does not move the tissue fraction"}
+  - {id: T_F1F4_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_XFER_LINEAGE_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat in a relevant lineage"}
+  - {id: T_XFER_DEV_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat in a developmental model"}
+
 edges:
   # forward reachability from the case state
   # The disease state is observed, not inferred from a mechanism: the child has mosaic variegated
@@ -855,10 +1028,10 @@ edges:
   - {from: CANONICAL_CELLULAR_STATE, to: S_MIS_LOWERED, label: GROUNDED, note: "The canonical trajectory entails the terminal state; it is one route to it, not the definition of it"}
   - {from: S_FLUX_NOT_THE_LEVER, to: C_KIF18A, label: GROUNDED, reentry: true, note: "The other named alignment candidate remains"}
   - {from: S_FLUX_NOT_THE_LEVER, to: CHAR01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "And the abundance family is untouched by a flux null"}
-  - {from: S_FLUX_COMPENSATORY, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reaches the terminal endpoint by exploiting residual function rather than replacing it; the functional target does not ask which", evidence: ["PMID:39541344"]}
-  - {from: S_FLUX_COMPENSATORY, to: S_ALIGN_SUPPLIED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "It supplies alignment compensatorily, which the canonical state would still have to account for"}
-  - {from: S_FLUX_LOWERS_MIS, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "The flux work measures lagging chromosomes and micronuclei directly — the terminal endpoint, not a canonical intermediate", evidence: ["PMID:39541344"]}
-  - {from: S_FLUX_LOWERS_MIS, to: S_ALIGN_SUPPLIED, label: GROUNDED, note: "It also supplies alignment, which the canonical state still needs"}
+  - {from: S_MIS_LOWERED_COMPENSATORY, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reaches the terminal endpoint by exploiting residual function rather than replacing it; the functional target does not ask which", evidence: ["PMID:39541344"]}
+  - {from: S_MIS_LOWERED_COMPENSATORY, to: S_ALIGN_SUPPLIED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "It supplies alignment compensatorily, which the canonical state would still have to account for"}
+  - {from: S_MIS_LOWERED_INDEPENDENT, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "The flux work measures lagging chromosomes and micronuclei directly — the terminal endpoint, not a canonical intermediate", evidence: ["PMID:39541344"]}
+  - {from: S_MIS_LOWERED_INDEPENDENT, to: S_ALIGN_SUPPLIED, label: GROUNDED, note: "It also supplies alignment, which the canonical state still needs"}
   - {from: S_POP_SAFE_F1B, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
   - {from: S_POP_SAFE_F2, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
   - {from: S_MIS_LOWERED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
@@ -911,6 +1084,123 @@ edges:
   - {from: CV_CLEARANCE_ENTRY, to: CLEAR01, label: EXPERIMENTAL_UNKNOWN}
   - {from: S_ESTABLISHED_BURDEN, to: IRREV01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "And the prospective component remains, whatever is fixed"}
   - {from: S_NEW_CONTROL_VARIABLE, to: BYPASS_ACT, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "A variable outside the map must be named and searched; the nearest existing discovery node is where that search re-enters"}
+
+  # ---- new control variables are candidates available from the observed disease state ----
+  - {from: S_MISSEGREGATION, to: C_CELL_SIZE, label: GROUNDED, note: "Cell enlargement causes mitotic errors and aneuploidy", evidence: ["PMID:PPR1045515"]}
+  - {from: S_MISSEGREGATION, to: C_ATTACH_TURNOVER, label: GROUNDED, note: "MCAK/Kif2C centromeric activity tunes k-fibre turnover, the rate errors are corrected at", evidence: ["PMID:42256274"]}
+  - {from: S_MISSEGREGATION, to: C_COHESION, label: GROUNDED, note: "Premature chromatid separation is the hallmark scored in these patients and is a cohesion readout", evidence: ["PMID:40437074"]}
+  - {from: C_CELL_SIZE, to: DEP_CELL_SIZE, label: EXPERIMENTAL_UNKNOWN}
+  - {from: C_ATTACH_TURNOVER, to: DEP_ATTACH_TURNOVER, label: EXPERIMENTAL_UNKNOWN}
+  - {from: C_COHESION, to: DEP_COHESION, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_PCS_DECOUPLED, to: ENDPOINT01, label: EXPERIMENTAL_UNKNOWN, note: "If they dissociate, which one the phenotype tracks is the question the target audit never asked"}
+  - {from: S_MISSEGREGATION, to: ENDPOINT01, label: EXPERIMENTAL_UNKNOWN, note: "Available from the current state: the endpoint choice is auditable before any route is run"}
+  - {from: S_ENDPOINT_IS_PCS, to: C_COHESION, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true, note: "A cohesion endpoint makes the cohesion variable the primary one rather than an alternative"}
+  # ---- cross-family combinations, entered from the states that motivate them ----
+  - {from: S_COMPOSITE_COMPENSATORY, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reaches the terminal endpoint by a mixed route, which the functional target permits"}
+  - {from: S_COMPOSITE_COMPENSATORY, to: XFER_LINEAGE, label: CONTEXT_TRANSFER_REQUIRED}
+  - {from: S_MIS_LOWERED_COMPENSATORY, to: COMBO_F2_F3, label: EXPERIMENTAL_UNKNOWN, note: "A compensatory route does not preclude supplying a second function"}
+  - {from: S_CASE_REFRACTORY, to: COMBO_F1_F2, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "If this allele resists stabilisation, partial restoration plus a supplied function is still untested"}
+  - {from: S_FLUX_NEEDS_MORE_BUBR1, to: COMBO_F1_F2, label: EXPERIMENTAL_UNKNOWN}
+  - {from: CV_CLEARANCE_ENTRY, to: COMBO_F3_F4, label: EXPERIMENTAL_UNKNOWN, note: "Clearance alone depletes a population that keeps making errors"}
+  - {from: CV_CLEARANCE_ENTRY, to: COMBO_F1_F4, label: EXPERIMENTAL_UNKNOWN, note: "The only combination that touches both the established and the prospective burden"}
+  # ---- context boundaries by dimension ----
+  - {from: S_STABILISED_FUNCTIONAL, to: XFER_LINEAGE, label: CONTEXT_TRANSFER_REQUIRED, note: "Lineage relevance is a separate dimension from whether it transfers at all"}
+  - {from: S_MIS_LOWERED_INDEPENDENT, to: XFER_LINEAGE, label: CONTEXT_TRANSFER_REQUIRED, note: "An independent route faces the same transfer question as a repair route"}
+  - {from: S_LINEAGE_DEPENDENT, to: XFER_DEVSTATE, label: EXPERIMENTAL_UNKNOWN, note: "Lineage dependence makes the developmental window the next dimension to ask about"}
+  - {from: S_XFER_OK, to: XFER_DEVSTATE, label: CONTEXT_TRANSFER_REQUIRED, reentry: true, note: "Transferring to an adult lineage is not transferring to the window the burden accrues in"}
+  - {from: S_DEV_WINDOW_MISSED, to: IRREV01, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true, note: "A route bounded to adult-like states can only address the prospective component, which is what IRREV01 measures"}
+
+# ============================ analysis pass: motif-derived hypotheses ============================
+# Separate from the city by construction. Motifs are patterns in the graph; a pattern is a reason to
+# ask a question, never a reason to draw an edge. Every entry here is NOT_TRAVERSABLE: the compiler
+# ignores this block entirely, so nothing below can shorten a route or close a branch until it is
+# grounded and promoted into `edges` by hand.
+#
+# Two kinds are distinguished. A STRUCTURAL hypothesis is a claim about this graph and is verifiable
+# by reading it. A BIOLOGICAL hypothesis is a claim about the world and needs evidence or an
+# experiment before it may be believed, let alone traversed.
+hypotheses:
+  - id: H_M1_SHARED_PLATFORM
+    kind: STRUCTURAL
+    motif: "shared prerequisite"
+    claim: "Nine branches require the same thing before any of them can be asked: a human-cell system
+      held at measured, limiting BubR1 with missegregation readouts. DEP_KIF18A, DEP_FLUX, CENPE_F3,
+      TRIP13_F3, POOL01, LIMFN01, DEP_CELL_SIZE, DEP_ATTACH_TURNOVER and DEP_COHESION all sit behind it."
+    consequence: "The expensive object in this map is not any experiment; it is the platform, and it is
+      shared. A view that ranked experiments individually would never surface this."
+    status: NOT_TRAVERSABLE
+    what_would_promote_it: "Nothing — it is a statement about the graph, not about biology, and it is
+      already checked by a test. It is recorded here because it is an analysis output, not a route."
+  - id: H_M2_ISOMORPHIC_ADJUDICATION
+    kind: STRUCTURAL
+    motif: "repeated subgraph"
+    claim: "Three dependency branches share an identical four-outcome signature (independent /
+      compensatory / no_reduction / unestablished) and three F3 branches share a three-outcome
+      signature. The shape repeats with only the candidate swapped."
+    consequence: "One experimental design, parameterised by candidate, resolves a whole class of
+      branches. The repetition is the point rather than redundancy to be collapsed."
+    status: NOT_TRAVERSABLE
+  - id: H_M3_FLUX_AND_TURNOVER_MAY_BE_ONE_VARIABLE
+    kind: BIOLOGICAL
+    motif: "disjoint actuators on a shared physical substrate"
+    claim: "CV_POLEWARD_FLUX and CV_ATTACHMENT_TURNOVER are modelled as separate variables with
+      disjoint actuators, yet both act on the kinetochore fibre: flux is k-fibre flux, and MCAK/Kif2C
+      centromeric activity tunes k-fibre turnover. They may be one control variable observed through
+      two readouts."
+    consequence: "If one variable, the two neighbourhoods merge and the apparent breadth of the F2/F3
+      candidate set shrinks. If two, they are independent levers and a combination becomes meaningful."
+    status: NOT_TRAVERSABLE
+    what_would_promote_it: "An experiment moving one readout while holding the other, in the same
+      system: tune MCAK/Kif2C and measure flux rate and overlap length, or slow flux and measure
+      k-fibre turnover. Until then the map keeps them separate, which is the conservative choice
+      because merging would delete branches."
+    evidence_so_far: ["PMID:39541344", "PMID:42256274"]
+  - id: H_M4_F3_MAY_RUN_THROUGH_ATTACHMENT_TURNOVER
+    kind: BIOLOGICAL
+    motif: "cross-family bridge through a shared mechanism class"
+    claim: "The F3 routes exploit residual BubR1, and BubR1 acts on attachments through PP2A-B56.
+      CV_ATTACHMENT_TURNOVER's actuators include Astrin-PP1. Both are phosphatase-mediated attachment
+      protection, so CENPE_F3, KIF18A_F3 and DEP_ATTACH_TURNOVER may be one route seen from three
+      angles rather than three routes."
+    consequence: "Would collapse three branches into one and explain why each is BubR1-dependent in the
+      same way. Would also mean a single negative result closes more than it appears to."
+    status: NOT_TRAVERSABLE
+    what_would_promote_it: "Epistasis: whether the benefit of a boosted CENP-E or KIF18A survives when
+      PP2A-B56 recruitment or Astrin-PP1 is held fixed."
+    evidence_so_far: ["PMID:41120314", "PMID:34853300", "PMID:42256274"]
+  - id: H_M5_COHESION_MAY_BE_THE_PROXIMAL_DEFECT
+    kind: BIOLOGICAL
+    motif: "endpoint mismatch between the map and the clinic"
+    claim: "Premature chromatid separation is the hallmark scored in these patients, and PCS is a
+      cohesion readout rather than a missegregation count. If cohesion loss is the proximal
+      consequence of BubR1 insufficiency, then the alignment and checkpoint routes address a
+      downstream symptom and CV_COHESION_PROTECTION is the primary variable."
+    consequence: "Would reorder the whole city, not a route within it. It is the most consequential
+      hypothesis here and the least examined."
+    status: NOT_TRAVERSABLE
+    what_would_promote_it: "ENDPOINT01: measure PCS and per-division missegregation in the same
+      BubR1-limiting system and see whether they move together."
+    evidence_so_far: ["PMID:40437074", "PMID:30464155", "PMID:42434306"]
+  - id: H_M6_NO_SHARED_ACTUATORS
+    kind: STRUCTURAL
+    motif: "absent overlap"
+    claim: "No actuator appears in more than one control variable across all nine."
+    consequence: "There is no accidental two-for-one: a combination route needs a combination of
+      perturbations, and no single intervention moves two variables. This is a negative motif and it
+      constrains the combination branches rather than enabling them."
+    status: NOT_TRAVERSABLE
+  - id: H_M7_KIF18A_CONVERGENCE_IS_A_WIRING_ARTEFACT
+    kind: STRUCTURAL
+    motif: "false convergence"
+    claim: "C_KIF18A has the highest inbound count in the graph (eight), above both genuine convergence
+      basins. That is not biological importance: several defect and ceiling states were wired to it
+      because it was the nearest remaining alignment candidate."
+    consequence: "Recorded so a later leverage pass does not mistake it for a hub. The real basins are
+      S_MIS_LOWERED_COMPENSATORY and S_MIS_LOWERED_INDEPENDENT, which many distinct routes reach on
+      their own merits."
+    status: NOT_TRAVERSABLE
+    what_would_promote_it: "Nothing. It is a caveat on the graph, and acting on it means re-examining
+      those edges, not drawing new ones."
 
 grounded_facts:
   - {id: G_KINASE_DISPENSABLE, statement: "Neither kinase activity nor the 265-residue kinase domain is required for checkpoint or stable attachments (731X restores both)", evidence: ["PMID:20516114"], consequence: "Any route premised on restoring BubR1 kinase activity is eliminated and does not appear in this map"}

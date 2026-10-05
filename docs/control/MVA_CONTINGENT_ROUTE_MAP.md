@@ -40,7 +40,7 @@ computed beside the functional one.
 
 | destination | distance | unavoidable branches | `BYPASS_ACT` an unavoidable gate? |
 |---|---|---|---|
-| `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` | none | no |
+| `CANONICAL_CELLULAR_STATE` | 3: `CENPE_F3`, `COMBO_F2_F3`, `COMPOSITE02` | none | no |
 | `FUNCTIONAL_CELLULAR_TARGET` | 2: `CENPE_F3`, `SAFE01` | none | no |
 | `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE02` | `IRREV01`, `SAFE_ORG`, `XSCALE02` | no |
 
@@ -72,7 +72,7 @@ SAFE01 appears in two campaigns because it is component-specific: whichever camp
 
 | destination | unresolved branches | campaigns needed | not covered by any campaign |
 |---|---|---|---|
-| `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` | 4: `TRIP13_01`, `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID` | `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID` |
+| `CANONICAL_CELLULAR_STATE` | 3: `CENPE_F3`, `COMBO_F2_F3`, `COMPOSITE02` | 3: `CENPE_F3`, `COMBO_F2_F3`, `COMPOSITE02` | `CENPE_F3`, `COMBO_F2_F3`, `COMPOSITE02` |
 | `FUNCTIONAL_CELLULAR_TARGET` | 2: `CENPE_F3`, `SAFE01` | 2: `FLUX01`, `CENPE_F3` | `CENPE_F3` |
 | `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE02` | 7: `FLUX01`, `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE_ORG`, `XSCALE02` | `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE_ORG`, `XSCALE02` |
 
@@ -91,7 +91,7 @@ No probability is attached to any of them, and none is available.
 
 | destination | `CONDITIONAL_REACHABLE` | `SINGLE_OUTCOME_RESILIENT` | single results that close it |
 |---|---|---|---|
-| `CANONICAL_CELLULAR_STATE` | YES, 5 branch(es) | **YES** | none |
+| `CANONICAL_CELLULAR_STATE` | YES, 3 branch(es) | **YES** | none |
 | `FUNCTIONAL_CELLULAR_TARGET` | YES, 2 branch(es) | **YES** | none |
 | `ORGANISM_TARGET` | YES, 7 branch(es) | NO | `IRREV01`=`established_and_fixed`, `IRREV01`=`unestablished`, `SAFE_ORG`=`harm`, `SAFE_ORG`=`unassessable`, `XSCALE02`=`unassessable` |
 
@@ -196,6 +196,16 @@ Distances are to `FUNCTIONAL_CELLULAR_TARGET` unless stated otherwise.
 | `CLEAR01` | runnable measurement | TISSUE_MODEL | `fraction_lowered_population_viable` | 2: `CENPE_F3`, `SAFE01` | 2 |
 | `CLIN02` | runnable measurement | ORGANISM_MODEL | `a_linked_feature_exists` | 2: `CENPE_F3`, `SAFE01` | 2 |
 | `XSCALE03` | runnable measurement | TISSUE_MODEL | `selection_dominates` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `DEP_CELL_SIZE` | runnable measurement | CELL_MODEL | `independent_of_bubr1` | 1: `SAFE01` | 1 |
+| `DEP_ATTACH_TURNOVER` | runnable measurement | CELL_MODEL | `independent_of_bubr1` | 1: `SAFE01` | 1 |
+| `DEP_COHESION` | runnable measurement | CELL_MODEL | `pcs_and_missegregation_fall` | 1: `SAFE01` | 1 |
+| `ENDPOINT01` | runnable measurement | CELL_MODEL | `same_quantity` | 1: `SAFE01` | 1 |
+| `COMBO_F1_F2` | runnable measurement | CELL_MODEL | `combination_sufficient` | 1: `SAFE01` | 1 |
+| `COMBO_F2_F3` | runnable measurement | CELL_MODEL | `combination_sufficient` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `COMBO_F3_F4` | runnable measurement | TISSUE_MODEL | `combination_sufficient` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `COMBO_F1_F4` | runnable measurement | TISSUE_MODEL | `combination_sufficient` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `XFER_LINEAGE` | runnable measurement | CELL_MODEL | `holds_in_relevant_lineage` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `XFER_DEVSTATE` | runnable measurement | TISSUE_MODEL | `holds_developmentally` | 2: `CENPE_F3`, `SAFE01` | 2 |
 
 ### Highest-leverage opportunities
 
@@ -209,6 +219,15 @@ state and a chain whose remaining steps are grounded:
 - `CENPE_F3` = `improves_at_residual_bubr1` → then only `SAFE01` remains
 - `KIF18A_F3` = `improves_at_residual_bubr1` → then only `SAFE01` remains
 - `COMBO01` = `combination_sufficient` → then only `SAFE01` remains
+- `DEP_CELL_SIZE` = `independent_of_bubr1` → then only `SAFE01` remains
+- `DEP_CELL_SIZE` = `benefit_requires_residual_bubr1` → then only `SAFE01` remains
+- `DEP_ATTACH_TURNOVER` = `independent_of_bubr1` → then only `SAFE01` remains
+- `DEP_ATTACH_TURNOVER` = `benefit_requires_residual_bubr1` → then only `SAFE01` remains
+- `DEP_COHESION` = `pcs_and_missegregation_fall` → then only `SAFE01` remains
+- `DEP_COHESION` = `benefit_requires_residual_bubr1` → then only `SAFE01` remains
+- `ENDPOINT01` = `same_quantity` → then only `SAFE01` remains
+- `ENDPOINT01` = `missegregation_tracks` → then only `SAFE01` remains
+- `COMBO_F1_F2` = `combination_sufficient` → then only `SAFE01` remains
 
 ## Branch nodes: every admissible outcome, continued
 
@@ -360,8 +379,8 @@ Does modifying poleward flux lower missegregation in a BubR1-limiting background
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `independent_of_bubr1` | `S_FLUX_LOWERS_MIS` (state) | 1 still unresolved: `SAFE01` |
-| `benefit_requires_residual_bubr1` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `independent_of_bubr1` | `S_MIS_LOWERED_INDEPENDENT` (state) | 1 still unresolved: `SAFE01` |
+| `benefit_requires_residual_bubr1` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
 | `benefit_absent_in_limiting_regime` | `S_FLUX_NEEDS_MORE_BUBR1` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `no_reduction` | `S_FLUX_NOT_THE_LEVER` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `unestablished` | `T_FLUX_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
@@ -471,7 +490,7 @@ Does raising CENP-E activity improve alignment at the residual BubR1 this case h
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `improves_at_residual_bubr1` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `improves_at_residual_bubr1` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
 | `needs_more_bubr1` | `S_FLUX_NEEDS_MORE_BUBR1` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `no_improvement` | `T_CENPE_F3_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `insufficient` | `T_CENPE_F3_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
@@ -484,7 +503,7 @@ Does modulating KIF18A improve alignment at residual BubR1?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `improves_at_residual_bubr1` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `improves_at_residual_bubr1` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
 | `worsens_alignment` | `S_FLUX_NOT_THE_LEVER` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `no_improvement` | `T_KIF18A_F3_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `insufficient` | `T_KIF18A_F3_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
@@ -497,7 +516,7 @@ Does a partial abundance gain plus flux modification reach the functional state 
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `combination_sufficient` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `combination_sufficient` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
 | `still_insufficient` | `T_COMBO_INSUFFICIENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `combination_harmful` | `T_UNSAFE_COMBO` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `insufficient` | `T_COMBO_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
@@ -624,15 +643,144 @@ Is selection or clearance, rather than per-division fidelity, what sets the tiss
 | `fidelity_dominates` | `T_AGGREGATION_UNEXPLAINED` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 | `insufficient` | `T_XSCALE03_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
+### `DEP_CELL_SIZE`
+
+Does reducing cell volume at mitotic entry lower missegregation in a BubR1-limiting state, and is the effect independent of residual BubR1?
+
+*Why unresolved:* The causal claim is made in cells evading senescence after CDK4/6 inhibition, not at limiting BubR1, and nothing connects the two. The variable is attractive precisely because it is off the kinetochore axis, which also means no published experiment has reason to have tested it here.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `independent_of_bubr1` | `S_MIS_LOWERED_INDEPENDENT` (state) | 1 still unresolved: `SAFE01` |
+| `benefit_requires_residual_bubr1` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `no_reduction` | `T_CELL_SIZE_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_CELL_SIZE_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `DEP_ATTACH_TURNOVER`
+
+Does tuning attachment turnover lower missegregation at limiting BubR1?
+
+*Why unresolved:* BubR1 works through PP2A-B56 on the same attachments, so this variable may not be independent of it — but it has its own actuators and its own readouts, and the dependency has never been tested. It is also the variable LIMFN01 would reach for.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `independent_of_bubr1` | `S_MIS_LOWERED_INDEPENDENT` (state) | 1 still unresolved: `SAFE01` |
+| `benefit_requires_residual_bubr1` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `no_reduction` | `T_TURNOVER_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_TURNOVER_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `DEP_COHESION`
+
+Does strengthening centromeric cohesion reduce premature chromatid separation and missegregation at limiting BubR1?
+
+*Why unresolved:* No route in this map addressed cohesion, although PCS is the hallmark scored in these patients. Whether BubR1 insufficiency produces PCS through cohesion loss or through checkpoint failure is itself unresolved, and the two imply different routes.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `pcs_and_missegregation_fall` | `S_MIS_LOWERED_INDEPENDENT` (state) | 1 still unresolved: `SAFE01` |
+| `benefit_requires_residual_bubr1` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `pcs_falls_missegregation_unchanged` | `S_PCS_DECOUPLED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_effect` | `T_COHESION_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_COHESION_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `ENDPOINT01`
+
+Which quantity does the clinical phenotype track — premature chromatid separation, or chromosome missegregation per division?
+
+*Why unresolved:* The map chose missegregation as the terminal cellular endpoint. The cytogenetics that diagnose these patients score PCS. If they dissociate, a route optimised for one may not move the other, and the target audit never examined this because both were assumed to be the same defect seen from two angles.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `same_quantity` | `S_MIS_LOWERED_INDEPENDENT` (state) | 1 still unresolved: `SAFE01` |
+| `pcs_is_the_tracker` | `S_ENDPOINT_IS_PCS` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `missegregation_tracks` | `S_MIS_LOWERED_INDEPENDENT` (state) | 1 still unresolved: `SAFE01` |
+| `unestablished` | `T_ENDPOINT_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `COMBO_F1_F2`
+
+Does a partial abundance gain plus an independently supplied function reach the state where neither does alone?
+
+*Why unresolved:* The families were enumerated as alternatives. A supplied function may need less of it when some residual protein is restored, and a partial restoration may need less supplied function. Neither direction is tested.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `combination_sufficient` | `S_MIS_LOWERED_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `still_insufficient` | `T_F1F2_INSUFFICIENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `combination_harmful` | `T_UNSAFE_COMBO` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_F1F2_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `COMBO_F2_F3`
+
+Does supplying one function while compensating another through a different physical process reach the state?
+
+*Why unresolved:* The functions are separable, so a composite need not supply all of them the same way. A supplied alignment component plus a compensatory silencing route is untested, as is the converse.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `combination_sufficient` | `S_COMPOSITE_COMPENSATORY` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `functions_conflict` | `S_COMPOSITE_CONFLICTED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `still_insufficient` | `T_F2F3_INSUFFICIENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_F2F3_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `COMBO_F3_F4`
+
+Does lowering the error rate while promoting clearance of cells that already carry errors move the tissue fraction where neither does alone?
+
+*Why unresolved:* Clearance alone depletes a population that keeps generating errors; error reduction alone leaves the established burden. Together the arithmetic is different, and nothing has run them together.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `combination_sufficient` | `S_TISSUE_FRACTION_FALLS` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `population_depleted` | `T_CLEAR_DEPLETES` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `still_insufficient` | `T_F3F4_INSUFFICIENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_F3F4_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `COMBO_F1_F4`
+
+Does partial protein restoration plus clearance of already-aneuploid cells move the tissue fraction?
+
+*Why unresolved:* Same arithmetic as F3+F4 with a different error-reduction mechanism, and it is the only combination that touches both the prospective and the established burden.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `combination_sufficient` | `S_TISSUE_FRACTION_FALLS` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `population_depleted` | `T_CLEAR_DEPLETES` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `still_insufficient` | `T_F1F4_INSUFFICIENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_F1F4_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `XFER_LINEAGE`
+
+Does the effect hold in a lineage relevant to this child's phenotype, rather than in a cancer line?
+
+*Why unresolved:* Every result in this map comes from HeLa, U2OS or RPE-1. The phenotype is multi-system, so the relevant lineage is not one cell type, and iPSC-derived lineages are a route that needs no patient material.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `holds_in_relevant_lineage` | `S_XFER_OK` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `lineage_specific_failure` | `S_LINEAGE_DEPENDENT` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_XFER_LINEAGE_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `XFER_DEVSTATE`
+
+Does the effect hold in a developmental state resembling when the burden is laid down?
+
+*Why unresolved:* The burden is largely developmental and the experiments are in adult-derived, transformed or immortalised cells. Developmental state is a lattice dimension the map has carried as a single undifferentiated transfer question.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `holds_developmentally` | `S_XFER_OK` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `adult_only` | `S_DEV_WINDOW_MISSED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_XFER_DEV_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
 ## Transitions by grounding label
 
 | label | count | meaning for the route |
 |---|---|---|
-| `GROUNDED` | 33 | traversed directly; no branch created |
-| `CONTEXT_TRANSFER_REQUIRED` | 2 | the relation holds somewhere else and the transfer is unestablished |
-| `EXPERIMENTAL_UNKNOWN` | 41 | a branch node; outcomes enumerated above |
+| `GROUNDED` | 36 | traversed directly; no branch created |
+| `CONTEXT_TRANSFER_REQUIRED` | 6 | the relation holds somewhere else and the transfer is unestablished |
+| `EXPERIMENTAL_UNKNOWN` | 52 | a branch node; outcomes enumerated above |
 | `PHYSICAL_ACTUATOR_MISSING` | 6 | the requirement is grounded and no component is known to supply it |
-| `CONCEPTUALLY_SUFFICIENT_ONLY` | 10 | sufficient in model; not a physical claim |
+| `CONCEPTUALLY_SUFFICIENT_ONLY` | 13 | sufficient in model; not a physical claim |
 | `UNSAFE` | 0 | closed on safety grounds |
 
 **`PHYSICAL_ACTUATOR_MISSING` transitions:**
@@ -648,6 +796,10 @@ Is selection or clearance, rather than per-division fidelity, what sets the tiss
 
 - `S_ABUNDANCE_LOW` → `S_MISSEGREGATION` — Direction grounded by doxycycline titration (~6% of wild-type missegregates in most cells, ~13% is near-normal); the magnitude was measured with normal protein in HeLa and does not transfer
 - `S_STABILISED_FUNCTIONAL` → `XFER01`
+- `S_COMPOSITE_COMPENSATORY` → `XFER_LINEAGE`
+- `S_STABILISED_FUNCTIONAL` → `XFER_LINEAGE` — Lineage relevance is a separate dimension from whether it transfers at all
+- `S_MIS_LOWERED_INDEPENDENT` → `XFER_LINEAGE` — An independent route faces the same transfer question as a repair route
+- `S_XFER_OK` → `XFER_DEVSTATE` — Transferring to an adult lineage is not transferring to the window the burden accrues in
 
 ## Grounded facts traversed without branching
 
@@ -695,6 +847,10 @@ edge and opens another branch".
 - *re-entry:* `S_RETEST_COMPOSITE` → `COMPOSITE_VALID` — Revalidation of the same branch with a different configuration
 - *re-entry:* `S_ESTABLISHED_BURDEN` → `IRREV01` — And the prospective component remains, whatever is fixed
 - *re-entry:* `S_NEW_CONTROL_VARIABLE` → `BYPASS_ACT` — A variable outside the map must be named and searched; the nearest existing discovery node is where that search re-enters
+- *re-entry:* `S_ENDPOINT_IS_PCS` → `C_COHESION` — A cohesion endpoint makes the cohesion variable the primary one rather than an alternative
+- *re-entry:* `S_CASE_REFRACTORY` → `COMBO_F1_F2` — If this allele resists stabilisation, partial restoration plus a supplied function is still untested
+- *re-entry:* `S_XFER_OK` → `XFER_DEVSTATE` — Transferring to an adult lineage is not transferring to the window the burden accrues in
+- *re-entry:* `S_DEV_WINDOW_MISSED` → `IRREV01` — A route bounded to adult-like states can only address the prospective component, which is what IRREV01 measures
 
 ## The graph
 
@@ -750,7 +906,7 @@ graph TD
   S_POP_SAFE_ANY["S_POP_SAFE_ANY"]
   S_CHECKPOINT_RISK_RESOLVED["S_CHECKPOINT_RISK_RESOLVED"]
   FUNCTIONAL_CELLULAR_TARGET[/"FUNCTIONAL_CELLULAR_TARGET"/]
-  S_FLUX_LOWERS_MIS["S_FLUX_LOWERS_MIS"]
+  S_MIS_LOWERED_INDEPENDENT["S_MIS_LOWERED_INDEPENDENT"]
   ACT_SAFETY01{{"ACT_SAFETY01"}}
   S_ACT_COMPETENCE_REQUIRED["S_ACT_COMPETENCE_REQUIRED"]
   T_ACT_RISK_FRONTIER(("T_ACT_RISK_FRONTIER<br/>BOUNDED_FRONTIER"))
@@ -795,7 +951,7 @@ graph TD
   S_CENPE_BUBR1_DEPENDENT["S_CENPE_BUBR1_DEPENDENT"]
   S_KIF18A_BUBR1_DEPENDENT["S_KIF18A_BUBR1_DEPENDENT"]
   T_KIF18A_FRONTIER(("T_KIF18A_FRONTIER<br/>BOUNDED_FRONTIER"))
-  S_FLUX_COMPENSATORY["S_FLUX_COMPENSATORY"]
+  S_MIS_LOWERED_COMPENSATORY["S_MIS_LOWERED_COMPENSATORY"]
   S_FLUX_NOT_THE_LEVER["S_FLUX_NOT_THE_LEVER"]
   S_FLUX_NEEDS_MORE_BUBR1["S_FLUX_NEEDS_MORE_BUBR1"]
   T_FLUX_FRONTIER(("T_FLUX_FRONTIER<br/>BOUNDED_FRONTIER"))
@@ -853,6 +1009,41 @@ graph TD
   T_CLIN02_BLOCKED(("T_CLIN02_BLOCKED<br/>GOVERNANCE_BLOCKED"))
   T_AGGREGATION_UNEXPLAINED(("T_AGGREGATION_UNEXPLAINED<br/>DECLARED_SCIENTIFIC_FRONTIER"))
   T_XSCALE03_REPEAT(("T_XSCALE03_REPEAT<br/>BOUNDED_FRONTIER"))
+  C_CELL_SIZE["C_CELL_SIZE"]
+  C_ATTACH_TURNOVER["C_ATTACH_TURNOVER"]
+  C_COHESION["C_COHESION"]
+  DEP_CELL_SIZE{{"DEP_CELL_SIZE"}}
+  DEP_ATTACH_TURNOVER{{"DEP_ATTACH_TURNOVER"}}
+  DEP_COHESION{{"DEP_COHESION"}}
+  S_COMPOSITE_COMPENSATORY["S_COMPOSITE_COMPENSATORY"]
+  S_PCS_DECOUPLED["S_PCS_DECOUPLED"]
+  ENDPOINT01{{"ENDPOINT01"}}
+  S_ENDPOINT_IS_PCS["S_ENDPOINT_IS_PCS"]
+  COMBO_F1_F2{{"COMBO_F1_F2"}}
+  COMBO_F2_F3{{"COMBO_F2_F3"}}
+  COMBO_F3_F4{{"COMBO_F3_F4"}}
+  COMBO_F1_F4{{"COMBO_F1_F4"}}
+  XFER_LINEAGE{{"XFER_LINEAGE"}}
+  S_LINEAGE_DEPENDENT["S_LINEAGE_DEPENDENT"]
+  XFER_DEVSTATE{{"XFER_DEVSTATE"}}
+  S_DEV_WINDOW_MISSED["S_DEV_WINDOW_MISSED"]
+  T_CELL_SIZE_NULL(("T_CELL_SIZE_NULL<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_CELL_SIZE_FRONTIER(("T_CELL_SIZE_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_TURNOVER_NULL(("T_TURNOVER_NULL<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_TURNOVER_FRONTIER(("T_TURNOVER_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_COHESION_NULL(("T_COHESION_NULL<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_COHESION_FRONTIER(("T_COHESION_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_ENDPOINT_FRONTIER(("T_ENDPOINT_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_F1F2_INSUFFICIENT(("T_F1F2_INSUFFICIENT<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_F1F2_FRONTIER(("T_F1F2_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_F2F3_INSUFFICIENT(("T_F2F3_INSUFFICIENT<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_F2F3_FRONTIER(("T_F2F3_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_F3F4_INSUFFICIENT(("T_F3F4_INSUFFICIENT<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_F3F4_FRONTIER(("T_F3F4_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_F1F4_INSUFFICIENT(("T_F1F4_INSUFFICIENT<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_F1F4_FRONTIER(("T_F1F4_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_XFER_LINEAGE_FRONTIER(("T_XFER_LINEAGE_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_XFER_DEV_FRONTIER(("T_XFER_DEV_FRONTIER<br/>BOUNDED_FRONTIER"))
   CHAR01 -->|destabilised_like_reference| S_ABUNDANCE_LOW
   CHAR01 -->|not_destabilised| S_ABUNDANCE_NORMAL
   CHAR01 -->|destabilised_other_mechanism| S_ABUNDANCE_LOW_OTHER
@@ -894,8 +1085,8 @@ graph TD
   DEP_KIF18A -->|independent_of_bubr1| S_ALIGN_SUPPLIED
   DEP_KIF18A -->|requires_bubr1| S_KIF18A_BUBR1_DEPENDENT
   DEP_KIF18A -->|unestablished| T_KIF18A_FRONTIER
-  DEP_FLUX -->|independent_of_bubr1| S_FLUX_LOWERS_MIS
-  DEP_FLUX -->|benefit_requires_residual_bubr1| S_FLUX_COMPENSATORY
+  DEP_FLUX -->|independent_of_bubr1| S_MIS_LOWERED_INDEPENDENT
+  DEP_FLUX -->|benefit_requires_residual_bubr1| S_MIS_LOWERED_COMPENSATORY
   DEP_FLUX -->|benefit_absent_in_limiting_regime| S_FLUX_NEEDS_MORE_BUBR1
   DEP_FLUX -->|no_reduction| S_FLUX_NOT_THE_LEVER
   DEP_FLUX -->|unestablished| T_FLUX_FRONTIER
@@ -924,15 +1115,15 @@ graph TD
   STAB03 -->|turnover_reduced_only| B_TURNOVER_ONLY
   STAB03 -->|no_effect| T_CV_ABUNDANCE_EXHAUSTED
   STAB03 -->|insufficient| T_STAB03_REPEAT
-  CENPE_F3 -->|improves_at_residual_bubr1| S_FLUX_COMPENSATORY
+  CENPE_F3 -->|improves_at_residual_bubr1| S_MIS_LOWERED_COMPENSATORY
   CENPE_F3 -->|needs_more_bubr1| S_FLUX_NEEDS_MORE_BUBR1
   CENPE_F3 -->|no_improvement| T_CENPE_F3_NULL
   CENPE_F3 -->|insufficient| T_CENPE_F3_REPEAT
-  KIF18A_F3 -->|improves_at_residual_bubr1| S_FLUX_COMPENSATORY
+  KIF18A_F3 -->|improves_at_residual_bubr1| S_MIS_LOWERED_COMPENSATORY
   KIF18A_F3 -->|worsens_alignment| S_FLUX_NOT_THE_LEVER
   KIF18A_F3 -->|no_improvement| T_KIF18A_F3_NULL
   KIF18A_F3 -->|insufficient| T_KIF18A_F3_REPEAT
-  COMBO01 -->|combination_sufficient| S_FLUX_COMPENSATORY
+  COMBO01 -->|combination_sufficient| S_MIS_LOWERED_COMPENSATORY
   COMBO01 -->|still_insufficient| T_COMBO_INSUFFICIENT
   COMBO01 -->|combination_harmful| T_UNSAFE_COMBO
   COMBO01 -->|insufficient| T_COMBO_REPEAT
@@ -968,6 +1159,45 @@ graph TD
   XSCALE03 -->|selection_dominates| CV_CLEARANCE_ENTRY
   XSCALE03 -->|fidelity_dominates| T_AGGREGATION_UNEXPLAINED
   XSCALE03 -->|insufficient| T_XSCALE03_REPEAT
+  DEP_CELL_SIZE -->|independent_of_bubr1| S_MIS_LOWERED_INDEPENDENT
+  DEP_CELL_SIZE -->|benefit_requires_residual_bubr1| S_MIS_LOWERED_COMPENSATORY
+  DEP_CELL_SIZE -->|no_reduction| T_CELL_SIZE_NULL
+  DEP_CELL_SIZE -->|unestablished| T_CELL_SIZE_FRONTIER
+  DEP_ATTACH_TURNOVER -->|independent_of_bubr1| S_MIS_LOWERED_INDEPENDENT
+  DEP_ATTACH_TURNOVER -->|benefit_requires_residual_bubr1| S_MIS_LOWERED_COMPENSATORY
+  DEP_ATTACH_TURNOVER -->|no_reduction| T_TURNOVER_NULL
+  DEP_ATTACH_TURNOVER -->|unestablished| T_TURNOVER_FRONTIER
+  DEP_COHESION -->|pcs_and_missegregation_fall| S_MIS_LOWERED_INDEPENDENT
+  DEP_COHESION -->|benefit_requires_residual_bubr1| S_MIS_LOWERED_COMPENSATORY
+  DEP_COHESION -->|pcs_falls_missegregation_unchanged| S_PCS_DECOUPLED
+  DEP_COHESION -->|no_effect| T_COHESION_NULL
+  DEP_COHESION -->|unestablished| T_COHESION_FRONTIER
+  ENDPOINT01 -->|same_quantity| S_MIS_LOWERED_INDEPENDENT
+  ENDPOINT01 -->|pcs_is_the_tracker| S_ENDPOINT_IS_PCS
+  ENDPOINT01 -->|missegregation_tracks| S_MIS_LOWERED_INDEPENDENT
+  ENDPOINT01 -->|unestablished| T_ENDPOINT_FRONTIER
+  COMBO_F1_F2 -->|combination_sufficient| S_MIS_LOWERED_COMPENSATORY
+  COMBO_F1_F2 -->|still_insufficient| T_F1F2_INSUFFICIENT
+  COMBO_F1_F2 -->|combination_harmful| T_UNSAFE_COMBO
+  COMBO_F1_F2 -->|unestablished| T_F1F2_FRONTIER
+  COMBO_F2_F3 -->|combination_sufficient| S_COMPOSITE_COMPENSATORY
+  COMBO_F2_F3 -->|functions_conflict| S_COMPOSITE_CONFLICTED
+  COMBO_F2_F3 -->|still_insufficient| T_F2F3_INSUFFICIENT
+  COMBO_F2_F3 -->|unestablished| T_F2F3_FRONTIER
+  COMBO_F3_F4 -->|combination_sufficient| S_TISSUE_FRACTION_FALLS
+  COMBO_F3_F4 -->|population_depleted| T_CLEAR_DEPLETES
+  COMBO_F3_F4 -->|still_insufficient| T_F3F4_INSUFFICIENT
+  COMBO_F3_F4 -->|unestablished| T_F3F4_FRONTIER
+  COMBO_F1_F4 -->|combination_sufficient| S_TISSUE_FRACTION_FALLS
+  COMBO_F1_F4 -->|population_depleted| T_CLEAR_DEPLETES
+  COMBO_F1_F4 -->|still_insufficient| T_F1F4_INSUFFICIENT
+  COMBO_F1_F4 -->|unestablished| T_F1F4_FRONTIER
+  XFER_LINEAGE -->|holds_in_relevant_lineage| S_XFER_OK
+  XFER_LINEAGE -->|lineage_specific_failure| S_LINEAGE_DEPENDENT
+  XFER_LINEAGE -->|unestablished| T_XFER_LINEAGE_FRONTIER
+  XFER_DEVSTATE -->|holds_developmentally| S_XFER_OK
+  XFER_DEVSTATE -->|adult_only| S_DEV_WINDOW_MISSED
+  XFER_DEVSTATE -->|unestablished| T_XFER_DEV_FRONTIER
   S0_CASE -->|GROUNDED| S_MISSEGREGATION
   S0_CASE -->|GROUNDED| S_CLASS_PREMISE
   S_CLASS_PREMISE -->|EXPERIMENTAL_UNKNOWN| CHAR01
@@ -1014,10 +1244,10 @@ graph TD
   CANONICAL_CELLULAR_STATE -->|GROUNDED| S_MIS_LOWERED
   S_FLUX_NOT_THE_LEVER -.->|GROUNDED| C_KIF18A
   S_FLUX_NOT_THE_LEVER -.->|EXPERIMENTAL_UNKNOWN| CHAR01
-  S_FLUX_COMPENSATORY -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_MIS_LOWERED
-  S_FLUX_COMPENSATORY -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_ALIGN_SUPPLIED
-  S_FLUX_LOWERS_MIS -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_MIS_LOWERED
-  S_FLUX_LOWERS_MIS -->|GROUNDED| S_ALIGN_SUPPLIED
+  S_MIS_LOWERED_COMPENSATORY -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_MIS_LOWERED
+  S_MIS_LOWERED_COMPENSATORY -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_ALIGN_SUPPLIED
+  S_MIS_LOWERED_INDEPENDENT -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_MIS_LOWERED
+  S_MIS_LOWERED_INDEPENDENT -->|GROUNDED| S_ALIGN_SUPPLIED
   S_POP_SAFE_F1B -->|GROUNDED| S_POP_SAFE_ANY
   S_POP_SAFE_F2 -->|GROUNDED| S_POP_SAFE_ANY
   S_MIS_LOWERED -->|GROUNDED| FUNCTIONAL_CELLULAR_TARGET
@@ -1060,6 +1290,27 @@ graph TD
   CV_CLEARANCE_ENTRY -->|EXPERIMENTAL_UNKNOWN| CLEAR01
   S_ESTABLISHED_BURDEN -.->|EXPERIMENTAL_UNKNOWN| IRREV01
   S_NEW_CONTROL_VARIABLE -.->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ACT
+  S_MISSEGREGATION -->|GROUNDED| C_CELL_SIZE
+  S_MISSEGREGATION -->|GROUNDED| C_ATTACH_TURNOVER
+  S_MISSEGREGATION -->|GROUNDED| C_COHESION
+  C_CELL_SIZE -->|EXPERIMENTAL_UNKNOWN| DEP_CELL_SIZE
+  C_ATTACH_TURNOVER -->|EXPERIMENTAL_UNKNOWN| DEP_ATTACH_TURNOVER
+  C_COHESION -->|EXPERIMENTAL_UNKNOWN| DEP_COHESION
+  S_PCS_DECOUPLED -->|EXPERIMENTAL_UNKNOWN| ENDPOINT01
+  S_MISSEGREGATION -->|EXPERIMENTAL_UNKNOWN| ENDPOINT01
+  S_ENDPOINT_IS_PCS -.->|CONCEPTUALLY_SUFFICIENT_ONLY| C_COHESION
+  S_COMPOSITE_COMPENSATORY -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_MIS_LOWERED
+  S_COMPOSITE_COMPENSATORY -->|CONTEXT_TRANSFER_REQUIRED| XFER_LINEAGE
+  S_MIS_LOWERED_COMPENSATORY -->|EXPERIMENTAL_UNKNOWN| COMBO_F2_F3
+  S_CASE_REFRACTORY -.->|EXPERIMENTAL_UNKNOWN| COMBO_F1_F2
+  S_FLUX_NEEDS_MORE_BUBR1 -->|EXPERIMENTAL_UNKNOWN| COMBO_F1_F2
+  CV_CLEARANCE_ENTRY -->|EXPERIMENTAL_UNKNOWN| COMBO_F3_F4
+  CV_CLEARANCE_ENTRY -->|EXPERIMENTAL_UNKNOWN| COMBO_F1_F4
+  S_STABILISED_FUNCTIONAL -->|CONTEXT_TRANSFER_REQUIRED| XFER_LINEAGE
+  S_MIS_LOWERED_INDEPENDENT -->|CONTEXT_TRANSFER_REQUIRED| XFER_LINEAGE
+  S_LINEAGE_DEPENDENT -->|EXPERIMENTAL_UNKNOWN| XFER_DEVSTATE
+  S_XFER_OK -.->|CONTEXT_TRANSFER_REQUIRED| XFER_DEVSTATE
+  S_DEV_WINDOW_MISSED -.->|CONCEPTUALLY_SUFFICIENT_ONLY| IRREV01
   S_XFER_OK --> F1_COMPLETE
   S_POP_SAFE_F1B --> F1_COMPLETE
   S_ALIGN_SUPPLIED --> F2_COMPLETE
@@ -1086,7 +1337,7 @@ composite bypass (supply each lost function independently).
 
 | EXP01 result | F1 abundance family | F2 bypass family | what it decides |
 |---|---|---|---|
-| `full_function` | 5 left (5 runnable) | 4 left (3 runnable) | the abundance premise survives for this allele; the whole question becomes physical |
+| `full_function` | 3 left (3 runnable) | 4 left (3 runnable) | the abundance premise survives for this allele; the whole question becomes physical |
 | `alignment_defect` | **closed** | 4 left (3 runnable) | F1 cannot be a complete solution; alignment must be supplied independently |
 | `silencing_defect` | **closed** | 4 left (3 runnable) | F1 cannot be a complete solution; silencing must be supplied independently |
 | `segregation_defect` | **closed** | 4 left (3 runnable) | the failing upstream function must be identified before a route is chosen |
@@ -1104,11 +1355,11 @@ decision-relevant fact is which branch gates a whole family:
 
 | family | unavoidable branches |
 |---|---|
-| F1 abundance | `CHAR01`, `EXP01`, `FUNCVAL01`, `SAFE02`, `STAB01`, `XFER01` |
+| F1 abundance | `CHAR01`, `EXP01`, `SAFE02` |
 | F2 bypass | `BYPASS_ACT`, `DEP_TRIP13`, `SAFE01` |
 
 The two families are blocked by different kinds of thing. **F1** is a strict chain: all
-6 of its branches are unavoidable and 6 are runnable measurements, so it
+3 of its branches are unavoidable and 3 are runnable measurements, so it
 is long but every step is work someone can do. **F2** is gated by
 `BYPASS_ACT`, which is a component discovery — the one hole the external search could not fill.
 
@@ -1162,12 +1413,12 @@ thing this map was built to stop.
 
 | needs | branches | meaning |
 |---|---|---|
-| `CELL_MODEL` | `ACT02`, `BYPASS_ACT`, `CENPE_F3`, `CHAR01`, `COMBO01`, `COMPOSITE02`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_KIF18A`, `DEP_TRIP13`, `EXP01`, `EXPRVAL01`, `FOLD01`, `FUNCVAL01`, `KIF18A_F3`, `LIMFN01`, `POOL01`, `SAFE01`, `SAFE02`, `STAB01`, `STAB02`, `STAB03`, `TRIP13_02`, `TRIP13_F3` | runnable now — a human cell line and standard assays |
-| `TISSUE_MODEL` | `CLEAR01`, `XSCALE01`, `XSCALE03` | needs a tissue-level model that does not exist for this case |
+| `CELL_MODEL` | `ACT02`, `BYPASS_ACT`, `CENPE_F3`, `CHAR01`, `COMBO01`, `COMBO_F1_F2`, `COMBO_F2_F3`, `COMPOSITE02`, `COMPOSITE_VALID`, `DEP_ATTACH_TURNOVER`, `DEP_CELL_SIZE`, `DEP_COHESION`, `DEP_FLUX`, `DEP_KIF18A`, `DEP_TRIP13`, `ENDPOINT01`, `EXP01`, `EXPRVAL01`, `FOLD01`, `FUNCVAL01`, `KIF18A_F3`, `LIMFN01`, `POOL01`, `SAFE01`, `SAFE02`, `STAB01`, `STAB02`, `STAB03`, `TRIP13_02`, `TRIP13_F3`, `XFER_LINEAGE` | runnable now — a human cell line and standard assays |
+| `TISSUE_MODEL` | `CLEAR01`, `COMBO_F1_F4`, `COMBO_F3_F4`, `XFER_DEVSTATE`, `XSCALE01`, `XSCALE03` | needs a tissue-level model that does not exist for this case |
 | `ORGANISM_MODEL` | `ACT_SAFETY01`, `CLIN02`, `IRREV01`, `SAFE_ORG`, `XSCALE02` | needs organism-level or longitudinal data |
 | `GOVERNANCE_ABSENT` | `XFER01` | blocked by governance, not biology: no patient material is available and none may be acquired |
 
-24 of 33 branches need nothing but a cell line. Of those, 2 sit on the shortest route to `FUNCTIONAL_CELLULAR_TARGET`: `CENPE_F3`, `SAFE01`.
+31 of 43 branches need nothing but a cell line. Of those, 2 sit on the shortest route to `FUNCTIONAL_CELLULAR_TARGET`: `CENPE_F3`, `SAFE01`.
 
 `CHAR01` remains the first bench experiment on the abundance family: cheapest, upstream of every
 other F1 branch, and no patient material.
@@ -1209,9 +1460,9 @@ open another, so they are excluded from the audit below: `T_EXP01_CEILING`.
 | `GOVERNANCE_BLOCKED` | 4 | blocked by governance, not biology — no material, no intervention, no recontact | `T_CLIN02_BLOCKED`, `T_CLINICAL_UNTESTABLE`, `T_TISSUE_UNTESTABLE`, `T_XFER_BLOCKED` |
 | `PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE` | 3 | the continuation contradicts evidence already in hand | `T_COMPOSITE_INTRINSIC`, `T_FOLD_INTRINSIC`, `T_TRIP13_INTRINSIC` |
 | `SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED` | 4 | bounded external search ran and returned nothing | `T_ACT_EXHAUSTED`, `T_ALIGN_NO_ACTUATOR`, `T_CV_ABUNDANCE_EXHAUSTED`, `T_SIL_NO_ACTUATOR` |
-| `DECLARED_SCIENTIFIC_FRONTIER` | 8 | no next experiment or search is currently identifiable | `T_AGGREGATION_UNEXPLAINED`, `T_CENPE_F3_NULL`, `T_CLEAR_NULL`, `T_CLINICAL_LINK_ABSENT`, `T_COMBO_INSUFFICIENT`, `T_KIF18A_F3_NULL`, `T_POOL_INSUFFICIENT`, `T_TRIP13_F3_NULL` |
+| `DECLARED_SCIENTIFIC_FRONTIER` | 15 | no next experiment or search is currently identifiable | `T_AGGREGATION_UNEXPLAINED`, `T_CELL_SIZE_NULL`, `T_CENPE_F3_NULL`, `T_CLEAR_NULL`, `T_CLINICAL_LINK_ABSENT`, `T_COHESION_NULL`, `T_COMBO_INSUFFICIENT`, `T_F1F2_INSUFFICIENT`, `T_F1F4_INSUFFICIENT`, `T_F2F3_INSUFFICIENT`, `T_F3F4_INSUFFICIENT`, `T_KIF18A_F3_NULL`, `T_POOL_INSUFFICIENT`, `T_TRIP13_F3_NULL`, `T_TURNOVER_NULL` |
 | `CONTEXT_TRANSFER_REQUIRED` | 1 | the transfer is unestablished and named | `T_NO_TRANSFER` |
-| `BOUNDED_FRONTIER` | 27 | a validity failure: the same condition is repeated, so reasoning has not stopped | `T_ACT02_REPEAT`, `T_ACT_RISK_FRONTIER`, `T_CENPE_F3_REPEAT`, `T_CLEAR01_REPEAT`, `T_COMBO_REPEAT`, `T_COMPOSITE02_REPEAT`, `T_COMPOSITE_REPEAT`, `T_EXP01_REPEAT`, `T_EXPR_INVALID`, `T_FLUX_FRONTIER`, `T_FOLD01_REPEAT`, `T_FUNCVAL_REPEAT`, `T_IRREV_FRONTIER`, `T_KIF18A_F3_REPEAT`, `T_KIF18A_FRONTIER`, `T_LIMFN01_REPEAT`, `T_ORG_SAFETY_FRONTIER`, `T_POOL01_REPEAT`, `T_SAFE01_REPEAT`, `T_SAFE02_REPEAT`, `T_STAB01_REPEAT`, `T_STAB02_REPEAT`, `T_STAB03_REPEAT`, `T_TRIP13_02_REPEAT`, `T_TRIP13_F3_REPEAT`, `T_TRIP13_FRONTIER`, `T_XSCALE03_REPEAT` |
+| `BOUNDED_FRONTIER` | 37 | a validity failure: the same condition is repeated, so reasoning has not stopped | `T_ACT02_REPEAT`, `T_ACT_RISK_FRONTIER`, `T_CELL_SIZE_FRONTIER`, `T_CENPE_F3_REPEAT`, `T_CLEAR01_REPEAT`, `T_COHESION_FRONTIER`, `T_COMBO_REPEAT`, `T_COMPOSITE02_REPEAT`, `T_COMPOSITE_REPEAT`, `T_ENDPOINT_FRONTIER`, `T_EXP01_REPEAT`, `T_EXPR_INVALID`, `T_F1F2_FRONTIER`, `T_F1F4_FRONTIER`, `T_F2F3_FRONTIER`, `T_F3F4_FRONTIER`, `T_FLUX_FRONTIER`, `T_FOLD01_REPEAT`, `T_FUNCVAL_REPEAT`, `T_IRREV_FRONTIER`, `T_KIF18A_F3_REPEAT`, `T_KIF18A_FRONTIER`, `T_LIMFN01_REPEAT`, `T_ORG_SAFETY_FRONTIER`, `T_POOL01_REPEAT`, `T_SAFE01_REPEAT`, `T_SAFE02_REPEAT`, `T_STAB01_REPEAT`, `T_STAB02_REPEAT`, `T_STAB03_REPEAT`, `T_TRIP13_02_REPEAT`, `T_TRIP13_F3_REPEAT`, `T_TRIP13_FRONTIER`, `T_TURNOVER_FRONTIER`, `T_XFER_DEV_FRONTIER`, `T_XFER_LINEAGE_FRONTIER`, `T_XSCALE03_REPEAT` |
 
 **Unexpanded frontiers remaining: 0.** The acceptance criterion is met: every leaf is a target, a safety closure, a governance block, an evidence incompatibility, an exhausted search, a declared frontier, or a validity repeat.
 
@@ -1226,7 +1477,7 @@ from.
 
 ### Distinct biological states
 
-61 states. Each is a condition the case can be in, not a step in a protocol.
+69 states. Each is a condition the case can be in, not a step in a protocol.
 
 - `B_ALIGN_DEFECT` — Alignment remains defective at matched abundance: the central region function is not supplied by this protein
 - `B_MULTI_DEFECT` — More than one function remains defective at matched abundance
@@ -1235,7 +1486,10 @@ from.
 - `B_TURNOVER_ONLY` — Turnover measurably slowed without a steady-state rise: another process, most likely synthesis or folding capacity, is rate-limiting
 - `CANONICAL_CELLULAR_STATE` — Canonical cell state: alignment, activation, silencing, low missegregation, viability, division and no added death — the trajectory a normal cell takes
 - `CV_CLEARANCE_ENTRY` — F4 entry: the aneuploid cell fraction is itself a control variable, and the only one that can touch aneuploidy already established
+- `C_ATTACH_TURNOVER` — Attachment turnover: MCAK/Kif2C centromeric activity tunes k-fibre turnover, which is the rate at which attachment errors are corrected
+- `C_CELL_SIZE` — Cell volume at mitotic entry: enlargement causes mitotic errors and aneuploidy, on an axis entirely outside the kinetochore
 - `C_CENPE` — CENP-E/kinesin-7: demonstrated to initiate chromosome congression of polar chromosomes, and physically manipulable (depletion, inhibition, truncation constructs)
+- `C_COHESION` — Centromeric cohesion: the phenotype actually scored in these patients is premature chromatid separation, which is a cohesion readout
 - `C_FLUX` — Microtubule poleward flux: reported as a target for modifying chromosome segregation errors — a physical handle on the microtubule side rather than on kinetochore signalling
 - `C_KIF18A` — KIF18A: promotes chromosome congression in cooperation with CENP-E downstream of CENP-C, identified in a genome-wide Cas9 screen; physically manipulable (knockout, inhibitors)
 - `C_TRIP13` — TRIP13 with APC15: catalytic MCC disassembly drives timely mitotic exit; degron-tagged depletion shows the requirement, so the state is physically manipulable
@@ -1255,23 +1509,28 @@ from.
 - `S_CLASS_PREMISE` — Class-level premise: kinase-domain missense reduces BubR1 abundance via misfolding and elevated turnover. MC_0005 PARTIALLY_SUPPORTED on 0 establishing / 11 indirect records
 - `S_CLINICAL_LINK_UNRESOLVED` — Tissue aneuploidy fell without a measurable change in the clinical feature that was chosen
 - `S_CLINICAL_MODIFIED` — A measurable feature of the clinical course is modified
+- `S_COMPOSITE_COMPENSATORY` — One function supplied and another compensated: a mixed composite that reaches the terminal endpoint without reproducing any single canonical route
 - `S_COMPOSITE_CONFLICTED` — Components supply their functions individually and conflict as an assembled system in the tested configuration
 - `S_COMPOSITE_INEFFECTIVE` — The assembled system did not lower missegregation, so the functions supplied were not the limiting ones
 - `S_COMPOSITE_VALIDATED` — The assembled composite system was directly shown to lower chromosome missegregation while holding the required functional state and population safety
+- `S_DEV_WINDOW_MISSED` — The effect holds only in adult-like states: the developmental window in which the burden accrues is not addressable by this route, which bounds it to the prospective component
+- `S_ENDPOINT_IS_PCS` — The phenotype tracks premature chromatid separation: the cellular target needs a cohesion endpoint that the current conjunction does not contain
 - `S_ESTABLISHED_BURDEN` — The developmental component already laid down is not addressable by improving future divisions
-- `S_FLUX_COMPENSATORY` — Flux manipulation lowers missegregation with the population preserved, and the benefit depends on residual BubR1: a compensatory route — residual function exploited, a different physical process altered
-- `S_FLUX_LOWERS_MIS` — Modifying poleward flux lowers missegregation in a BubR1-limited background
 - `S_FLUX_NEEDS_MORE_BUBR1` — The flux benefit is present in replete cells and absent at the limiting end: it needs more BubR1 than this case has
 - `S_FLUX_NOT_THE_LEVER` — The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state
 - `S_FUNCTION_OK` — At matched abundance the exact altered protein supports alignment, silencing and segregation
 - `S_KIF18A_BUBR1_DEPENDENT` — KIF18A's alignment role requires BubR1
+- `S_LINEAGE_DEPENDENT` — The effect is lineage-dependent: it works in some relevant lineages and not others, which makes tissue selectivity a design variable rather than a confound
 - `S_MATCHED_ACHIEVABLE` — The exact allele can be held at wild-type-comparable abundance in a human cell
 - `S_MISSEGREGATION` — Chromosome missegregation and aneuploidy (the disease state)
 - `S_MIS_LOWERED` — Chromosome missegregation is low, by whatever route produced it
+- `S_MIS_LOWERED_COMPENSATORY` — Missegregation is lowered with the population preserved, and the benefit depends on residual BubR1: the F3 convergence state — residual function exploited, another physical process altered
+- `S_MIS_LOWERED_INDEPENDENT` — Missegregation is lowered in a BubR1-limiting state by a route that does not require the protein: the convergence state every independent candidate arrives at
 - `S_NEW_CONTROL_VARIABLE` — A control variable outside this map limits missegregation in this state: it must be named and searched before any route can address it
 - `S_NOT_EXPRESSIBLE` — The exact allele did not reach wild-type-comparable abundance in the tested construct and condition — a property of this construct and promoter, not yet a property of the protein
 - `S_ORG_SAFE` — No organism-level harm from the manipulation
 - `S_P1P4_EXHAUSTED` — Not controllable through the four interrogated mechanisms (HSP90, proteasomal, SIRT2, FBXW7). Four actuators, not the control variable
+- `S_PCS_DECOUPLED` — Premature chromatid separation falls and missegregation does not: the hallmark scored in patients and the endpoint this map targets are different quantities, and which one the phenotype tracks becomes the question
 - `S_POOL_ONLY` — The abundance change is confined to the kinetochore pool
 - `S_POOL_SUFFICES` — The kinetochore pool is the functionally limiting one, so a pool-confined abundance gain is enough and whole-cell restoration is not required
 - `S_POP_SAFE_ANY` — The manipulation that got here has its own population safety established
@@ -1292,7 +1551,7 @@ from.
 
 ### Experiment and observation nodes
 
-33 branches, carrying 115 admissible outcomes between them.
+43 branches, carrying 154 admissible outcomes between them.
 
 | branch | needs | outcomes |
 |---|---|---|
@@ -1304,11 +1563,19 @@ from.
 | `CLEAR01` | TISSUE_MODEL | `fraction_lowered_population_viable`, `population_depleted`, `no_selective_elimination`, `insufficient` |
 | `CLIN02` | ORGANISM_MODEL | `a_linked_feature_exists`, `no_feature_links`, `unassessable` |
 | `COMBO01` | CELL_MODEL | `combination_sufficient`, `still_insufficient`, `combination_harmful`, `insufficient` |
+| `COMBO_F1_F2` | CELL_MODEL | `combination_sufficient`, `still_insufficient`, `combination_harmful`, `unestablished` |
+| `COMBO_F1_F4` | TISSUE_MODEL | `combination_sufficient`, `population_depleted`, `still_insufficient`, `unestablished` |
+| `COMBO_F2_F3` | CELL_MODEL | `combination_sufficient`, `functions_conflict`, `still_insufficient`, `unestablished` |
+| `COMBO_F3_F4` | TISSUE_MODEL | `combination_sufficient`, `population_depleted`, `still_insufficient`, `unestablished` |
 | `COMPOSITE02` | CELL_MODEL | `reconfiguration_works`, `conflict_intrinsic`, `insufficient` |
 | `COMPOSITE_VALID` | CELL_MODEL | `system_validated`, `functions_conflict`, `no_improvement`, `insufficient` |
+| `DEP_ATTACH_TURNOVER` | CELL_MODEL | `independent_of_bubr1`, `benefit_requires_residual_bubr1`, `no_reduction`, `unestablished` |
+| `DEP_CELL_SIZE` | CELL_MODEL | `independent_of_bubr1`, `benefit_requires_residual_bubr1`, `no_reduction`, `unestablished` |
+| `DEP_COHESION` | CELL_MODEL | `pcs_and_missegregation_fall`, `benefit_requires_residual_bubr1`, `pcs_falls_missegregation_unchanged`, `no_effect`, `unestablished` |
 | `DEP_FLUX` | CELL_MODEL | `independent_of_bubr1`, `benefit_requires_residual_bubr1`, `benefit_absent_in_limiting_regime`, `no_reduction`, `unestablished` |
 | `DEP_KIF18A` | CELL_MODEL | `independent_of_bubr1`, `requires_bubr1`, `unestablished` |
 | `DEP_TRIP13` | CELL_MODEL | `independent_and_specific`, `requires_bubr1`, `degrades_activation`, `unestablished` |
+| `ENDPOINT01` | CELL_MODEL | `same_quantity`, `pcs_is_the_tracker`, `missegregation_tracks`, `unestablished` |
 | `EXP01` | CELL_MODEL | `full_function`, `alignment_defect`, `silencing_defect`, `segregation_defect`, `multiple_defects`, `matched_not_achieved`, `confounded_invalid` |
 | `EXPRVAL01` | CELL_MODEL | `construct_limited`, `protein_limited`, `insufficient` |
 | `FOLD01` | CELL_MODEL | `functional_fraction_raised`, `abundance_without_function`, `insufficient` |
@@ -1326,6 +1593,8 @@ from.
 | `TRIP13_02` | CELL_MODEL | `exit_restored_activation_intact`, `conflict_persists`, `insufficient` |
 | `TRIP13_F3` | CELL_MODEL | `improves_at_residual_bubr1`, `no_improvement`, `insufficient` |
 | `XFER01` | GOVERNANCE_ABSENT | `transfers`, `does_not_transfer`, `cannot_be_tested` |
+| `XFER_DEVSTATE` | TISSUE_MODEL | `holds_developmentally`, `adult_only`, `unestablished` |
+| `XFER_LINEAGE` | CELL_MODEL | `holds_in_relevant_lineage`, `lineage_specific_failure`, `unestablished` |
 | `XSCALE01` | TISSUE_MODEL | `fraction_falls`, `no_aggregate`, `untestable` |
 | `XSCALE02` | ORGANISM_MODEL | `course_modified`, `no_change`, `unassessable` |
 | `XSCALE03` | TISSUE_MODEL | `selection_dominates`, `fidelity_dominates`, `insufficient` |
@@ -1337,16 +1606,22 @@ branching, and they are why this is not a tree.
 
 | state | worlds arriving |
 |---|---|
+| `S_MIS_LOWERED_COMPENSATORY` | 8 |
 | `C_KIF18A` | 8 |
+| `S_MIS_LOWERED_INDEPENDENT` | 6 |
 | `STAB01` | 5 |
-| `S_FLUX_COMPENSATORY` | 4 |
+| `S_TISSUE_FRACTION_FALLS` | 4 |
+| `S_MIS_LOWERED` | 4 |
 | `ORGANISM_TARGET` | 4 |
 | `F2_COMPLETE` | 4 |
 | `BYPASS_ACT` | 4 |
+| `XFER_LINEAGE` | 3 |
+| `T_CLEAR_DEPLETES` | 3 |
+| `S_XFER_OK` | 3 |
 | `S_SIL_SUPPLIED` | 3 |
-| `S_MIS_LOWERED` | 3 |
 | `S_CHECKPOINT_RISK_RESOLVED` | 3 |
 | `S_ALIGN_SUPPLIED` | 3 |
+| `IRREV01` | 3 |
 | `EXP01` | 3 |
 | `C_TRIP13` | 3 |
 | `CHAR01` | 3 |
@@ -1363,7 +1638,7 @@ Branches whose resolution needs knowledge from outside this case, with what has 
 
 ### Grounded direct transitions
 
-33 transitions are traversed directly rather than branched, because the evidence
+36 transitions are traversed directly rather than branched, because the evidence
 settles them. A caveat is recorded as an applicability boundary, not as a fork.
 
 - `S0_CASE` → `S_MISSEGREGATION` — Observed phenotype: random aneuploidies and elevated premature chromatid separation, confirmed cytogenetically
@@ -1387,7 +1662,7 @@ settles them. A caveat is recorded as an applicability boundary, not as a fork.
 - `S_POP_SAFE_F1B` → `F1_COMPLETE` — AND-node member
 - `CANONICAL_CELLULAR_STATE` → `S_MIS_LOWERED` — The canonical trajectory entails the terminal state; it is one route to it, not the definition of it
 - `S_FLUX_NOT_THE_LEVER` → `C_KIF18A` — The other named alignment candidate remains
-- `S_FLUX_LOWERS_MIS` → `S_ALIGN_SUPPLIED` — It also supplies alignment, which the canonical state still needs
+- `S_MIS_LOWERED_INDEPENDENT` → `S_ALIGN_SUPPLIED` — It also supplies alignment, which the canonical state still needs
 - `S_POP_SAFE_F1B` → `S_POP_SAFE_ANY` — Either family's own safety observation satisfies the functional target's safety conjunct
 - `S_POP_SAFE_F2` → `S_POP_SAFE_ANY` — Either family's own safety observation satisfies the functional target's safety conjunct
 - `S_MIS_LOWERED` → `FUNCTIONAL_CELLULAR_TARGET` — AND-node member
@@ -1397,6 +1672,9 @@ settles them. A caveat is recorded as an applicability boundary, not as a fork.
 - `S_PROSPECTIVE_EXISTS` → `ORGANISM_TARGET` — AND-node member: without a prospective component there is nothing for a route to change
 - `S_ORG_SAFE` → `ORGANISM_TARGET` — AND-node member
 - `S_P1P4_EXHAUSTED` → `C_KIF18A` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
+- `S_MISSEGREGATION` → `C_CELL_SIZE` — Cell enlargement causes mitotic errors and aneuploidy [PMID:PPR1045515]
+- `S_MISSEGREGATION` → `C_ATTACH_TURNOVER` — MCAK/Kif2C centromeric activity tunes k-fibre turnover, the rate errors are corrected at [PMID:42256274]
+- `S_MISSEGREGATION` → `C_COHESION` — Premature chromatid separation is the hallmark scored in these patients and is a cohesion readout [PMID:40437074]
 
 ## Control variables and actuators
 
@@ -1410,6 +1688,9 @@ evidence speaks to the variable itself.
 | `CV_CHROMOSOME_ALIGNMENT` | none | `CENP_E`, `KIF18A`, `poleward_flux` | NOT_ESTABLISHED |
 | `CV_CHECKPOINT_ACTIVATION` | none | `MPS1_phosphorylation_cascade` | PARTLY — chronic activation causes myelosuppression and gastrointestinal atrophy in vivo, so the sustained form of this variable carries organism-leve |
 | `CV_CHECKPOINT_SILENCING` | none | `TRIP13_APC15`, `UBR5` | NOT_ESTABLISHED |
+| `CV_CELL_SIZE` | none | `cell_cycle_length`, `CDK4_6_state` | NOT_ESTABLISHED |
+| `CV_ATTACHMENT_TURNOVER` | none | `MCAK_Kif2C_centromeric_activity`, `Astrin_PP1`, `Aurora_B_gradient` | NOT_ESTABLISHED |
+| `CV_COHESION_PROTECTION` | none | `SGO1_protection`, `ATRX_centromeric_role` | NOT_ESTABLISHED |
 | `CV_ANEUPLOID_CELL_FRACTION` | none | `cell_competition`, `lineage_specific_elimination` | NOT_ESTABLISHED, and in tension with this project's own guards: a falling aneuploid fraction through selective loss is exactly the confounder B08 and  |
 
 ## Strategy families
@@ -1427,15 +1708,144 @@ on aneuploidy which already exists.
 
 | | count |
 |---|---|
-| state nodes | 61 |
-| branch nodes | 33 |
+| state nodes | 69 |
+| branch nodes | 43 |
 | all_of nodes | 4 |
-| terminal nodes | 55 |
-| edges | 92 |
-| admissible outcomes across all branches | 115 |
-| control variables | 6 |
+| terminal nodes | 72 |
+| edges | 113 |
+| admissible outcomes across all branches | 154 |
+| control variables | 9 |
 | strategy families | 4 |
 | campaigns | 4 |
+
+---
+
+# Analysis pass
+
+Separate from the city by construction, and run after it rather than during it. Motifs are
+patterns in the graph; a pattern is a reason to ask a question, never a reason to draw an edge.
+Nothing in this section feeds the reachability computation, and no hypothesis below is
+traversable until it is grounded and promoted into `edges` by hand.
+
+## Motifs found
+
+### Shared prerequisite
+
+**9 branches sit behind one system**: a human-cell model held at measured, limiting
+BubR1 with missegregation readouts.
+
+`CENPE_F3`, `DEP_ATTACH_TURNOVER`, `DEP_CELL_SIZE`, `DEP_COHESION`, `DEP_FLUX`, `DEP_KIF18A`, `LIMFN01`, `POOL01`, `TRIP13_F3`.
+
+The expensive object in this map is not any experiment; it is the platform, and it is shared. A
+view that ranked experiments one at a time would not surface this.
+
+### Repeated subgraphs
+
+| branches | identical outcome signature |
+|---|---|
+| `SAFE01`, `SAFE02` | `harm`, `insufficient`, `preserved` |
+| `DEP_ATTACH_TURNOVER`, `DEP_CELL_SIZE` | `benefit_requires_residual_bubr1`, `independent_of_bubr1`, `no_reduction`, `unestablished` |
+| `COMBO_F1_F4`, `COMBO_F3_F4` | `combination_sufficient`, `population_depleted`, `still_insufficient`, `unestablished` |
+
+One design, parameterised by candidate, resolves a class of branches. The repetition is
+structure rather than redundancy.
+
+### Convergence
+
+| node | worlds arriving |
+|---|---|
+| `C_KIF18A` | 8 |
+| `S_MIS_LOWERED_COMPENSATORY` | 8 |
+| `S_MIS_LOWERED_INDEPENDENT` | 6 |
+| `STAB01` | 5 |
+| `BYPASS_ACT` | 4 |
+| `F2_COMPLETE` | 4 |
+| `S_MIS_LOWERED` | 4 |
+| `ORGANISM_TARGET` | 4 |
+| `S_TISSUE_FRACTION_FALLS` | 4 |
+| `CHAR01` | 3 |
+
+### Shared actuators across control variables
+
+None. No actuator moves two control variables, so a combination route needs a combination of perturbations and there is no accidental two-for-one. This is a negative motif: it constrains the combination branches rather than enabling them.
+
+## Hypotheses the motifs generate
+
+Each is **`NOT_TRAVERSABLE`**. A structural hypothesis is a claim about this graph and can be
+checked by reading it; a biological hypothesis is a claim about the world and needs evidence or
+an experiment before it may be believed, let alone traversed.
+
+### `H_M1_SHARED_PLATFORM` — STRUCTURAL
+
+*Motif:* shared prerequisite
+
+Nine branches require the same thing before any of them can be asked: a human-cell system held at measured, limiting BubR1 with missegregation readouts. DEP_KIF18A, DEP_FLUX, CENPE_F3, TRIP13_F3, POOL01, LIMFN01, DEP_CELL_SIZE, DEP_ATTACH_TURNOVER and DEP_COHESION all sit behind it.
+
+**Consequence.** The expensive object in this map is not any experiment; it is the platform, and it is shared. A view that ranked experiments individually would never surface this.
+
+**What would promote it.** Nothing — it is a statement about the graph, not about biology, and it is already checked by a test. It is recorded here because it is an analysis output, not a route.
+
+### `H_M2_ISOMORPHIC_ADJUDICATION` — STRUCTURAL
+
+*Motif:* repeated subgraph
+
+Three dependency branches share an identical four-outcome signature (independent / compensatory / no_reduction / unestablished) and three F3 branches share a three-outcome signature. The shape repeats with only the candidate swapped.
+
+**Consequence.** One experimental design, parameterised by candidate, resolves a whole class of branches. The repetition is the point rather than redundancy to be collapsed.
+
+### `H_M3_FLUX_AND_TURNOVER_MAY_BE_ONE_VARIABLE` — BIOLOGICAL
+
+*Motif:* disjoint actuators on a shared physical substrate
+
+CV_POLEWARD_FLUX and CV_ATTACHMENT_TURNOVER are modelled as separate variables with disjoint actuators, yet both act on the kinetochore fibre: flux is k-fibre flux, and MCAK/Kif2C centromeric activity tunes k-fibre turnover. They may be one control variable observed through two readouts.
+
+**Consequence.** If one variable, the two neighbourhoods merge and the apparent breadth of the F2/F3 candidate set shrinks. If two, they are independent levers and a combination becomes meaningful.
+
+**What would promote it.** An experiment moving one readout while holding the other, in the same system: tune MCAK/Kif2C and measure flux rate and overlap length, or slow flux and measure k-fibre turnover. Until then the map keeps them separate, which is the conservative choice because merging would delete branches.
+
+*Evidence so far:* PMID:39541344, PMID:42256274
+
+### `H_M4_F3_MAY_RUN_THROUGH_ATTACHMENT_TURNOVER` — BIOLOGICAL
+
+*Motif:* cross-family bridge through a shared mechanism class
+
+The F3 routes exploit residual BubR1, and BubR1 acts on attachments through PP2A-B56. CV_ATTACHMENT_TURNOVER's actuators include Astrin-PP1. Both are phosphatase-mediated attachment protection, so CENPE_F3, KIF18A_F3 and DEP_ATTACH_TURNOVER may be one route seen from three angles rather than three routes.
+
+**Consequence.** Would collapse three branches into one and explain why each is BubR1-dependent in the same way. Would also mean a single negative result closes more than it appears to.
+
+**What would promote it.** Epistasis: whether the benefit of a boosted CENP-E or KIF18A survives when PP2A-B56 recruitment or Astrin-PP1 is held fixed.
+
+*Evidence so far:* PMID:41120314, PMID:34853300, PMID:42256274
+
+### `H_M5_COHESION_MAY_BE_THE_PROXIMAL_DEFECT` — BIOLOGICAL
+
+*Motif:* endpoint mismatch between the map and the clinic
+
+Premature chromatid separation is the hallmark scored in these patients, and PCS is a cohesion readout rather than a missegregation count. If cohesion loss is the proximal consequence of BubR1 insufficiency, then the alignment and checkpoint routes address a downstream symptom and CV_COHESION_PROTECTION is the primary variable.
+
+**Consequence.** Would reorder the whole city, not a route within it. It is the most consequential hypothesis here and the least examined.
+
+**What would promote it.** ENDPOINT01: measure PCS and per-division missegregation in the same BubR1-limiting system and see whether they move together.
+
+*Evidence so far:* PMID:40437074, PMID:30464155, PMID:42434306
+
+### `H_M6_NO_SHARED_ACTUATORS` — STRUCTURAL
+
+*Motif:* absent overlap
+
+No actuator appears in more than one control variable across all nine.
+
+**Consequence.** There is no accidental two-for-one: a combination route needs a combination of perturbations, and no single intervention moves two variables. This is a negative motif and it constrains the combination branches rather than enabling them.
+
+### `H_M7_KIF18A_CONVERGENCE_IS_A_WIRING_ARTEFACT` — STRUCTURAL
+
+*Motif:* false convergence
+
+C_KIF18A has the highest inbound count in the graph (eight), above both genuine convergence basins. That is not biological importance: several defect and ceiling states were wired to it because it was the nearest remaining alignment candidate.
+
+**Consequence.** Recorded so a later leverage pass does not mistake it for a hub. The real basins are S_MIS_LOWERED_COMPENSATORY and S_MIS_LOWERED_INDEPENDENT, which many distinct routes reach on their own merits.
+
+**What would promote it.** Nothing. It is a caveat on the graph, and acting on it means re-examining those edges, not drawing new ones.
 
 ## What this map does not claim
 

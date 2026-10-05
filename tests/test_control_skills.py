@@ -724,7 +724,9 @@ def test_all_four_strategy_families_are_present_and_reachable():
     fams = d["families"]
     assert set(fams) == {"F1_REPAIR", "F2_REPLACE", "F3_EXPLOIT_AND_ALTER", "F4_REMOVE"}
     c = M.cost(d)
-    for entry in ("S_FLUX_COMPENSATORY", "CV_CLEARANCE_ENTRY"):
+    # The flux-specific convergence states were merged into actuator-agnostic ones during saturation,
+    # so every candidate arrives at the same biological state instead of duplicating the subtree.
+    for entry in ("S_MIS_LOWERED_COMPENSATORY", "CV_CLEARANCE_ENTRY"):
         assert c.get(entry) is not None, f"{entry} is not reachable, so its family is decoration"
 
 
@@ -738,3 +740,67 @@ def test_the_campaign_arms_separate_actuator_failure_from_variable_failure():
         assert arm["engagement_readout"]
     assert "arm_level_rule" in flux and "every arm fails" in flux["arm_level_rule"]
     assert set(flux["arm_divergence_outcomes"]) >= {"some_arms_effective_some_unsafe"}
+
+
+def test_a_motif_hypothesis_is_never_traversable():
+    """The load-bearing separation of the analysis pass.
+
+    A motif is a pattern in the graph and a reason to ask a question. If a motif-derived connection
+    could be traversed, an interesting pattern would start shortening routes and closing branches
+    without anyone having grounded it — the graph would begin believing its own conjectures. So the
+    hypotheses live outside `edges`, and deleting every one of them must leave reachability identical.
+    """
+    M, d = _route_map()
+    hyps = d["hypotheses"]
+    assert hyps, "the analysis pass produced nothing"
+    ids = {n["id"] for n in d["nodes"]}
+    for h in hyps:
+        assert h["status"] == "NOT_TRAVERSABLE", h["id"]
+        assert h["kind"] in ("STRUCTURAL", "BIOLOGICAL"), h["id"]
+        assert h["id"] not in ids, f"{h['id']} is a node, so it is traversable"
+        if h["kind"] == "BIOLOGICAL":
+            assert h.get("what_would_promote_it"), (
+                f"{h['id']} is a claim about the world with no stated way to ground it")
+
+    before = M.cost(d)
+    stripped = {k: v for k, v in d.items() if k != "hypotheses"}
+    after = M.cost(stripped)
+    assert before == after, "removing the hypotheses changed reachability, so one of them is traversable"
+
+
+def test_the_motif_analysis_reads_the_graph_rather_than_asserting_it():
+    """Motif counts must be computed, so a stale claim in prose cannot survive an edit."""
+    M, d = _route_map()
+    mo = M.motifs(d)
+    assert len(mo["shared_prerequisite_limiting_system"]) >= 5, (
+        "the shared-platform motif is the analysis pass's main finding and must be recomputed")
+    assert mo["repeated_shapes"], "repeated branch shapes should exist once candidates are parameterised"
+    assert not mo["shared_actuators"], (
+        "no actuator should move two control variables; if one now does, the combination branches "
+        "need revisiting and the negative motif in the report is stale")
+    rendered = M.render(d)
+    assert "NOT_TRAVERSABLE" in rendered
+    assert str(len(mo["shared_prerequisite_limiting_system"])) in rendered
+
+
+def test_the_new_control_variables_carry_evidence_and_actuators():
+    """A control variable without an actuator is a wish, and without evidence it is a guess."""
+    M, d = _route_map()
+    for cv in ("CV_CELL_SIZE", "CV_ATTACHMENT_TURNOVER", "CV_COHESION_PROTECTION"):
+        spec = d["control_variables"][cv]
+        assert spec.get("evidence"), f"{cv} has no evidence"
+        assert spec.get("actuators_identified_not_tried"), f"{cv} has no actuator"
+        assert spec.get("intrinsically_unsafe") == "NOT_ESTABLISHED"
+    c = M.cost(d)
+    for cand in ("C_CELL_SIZE", "C_ATTACH_TURNOVER", "C_COHESION"):
+        assert c.get(cand) is not None, f"{cand} is unreachable, so the variable is decoration"
+
+
+def test_every_cross_family_combination_exists_and_is_reachable():
+    """The families were enumerated as alternatives; combinations are their own routes."""
+    M, d = _route_map()
+    c = M.cost(d)
+    for combo in ("COMBO01", "COMBO_F1_F2", "COMBO_F2_F3", "COMBO_F3_F4", "COMBO_F1_F4"):
+        node = next((n for n in d["nodes"] if n["id"] == combo), None)
+        assert node and node["kind"] == "branch", f"{combo} missing"
+        assert c.get(combo) is not None, f"{combo} is unreachable"

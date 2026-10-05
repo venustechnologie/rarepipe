@@ -318,6 +318,38 @@ def blocking_outcomes(d: dict, dest: str) -> list[tuple[str, str]]:
     return sorted(out)
 
 
+def motifs(d: dict) -> dict:
+    """Structural patterns in the graph. Computed, never asserted, and never traversable.
+
+    A motif is a reason to ask a question, not a reason to draw an edge. Nothing here feeds cost(),
+    frontier() or dominators_for(), so an interesting pattern cannot shorten a route.
+    """
+    import collections
+
+    branches = [n for n in d["nodes"] if n["kind"] == "branch"]
+    sig = collections.defaultdict(list)
+    for b in branches:
+        sig[tuple(sorted(b.get("outcomes") or {}))].append(b["id"])
+    inbound: collections.Counter = collections.Counter()
+    for e in d["edges"]:
+        inbound[e["to"]] += 1
+    for b in branches:
+        for t in (b.get("outcomes") or {}).values():
+            inbound[t] += 1
+    actuators = collections.defaultdict(set)
+    for cv, spec in (d.get("control_variables") or {}).items():
+        for a in spec.get("actuators_tried", []) + spec.get("actuators_identified_not_tried", []):
+            actuators[a].add(cv)
+    limiting = [b["id"] for b in branches
+                if "limiting" in (str(b.get("why_unresolved", "")) + str(b.get("label", ""))).lower()]
+    return {
+        "repeated_shapes": {k: v for k, v in sig.items() if len(v) > 1},
+        "convergence": inbound.most_common(10),
+        "shared_actuators": {a: sorted(c) for a, c in actuators.items() if len(c) > 1},
+        "shared_prerequisite_limiting_system": sorted(limiting),
+    }
+
+
 def gaps(d: dict) -> dict[str, list[dict]]:
     """Edges grouped by label, which is what the PRD's per-route gap counts are built from."""
     by: dict[str, list[dict]] = {}
@@ -1018,6 +1050,77 @@ def render(d: dict) -> str:
     A(f"| strategy families | {len(d.get('families') or {})} |")
     A(f"| campaigns | {len(d.get('campaigns') or [])} |")
     A("")
+    A("---")
+    A("")
+    A("# Analysis pass")
+    A("")
+    A("Separate from the city by construction, and run after it rather than during it. Motifs are")
+    A("patterns in the graph; a pattern is a reason to ask a question, never a reason to draw an edge.")
+    A("Nothing in this section feeds the reachability computation, and no hypothesis below is")
+    A("traversable until it is grounded and promoted into `edges` by hand.")
+    A("")
+    mo = motifs(d)
+    A("## Motifs found")
+    A("")
+    A("### Shared prerequisite")
+    A("")
+    lim = mo["shared_prerequisite_limiting_system"]
+    A(f"**{len(lim)} branches sit behind one system**: a human-cell model held at measured, limiting")
+    A("BubR1 with missegregation readouts.")
+    A("")
+    A("" + ", ".join("`" + x + "`" for x in lim) + ".")
+    A("")
+    A("The expensive object in this map is not any experiment; it is the platform, and it is shared. A")
+    A("view that ranked experiments one at a time would not surface this.")
+    A("")
+    A("### Repeated subgraphs")
+    A("")
+    A("| branches | identical outcome signature |")
+    A("|---|---|")
+    for k, v in sorted(mo["repeated_shapes"].items(), key=lambda kv: -len(kv[1])):
+        A(f"| {', '.join('`' + x + '`' for x in sorted(v))} | {', '.join('`' + x + '`' for x in k)} |")
+    A("")
+    A("One design, parameterised by candidate, resolves a class of branches. The repetition is")
+    A("structure rather than redundancy.")
+    A("")
+    A("### Convergence")
+    A("")
+    A("| node | worlds arriving |")
+    A("|---|---|")
+    for k, v in mo["convergence"]:
+        if v >= 3:
+            A(f"| `{k}` | {v} |")
+    A("")
+    A("### Shared actuators across control variables")
+    A("")
+    A(("None. " if not mo["shared_actuators"] else
+       ", ".join(f"`{a}` in {c}" for a, c in mo["shared_actuators"].items()) + ". ")
+      + ("No actuator moves two control variables, so a combination route needs a combination of "
+         "perturbations and there is no accidental two-for-one. This is a negative motif: it "
+         "constrains the combination branches rather than enabling them."
+         if not mo["shared_actuators"] else ""))
+    A("")
+    A("## Hypotheses the motifs generate")
+    A("")
+    A("Each is **`NOT_TRAVERSABLE`**. A structural hypothesis is a claim about this graph and can be")
+    A("checked by reading it; a biological hypothesis is a claim about the world and needs evidence or")
+    A("an experiment before it may be believed, let alone traversed.")
+    A("")
+    for h in (d.get("hypotheses") or []):
+        A(f"### `{h['id']}` — {h['kind']}")
+        A("")
+        A(f"*Motif:* {h['motif']}")
+        A("")
+        A(" ".join(h["claim"].split()))
+        A("")
+        A(f"**Consequence.** {' '.join(h['consequence'].split())}")
+        A("")
+        if h.get("what_would_promote_it"):
+            A(f"**What would promote it.** {' '.join(h['what_would_promote_it'].split())}")
+            A("")
+        if h.get("evidence_so_far"):
+            A(f"*Evidence so far:* {', '.join(h['evidence_so_far'])}")
+            A("")
     A("## What this map does not claim")
     A("")
     A("No probability is attached to any branch, because none is grounded. A route that \"conditionally")
