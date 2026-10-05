@@ -1018,3 +1018,78 @@ def test_the_opening_does_not_sell_a_route():
     assert "distance" not in head.lower() or "appendix" in head.lower(), (
         "a distance table before the city reintroduces route selection as the frame")
     assert "FUNCTIONAL_CELLULAR_TARGET" in head and "CANONICAL_CELLULAR_STATE" in head
+
+
+def test_a_latent_variable_hypothesis_cannot_enter_the_city():
+    """The same firewall as the motif pass, for a layer with more reach.
+
+    A latent variable claims three or more neighbourhoods share a hidden cause. If such a claim could
+    be traversed it would merge control variables by implication — which is graph compression wearing
+    the clothes of a discovery — and the city would start believing a conjecture it generated. The
+    hypotheses live outside `edges` and `control_variables`, and deleting all of them must leave the
+    city byte-identical.
+    """
+    M, d = _route_map()
+    lv = d["latent_variable_hypotheses"]
+    assert lv, "the sweep produced nothing"
+    ids = {n["id"] for n in d["nodes"]}
+    cvs = set(d["control_variables"])
+    for h in lv:
+        assert h["status"] == "NOT_TRAVERSABLE", h["id"]
+        assert h["kind"] in ("STRUCTURAL_COMMONALITY", "BIOLOGICAL_LATENT_VARIABLE"), h["id"]
+        assert h["id"] not in ids and h["id"] not in cvs, f"{h['id']} is part of the city"
+
+    before_cost, before_doc = M.cost(d), M.render(d)
+    stripped = {k: v for k, v in d.items()
+                if k not in ("latent_variable_hypotheses", "negative_latent_results")}
+    assert M.cost(stripped) == before_cost, (
+        "removing the latent sweep changed reachability, so one hypothesis is traversable")
+    assert len(d["control_variables"]) == len(stripped["control_variables"]), (
+        "the sweep must not have merged or added a control variable")
+
+
+def test_a_latent_variable_must_predict_something_not_used_to_build_it():
+    """Otherwise it is a renaming, and renaming is not explaining.
+
+    This is the rule that separates "what an interesting coincidence" from a falsifiable common
+    explanation, so it is enforced rather than encouraged: every biological candidate carries
+    predictions, counter-evidence and a discriminating experiment, and names only real neighbourhoods.
+    """
+    M, d = _route_map()
+    bio = [h for h in d["latent_variable_hypotheses"]
+           if h["kind"] == "BIOLOGICAL_LATENT_VARIABLE"]
+    assert bio, "no biological candidate was produced"
+    for h in bio:
+        assert h["new_predictions"], f"{h['id']} predicts nothing"
+        assert h["evidence_against_or_incompatibilities"], (
+            f"{h['id']} records no way it could be wrong")
+        assert h["smallest_discriminating_experiment"], f"{h['id']} is not falsifiable as stated"
+        assert h["promotion_requires"], f"{h['id']} has no promotion criterion"
+        hoods = [x for x in h["neighbourhoods_explained"] if str(x).startswith("CV_")]
+        assert len(h["neighbourhoods_explained"]) >= 3, (
+            f"{h['id']} explains fewer than three neighbourhoods")
+        for cv in hoods:
+            assert cv in d["control_variables"], f"{h['id']} names unknown {cv}"
+    assert not M.validate(d)
+
+
+def test_a_structural_commonality_is_not_upgraded_to_a_biological_one():
+    """The shared platform explains why branches are blocked together, not how the cell works."""
+    M, d = _route_map()
+    struct = [h for h in d["latent_variable_hypotheses"] if h["kind"] == "STRUCTURAL_COMMONALITY"]
+    assert struct, "the shared prerequisite must be recorded so it is not counted as biology"
+    for h in struct:
+        assert h.get("why_it_is_not_a_latent_biological_variable"), h["id"]
+        assert not h.get("new_predictions"), (
+            f"{h['id']} is structural and must not carry biological predictions")
+
+
+def test_the_sweep_reports_its_negative_results():
+    """A sweep that published only its hits would be a generator of coincidences."""
+    M, d = _route_map()
+    neg = d["negative_latent_results"]
+    assert len(neg) >= 2
+    for n in neg:
+        assert len(n["neighbourhood_set"]) >= 3
+        assert len(n["finding"]) > 80, "a negative result needs a reason, not a shrug"
+    assert "Negative results" in M.render(d)
