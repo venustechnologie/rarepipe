@@ -171,7 +171,21 @@ def test_the_second_disqualified_attribution_was_found_by_auditing_everything():
     assert repair.kind is RepairKind.RETIRE_ATTRIBUTION
     assert repair.previous_source_assignment == "PMID:20516114"
     assert "backward audit over every load-bearing citation" in repair.reason_for_invalidation
-    assert repair.needs_human_decision, "retiring a label here may not be the remedy a scientist wants"
+
+
+def test_r4s_open_question_was_answered_by_reading_the_whole_article():
+    """R4 retired a label while conceding the stored copy was only an abstract.
+
+    That concession was the whole of its open question: a scientist might reasonably have retrieved
+    the full article instead of accepting an assertion. The article has since been read, and it does
+    not measure cell loss anywhere, so the conservative label stands on the complete document rather
+    than on a partial copy. The flag is closed because the work was done, not because the answer was
+    preferred — so the reason has to say what was read.
+    """
+    repair = next(r for r in ledger().repairs if r.repair_id == "REPAIR_R4")
+    assert "full article" in repair.reason_for_invalidation
+    assert repair.new_support_level == "asserted_only"
+    assert not repair.needs_human_decision
 
 
 # ---------------------------------------------------------------- sections 9 to 12: propagation

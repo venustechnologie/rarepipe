@@ -161,7 +161,7 @@ Two attributions were disqualified. One was already known. The other was found o
 **Audit**
 
 - verdict: `DOES_NOT_SUPPORT_ATTRIBUTION`
-- Found by running the backward audit over every load-bearing citation rather than only the one that had already failed. The cited document's stored text mentions neither cell death nor division rate in any recorded spelling, so it does not address this relation.
+- Found by running the backward audit over every load-bearing citation rather than only the one that had already failed. The cited document's stored text mentions neither cell death nor division rate in any recorded spelling, so it does not address this relation. Re-checked against the full article (PMC2887387, 31654 characters), retrieved after this repair was first written because the open question was whether only the stored abstract was at fault: cell death, apoptosis, viability, proliferation, division rate, doubling, caspase, annexin and clonogenic survival occur zero times in it. The paper measures chromosome segregation, not cell loss, so no part of it can carry this relation.
 
 **Recovery of the intended reference**
 
@@ -178,8 +178,6 @@ Two attributions were disqualified. One was already known. The other was found o
 - scope: population-level consequence; no retrieved source addresses it
 
 **Why this state and not another.** Retiring an unsupported label is the conservative action; keeping it would have been the aggressive one. The edge survives as an assertion rather than being deleted.
-
-**Needs a human decision.** Only abstracts are stored, so the remedy may be retrieving the full article rather than leaving this edge as an assertion. A scientist should decide which.
 
 **Downstream effects**
 

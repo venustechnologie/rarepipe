@@ -23,6 +23,7 @@ solvers or architectures. See [`REPAIR_DESIGN.md`](REPAIR_DESIGN.md) for what th
 | 7 | every load-bearing citation was audited, not only the one that failed | `tests/test_evidence_repair.py::test_the_backward_audit_covers_every_load_bearing_citation` |
 |  | supporting assertion | `tests/test_evidence_repair.py::test_the_audit_says_which_of_its_checks_a_machine_cannot_make` |
 |  | supporting assertion | `tests/test_evidence_repair.py::test_the_second_disqualified_attribution_was_found_by_auditing_everything` |
+|  | supporting assertion | `tests/test_evidence_repair.py::test_r4s_open_question_was_answered_by_reading_the_whole_article` |
 | 9, 10, 12 | every dependent layer was recomputed in dependency order, and each explains itself | `tests/test_evidence_repair.py::test_every_layer_in_the_dependency_order_is_recomputed` |
 |  | supporting assertion | `tests/test_evidence_repair.py::test_an_unchanged_layer_still_explains_itself` |
 |  | supporting assertion | `tests/test_evidence_repair.py::test_the_recompile_reads_fresh_compilations_not_recorded_conclusions` |
