@@ -93,6 +93,26 @@ campaigns:
     resolves: [DEP_FLUX, SAFE01]
     requires: CELL_MODEL
     component: "poleward flux, perturbed as in PMID:39541344 — low-dose taxol, or HAUS8 or NuMA codepletion"
+    # Rule 4: the campaign verdict stays compact, but the arms are mechanistically independent and may
+    # disagree. Arm-level states are retained where they would differ; worlds producing the same
+    # biological state are merged rather than duplicated.
+    arms:
+      F_a: {actuator: low_dose_paclitaxel, control_variable: CV_POLEWARD_FLUX, engagement_readout: "k-fibre flux rate"}
+      F_b: {actuator: HAUS8_depletion, control_variable: CV_POLEWARD_FLUX, engagement_readout: "overlap length and flux rate"}
+      F_c: {actuator: NuMA_depletion, control_variable: CV_POLEWARD_FLUX, engagement_readout: "overlap length and flux rate"}
+    arm_level_rule: "An arm that fails on efficacy, safety or engagement closes that ACTUATOR. It closes
+      CV_POLEWARD_FLUX only when every arm fails on efficacy with engagement validated — one unsafe
+      actuator is not an unsafe control variable, which is Rule 3 applied inside a campaign. Arms that
+      lower missegregation with the population preserved all converge on the same state and are merged
+      there; the arm identity is retained in the record because it is what a later actuator choice
+      depends on."
+    arm_divergence_outcomes:
+      some_arms_effective_some_unsafe: "the control variable survives on the effective, safe arms; the
+        unsafe arms are closed individually and named"
+      all_arms_unsafe_engagement_validated: "escalates to a question about CV_POLEWARD_FLUX itself, and
+        only then may the variable be called intrinsically unsafe"
+      all_arms_ineffective_engagement_validated: "closes CV_POLEWARD_FLUX for this state, which is the
+        no_reduction verdict"
     primary_endpoints: [missegregation, viability, cell_death, division_rate]
     diagnostics: [chromosome_alignment, checkpoint_activation, checkpoint_silencing]
     diagnostics_note: "Alignment, activation and silencing are recorded as mechanistic diagnostics, not
@@ -147,9 +167,62 @@ ultimate_target:
   note: "Modification of this child's clinical course. Not reachable by any route in this map today, and
     bounded by governance as well as biology: no intervention in this child is authorised, there is no
     recontact, and much of the phenotype is developmental and already established."
-terminal_vocabulary: [TARGET_REACHED_IN_MODEL, UNSAFE, NO_KNOWN_CONTINUATION,
-                      NOT_IN_LOCAL_CASE_CORPUS, NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE,
-                      NO_KNOWN_PHYSICAL_REALIZATION, CONTEXT_TRANSFER_REQUIRED, BOUNDED_FRONTIER]
+# Rule 7. A branch may stop only at one of these, and NO_KNOWN_CONTINUATION is gone: every one of the
+# thirteen nodes that carried it turned out to be a branch nobody had expanded, not a real end.
+terminal_vocabulary: [FUNCTIONAL_TARGET_REACHED, ORGANISM_TARGET_REACHED_IN_MODEL, UNSAFE,
+                      GOVERNANCE_BLOCKED, PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE,
+                      SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, DECLARED_SCIENTIFIC_FRONTIER,
+                      UNEXPANDED_FRONTIER, NOT_IN_LOCAL_CASE_CORPUS, CONTEXT_TRANSFER_REQUIRED,
+                      BOUNDED_FRONTIER]
+# Rule 3. A control variable is a biological quantity; an actuator is a way of moving it. A failed or
+# unsafe actuator closes the actuator, never the variable, unless the evidence speaks to the variable
+# itself. Every "no actuator" terminal in the previous map violated this.
+control_variables:
+  CV_BUBR1_ABUNDANCE:
+    state_variable: "steady-state abundance of the altered BubR1 protein"
+    actuators_tried: [HSP90_folding, proteasomal_clearance, SIRT2_K668, FBXW7_T620]
+    actuators_identified_not_tried: [CHIP_STUB1_triage, autophagy_lysosomal, HSP70_DNAJ_cochaperone]
+    evidence: ["PMID:42567515", "PMID:41525846", "PMID:41265458", "PMID:34544131"]
+    intrinsically_unsafe: NOT_ESTABLISHED
+  CV_POLEWARD_FLUX:
+    state_variable: "k-fibre poleward flux rate, set by antiparallel overlap length"
+    actuators_tried: []
+    actuators_identified_not_tried: [low_dose_taxol, HAUS8_depletion, NuMA_depletion, KIF4A_depletion]
+    evidence: ["PMID:39541344"]
+    intrinsically_unsafe: NOT_ESTABLISHED
+  CV_CHROMOSOME_ALIGNMENT:
+    state_variable: "fraction of chromosomes congressed and bioriented at the plate"
+    actuators_identified_not_tried: [CENP_E, KIF18A, poleward_flux]
+    note: "CENP-E and KIF18A are BubR1-dependent for this function, which makes them F3 candidates
+      rather than dead ones — the variable is not closed by an actuator's dependency."
+  CV_CHECKPOINT_ACTIVATION:
+    state_variable: "arrest competence on unattached kinetochores"
+    actuators_identified_not_tried: [MPS1_phosphorylation_cascade]
+    evidence: ["PMID:28072388"]
+    intrinsically_unsafe: "PARTLY — chronic activation causes myelosuppression and gastrointestinal
+      atrophy in vivo, so the sustained form of this variable carries organism-level harm. A transient
+      or conditional form is not covered by that evidence and stays open."
+    unsafe_evidence: ["PMID:38806674"]
+  CV_CHECKPOINT_SILENCING:
+    state_variable: "time from alignment to anaphase onset"
+    actuators_identified_not_tried: [TRIP13_APC15, UBR5]
+    evidence: ["PMID:30341343", "PMID:35217622"]
+  CV_ANEUPLOID_CELL_FRACTION:
+    state_variable: "fraction of aneuploid cells in a population or tissue"
+    actuators_identified_not_tried: [cell_competition, lineage_specific_elimination]
+    evidence: ["PMID:33847264", "PMID:42409819", "PMID:40466636"]
+    note: "The F4 family. It does not prevent errors; it removes the cells that carry them, which is
+      the only route that can touch aneuploidy already established."
+    intrinsically_unsafe: "NOT_ESTABLISHED, and in tension with this project's own guards: a falling
+      aneuploid fraction through selective loss is exactly the confounder B08 and B18 exist to catch.
+      Here it would be the mechanism rather than the artefact, which does not make it safe."
+# Rule 2 and the F4 addition. Families are maintained explicitly so each is expanded through happy and
+# unhappy outcomes rather than only where it is currently shortest.
+families:
+  F1_REPAIR: "restore or stabilise the altered protein"
+  F2_REPLACE: "supply the required function independently of it"
+  F3_EXPLOIT_AND_ALTER: "exploit the residual function that is present while altering another physical process"
+  F4_REMOVE: "do not prevent the error; remove the cells that carry it"
 # A bounded negative search is not biological impossibility. NO_KNOWN_PHYSICAL_REALIZATION is reserved
 # for evidence that justifies it; a search that simply came back empty gets the middle state.
 
@@ -224,8 +297,8 @@ nodes:
     outcomes:
       steady_state_increased: S_REF_STABILISABLE
       turnover_reduced_only:  B_TURNOVER_ONLY
-      local_pool_only:        T_POOL_ONLY
-      no_stabilisation:       T_NO_ACTUATOR
+      local_pool_only:        S_POOL_ONLY
+      no_stabilisation:       S_P1P4_EXHAUSTED
       insufficient:           T_STAB01_REPEAT
   - {id: B_TURNOVER_ONLY, kind: state, label: "Turnover measurably slowed without a steady-state rise: another process, most likely synthesis or folding capacity, is rate-limiting"}
 
@@ -237,7 +310,7 @@ nodes:
     why_unresolved: "Reached only under the STAB01 stop rule; the exact allele has never been placed in such a system."
     outcomes:
       case_allele_stabilised: S_CASE_STABILISABLE
-      case_allele_refractory: T_CASE_REFRACTORY
+      case_allele_refractory: S_CASE_REFRACTORY
       insufficient:           T_STAB02_REPEAT
 
   - id: FUNCVAL01
@@ -248,7 +321,7 @@ nodes:
     why_unresolved: "A chaperone-retained protein can be abundant and non-native. EXP01 answers function at ectopically matched abundance, which is a different condition from function under a stabilising perturbation."
     outcomes:
       functional:     S_STABILISED_FUNCTIONAL
-      not_functional: T_PRESENT_NOT_FUNCTIONAL
+      not_functional: S_PRESENT_NON_NATIVE
       insufficient:   T_FUNCVAL_REPEAT
 
   - id: XFER01
@@ -303,8 +376,8 @@ nodes:
     why_unresolved: "No composite has been assembled, and the component functions interact: a protein recruited to supply one function may perturb another."
     outcomes:
       system_validated:   S_COMPOSITE_VALIDATED
-      functions_conflict: T_COMPOSITE_CONFLICT
-      no_improvement:     T_COMPOSITE_NULL
+      functions_conflict: S_COMPOSITE_CONFLICTED
+      no_improvement:     S_COMPOSITE_INEFFECTIVE
       insufficient:       T_COMPOSITE_REPEAT
 
   # ---------- named alignment candidates, from data/literature/mva-bypass-v1 ----------
@@ -320,7 +393,7 @@ nodes:
     why_unresolved: "Full-text adjudication: KIF18A's own paper mentions BubR1 only as a localisation marker, so no experiment places it in a BubR1-limited background. PMID:41120314 additionally shows congression after CENP-E reactivation succeeds without KIF18A activity, so KIF18A is not an alternative driver of the congression-initiation step BubR1 is required for; its remaining relevance is alignment at the metaphase plate. Absence of a direct BubR1 link is not independence."
     outcomes:
       independent_of_bubr1: S_ALIGN_SUPPLIED
-      requires_bubr1:       T_KIF18A_DEPENDENT
+      requires_bubr1:       S_KIF18A_BUBR1_DEPENDENT
       unestablished:        T_KIF18A_FRONTIER
 
   - id: DEP_FLUX
@@ -333,7 +406,7 @@ nodes:
     outcomes:
       independent_of_bubr1:              S_FLUX_LOWERS_MIS
       benefit_requires_residual_bubr1:   S_FLUX_COMPENSATORY
-      benefit_absent_in_limiting_regime: T_FLUX_DEPENDENT
+      benefit_absent_in_limiting_regime: S_FLUX_NEEDS_MORE_BUBR1
       no_reduction:                      S_FLUX_NOT_THE_LEVER
       unestablished:                     T_FLUX_FRONTIER
 
@@ -348,8 +421,8 @@ nodes:
     why_unresolved: "Full-text adjudication confirms the trade-off in one system and sharpens it. The two disassembly pathways do not target BubR1 directly (Mad2 for TRIP13/p31comet, Cdc20 for APC15), so dependency is indirect — but the substrate complex contains BubR1, the arrest TRIP13 depletion causes was itself dependent on Mad2 and BubR1 (Fig. 3b), and every experiment ran at BubR1-present. The dual role is demonstrated, not inferred: losing TRIP13 in interphase causes checkpoint activation failure through loss of soluble O-Mad2 (half-time 1.4 h), while losing it just before mitosis causes a dramatic delay in exit. The authors frame TRIP13 as a counter-balance in a delicate equilibrium and note that both loss and overexpression matter, so augmenting it for silencing cannot be assumed to leave activation intact."
     outcomes:
       independent_and_specific: S_SIL_SUPPLIED
-      requires_bubr1:           T_TRIP13_DEPENDENT
-      degrades_activation:      T_TRIP13_CONFLICT
+      requires_bubr1:           S_TRIP13_BUBR1_DEPENDENT
+      degrades_activation:      S_TRIP13_CONFLICTED
       unestablished:            T_TRIP13_FRONTIER
 
   - id: BYPASS_ACT
@@ -360,7 +433,7 @@ nodes:
     why_unresolved: "The TPR-KNL1 route is grounded as a requirement, not as a suppliable component."
     outcomes:
       grounded_component_found: S_ACT_SUPPLIED
-      no_component:             T_ACT_NO_ACTUATOR
+      no_component:             S_ACT_NO_COMPONENT_YET
 
   # ---------- terminals ----------
   # Two definitions, both computed. The canonical state is the full BubR1 trajectory; the functional
@@ -403,12 +476,12 @@ nodes:
   - {id: S_PROSPECTIVE_EXISTS, kind: state, label: "Part of the phenotype is still ahead of the child and therefore addressable in principle"}
   - {id: S_ORG_SAFE, kind: state, label: "No organism-level harm from the manipulation"}
   - {id: ORGANISM_TARGET, kind: all_of, of: [S_CLINICAL_MODIFIED, S_ORG_SAFE, S_PROSPECTIVE_EXISTS, S_CHECKPOINT_RISK_RESOLVED], label: "Organism-level target: clinical course modified without organism-level harm"}
-  - {id: T_ORGANISM_REACHED, kind: terminal, terminal: TARGET_REACHED_IN_MODEL, label: "Organism-level target reached in model"}
-  - {id: T_NO_TISSUE_EFFECT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Per-cell fidelity improved without the tissue aneuploid fraction falling: the cell-level gain does not aggregate"}
-  - {id: T_TISSUE_UNTESTABLE, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "No tissue-level readout is available for this child: a governance boundary, since no sampling is authorised and there is no recontact"}
-  - {id: T_IRREVERSIBLE, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The established developmental component of the phenotype is not reversible by improving mitotic fidelity now. It bounds what any route in this map can address, whatever the cell-level result"}
-  - {id: T_NO_CLINICAL_EFFECT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Tissue aneuploidy falls without a measurable change in clinical course"}
-  - {id: T_CLINICAL_UNTESTABLE, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "Not assessable: no intervention in this child is authorised, so clinical-course modification cannot be observed here"}
+  - {id: T_ORGANISM_REACHED, kind: terminal, terminal: ORGANISM_TARGET_REACHED_IN_MODEL, label: "Organism-level target reached in model"}
+  - {id: S_AGGREGATION_FAILS, kind: state, label: "Per-division fidelity improved and the tissue aneuploid fraction did not fall"}
+  - {id: T_TISSUE_UNTESTABLE, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "No tissue-level readout is available for this child: a governance boundary, since no sampling is authorised and there is no recontact"}
+  - {id: S_ESTABLISHED_BURDEN, kind: state, label: "The developmental component already laid down is not addressable by improving future divisions"}
+  - {id: S_CLINICAL_LINK_UNRESOLVED, kind: state, label: "Tissue aneuploidy fell without a measurable change in the clinical feature that was chosen"}
+  - {id: T_CLINICAL_UNTESTABLE, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Not assessable: no intervention in this child is authorised, so clinical-course modification cannot be observed here"}
 
   - id: XSCALE01
     kind: branch
@@ -418,7 +491,7 @@ nodes:
     why_unresolved: "Every readout in this map is per-division in cultured cells. A tissue's aneuploid fraction is a population property set by division fidelity, selection and clearance together, and nothing here measures the aggregate."
     outcomes:
       fraction_falls: S_TISSUE_FRACTION_FALLS
-      no_aggregate:   T_NO_TISSUE_EFFECT
+      no_aggregate:   S_AGGREGATION_FAILS
       untestable:     T_TISSUE_UNTESTABLE
 
   - id: IRREV01
@@ -429,7 +502,7 @@ nodes:
     why_unresolved: "Mosaic variegated aneuploidy is constitutional: much of the burden is developmental and already laid down. Improving fidelity prospectively does not undo an aneuploid cell that already exists, and nothing establishes which part of the phenotype is prospective."
     outcomes:
       prospective_component_exists: S_PROSPECTIVE_EXISTS
-      established_and_fixed:        T_IRREVERSIBLE
+      established_and_fixed:        S_ESTABLISHED_BURDEN
       unestablished:                T_IRREV_FRONTIER
   - {id: T_IRREV_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Which part of the phenotype is prospective is unestablished; the question is specified and unasked"}
 
@@ -441,7 +514,7 @@ nodes:
     why_unresolved: "The link from aneuploid burden to clinical feature is not quantified for this disorder, and the phenotype is multi-system."
     outcomes:
       course_modified: S_CLINICAL_MODIFIED
-      no_change:       T_NO_CLINICAL_EFFECT
+      no_change:       S_CLINICAL_LINK_UNRESOLVED
       unassessable:    T_CLINICAL_UNTESTABLE
 
   - id: SAFE_ORG
@@ -462,22 +535,22 @@ nodes:
   - {id: T_STAB01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Perturbation did not engage, or the population was compromised: repeat under a valid condition"}
   - {id: T_STAB02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
   - {id: T_FUNCVAL_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_POOL_ONLY, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Change confined to the kinetochore pool: closes the FBXW7-type route to whole-cell abundance"}
-  - {id: T_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "Not controllable through the interrogated machinery (HSP90, proteasomal, SIRT2, FBXW7). 50 queries over four rounds found no grounded reverse direction, which bounds the searched universe and does not establish impossibility"}
-  - {id: T_CASE_REFRACTORY, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The reference class stabilises and this allele does not: a real and interpretable finding that closes the abundance family for this child"}
-  - {id: T_PRESENT_NOT_FUNCTIONAL, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Abundance raised without function restored: stabilisation is not the lever, and the route returns to functional bypass"}
+  - {id: S_POOL_ONLY, kind: state, label: "The abundance change is confined to the kinetochore pool"}
+  - {id: S_P1P4_EXHAUSTED, kind: state, label: "Not controllable through the four interrogated mechanisms (HSP90, proteasomal, SIRT2, FBXW7). Four actuators, not the control variable"}
+  - {id: S_CASE_REFRACTORY, kind: state, label: "The reference class stabilises and this allele does not under the tested actuator"}
+  - {id: S_PRESENT_NON_NATIVE, kind: state, label: "Abundance was raised and function was not restored: the protein is present without being native"}
   - {id: T_NO_TRANSFER, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "Effect does not hold in a relevant cell type"}
-  - {id: T_XFER_BLOCKED, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "Cannot be tested: no patient-derived material is available and acquisition is not authorised. A governance boundary, not a biological one"}
+  - {id: T_XFER_BLOCKED, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Cannot be tested: no patient-derived material is available and acquisition is not authorised. A governance boundary, not a biological one"}
   - {id: S_PROTEIN_CEILING, kind: state, label: "The protein itself cannot be held at wild-type-comparable abundance by expression alone — a real ceiling, established rather than assumed"}
   - {id: T_UNSAFE_F1, kind: terminal, terminal: UNSAFE, label: "The stabilisation manipulation harms the population: closed on safety grounds whatever it does to abundance"}
   - {id: T_SAFE02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Safety readouts invalid under the stabilisation manipulation: repeat"}
-  - {id: T_COMPOSITE_CONFLICT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Components supply their functions individually and conflict as a system: the composite is not a route in this configuration"}
-  - {id: T_COMPOSITE_NULL, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The assembled system did not lower missegregation: supplying the functions was not sufficient"}
+  - {id: S_COMPOSITE_CONFLICTED, kind: state, label: "Components supply their functions individually and conflict as an assembled system in the tested configuration"}
+  - {id: S_COMPOSITE_INEFFECTIVE, kind: state, label: "The assembled system did not lower missegregation, so the functions supplied were not the limiting ones"}
   - {id: T_COMPOSITE_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Composite validation invalid: repeat"}
   - {id: T_UNSAFE, kind: terminal, terminal: UNSAFE, label: "The component supplies the function and harms the population: closed on safety grounds, and no benefit verdict overrides it"}
   - {id: T_SAFE01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Safety readouts invalid: repeat under a valid condition"}
-  - {id: T_CENPE_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "CENP-E cannot supply alignment independently of BubR1: closed by evidence, not by an empty search"}
-  - {id: T_KIF18A_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "KIF18A's alignment role requires BubR1"}
+  - {id: S_CENPE_BUBR1_DEPENDENT, kind: state, label: "CENP-E's congression function requires BubR1, so it cannot replace it — which makes it a candidate for exploiting it instead"}
+  - {id: S_KIF18A_BUBR1_DEPENDENT, kind: state, label: "KIF18A's alignment role requires BubR1"}
   - {id: T_KIF18A_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "KIF18A dependency unestablished: the experiment is specified and unrun"}
   # Engaged and ineffective is a different result from dependent or untested, and it continues:
   # flux is not the lever in this state, which leaves the other alignment candidate and F1.
@@ -486,14 +559,221 @@ nodes:
   # required BubR1-independence, so this reaches it exactly as a bypass would.
   - {id: S_FLUX_COMPENSATORY, kind: state, label: "Flux manipulation lowers missegregation with the population preserved, and the benefit depends on residual BubR1: a compensatory route — residual function exploited, a different physical process altered"}
   - {id: S_FLUX_NOT_THE_LEVER, kind: state, label: "The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state"}
-  - {id: T_FLUX_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The benefit disappears in the limiting regime this case occupies: it needs more BubR1 than the case has, so it is not a route for this case whatever it does in replete cells"}
+  - {id: S_FLUX_NEEDS_MORE_BUBR1, kind: state, label: "The flux benefit is present in replete cells and absent at the limiting end: it needs more BubR1 than this case has"}
   - {id: T_FLUX_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Flux dependency unestablished: the experiment is specified and unrun"}
-  - {id: T_TRIP13_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "TRIP13-driven exit requires BubR1"}
-  - {id: T_TRIP13_CONFLICT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Augmenting TRIP13 restores exit at the cost of checkpoint activation: it trades one target component for another"}
+  - {id: S_TRIP13_BUBR1_DEPENDENT, kind: state, label: "TRIP13-driven exit requires BubR1"}
+  - {id: S_TRIP13_CONFLICTED, kind: state, label: "Augmenting TRIP13 restored exit at the cost of checkpoint activation"}
   - {id: T_TRIP13_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "TRIP13 dependency and specificity unestablished: the experiment is specified and unrun"}
-  - {id: T_ALIGN_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "No component surviving dependency adjudication for alignment in the searched external universe (data/literature/mva-bypass-v1). A bounded negative search, not biological impossibility"}
-  - {id: T_SIL_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "No component surviving dependency adjudication for silencing in the searched external universe (data/literature/mva-bypass-v1). A bounded negative search, not biological impossibility"}
-  - {id: T_ACT_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "No component surviving dependency adjudication for activation in the searched external universe (data/literature/mva-bypass-v1). A bounded negative search, not biological impossibility"}
+  - {id: T_ALIGN_NO_ACTUATOR, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "Every named alignment candidate failed dependency adjudication and no further candidate survived two search depths. Reached only when all of them are closed"}
+  - {id: T_SIL_NO_ACTUATOR, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "Every named silencing candidate failed dependency adjudication and no further candidate survived two search depths. Reached only when all of them are closed"}
+  - {id: S_ACT_NO_COMPONENT_YET, kind: state, label: "No component survived function-first discovery for checkpoint activation at the first depth; a named mechanistic handle exists at the second"}
+
+  # ================= continuations opened by the Rule 5 audit =================
+  # Each of these existed as a NO_KNOWN_CONTINUATION leaf. None was biologically impossible, unsafe or
+  # search-exhausted; all thirteen were simply one step past an experiment nobody had continued.
+
+  - id: STAB03
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does an actuator outside the four already interrogated raise this substrate's steady-state abundance — CHIP/STUB1 triage, autophagic-lysosomal clearance, or HSP70/DNAJ co-chaperone capacity?"
+    why_unresolved: "CV_BUBR1_ABUNDANCE was never closed; four actuators were. Named machinery outside P1-P4 exists and has been shown to govern missense-variant abundance in other proteins: CHIP's co-chaperone and E3 activities are separable, a disease variant of another receptor is cleared by autophagy, and HSP90 buffers deleterious missense variation in BRCA1."
+    evidence: ["PMID:42567515", "PMID:41525846", "PMID:41265458", "PMID:34544131"]
+    outcomes:
+      abundance_raised:        S_REF_STABILISABLE
+      turnover_reduced_only:   B_TURNOVER_ONLY
+      no_effect:               T_CV_ABUNDANCE_EXHAUSTED
+      insufficient:            T_STAB03_REPEAT
+
+  - id: CENPE_F3
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does raising CENP-E activity improve alignment at the residual BubR1 this case has, exploiting the dependency rather than being blocked by it?"
+    why_unresolved: "CENP-E needs BubR1 for its congression function, which closes it as a replacement and opens it as an F3 candidate: if the residual protein is enough to support a boosted CENP-E, the dependency is a lever instead of an obstacle. No experiment has tried it at limiting BubR1."
+    outcomes:
+      improves_at_residual_bubr1: S_FLUX_COMPENSATORY
+      needs_more_bubr1:           S_FLUX_NEEDS_MORE_BUBR1
+      no_improvement:             T_CENPE_F3_NULL
+      insufficient:               T_CENPE_F3_REPEAT
+
+  - id: KIF18A_F3
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does modulating KIF18A improve alignment at residual BubR1?"
+    why_unresolved: "Same shape as CENP-E, and KIF18A is the better-handled of the two. Its congression role runs through CENP-E and therefore through BubR1, which makes it compensatory rather than independent, and the flux work already uses KIF18A depletion as the state it rescues."
+    outcomes:
+      improves_at_residual_bubr1: S_FLUX_COMPENSATORY
+      worsens_alignment:          S_FLUX_NOT_THE_LEVER
+      no_improvement:             T_KIF18A_F3_NULL
+      insufficient:               T_KIF18A_F3_REPEAT
+
+  - id: COMBO01
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does a partial abundance gain plus flux modification reach the functional state where neither does alone?"
+    why_unresolved: "A benefit that needs more BubR1 than the case has is not a closed route if abundance can be raised a little. F1 and F3 were treated as alternatives; in combination the abundance requirement of the flux benefit may be met without full restoration. Untested in either direction."
+    outcomes:
+      combination_sufficient: S_FLUX_COMPENSATORY
+      still_insufficient:     T_COMBO_INSUFFICIENT
+      combination_harmful:    T_UNSAFE_COMBO
+      insufficient:           T_COMBO_REPEAT
+
+  - id: TRIP13_02
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does temporally restricted TRIP13 augmentation restore exit without degrading activation?"
+    why_unresolved: "The conflict is not intrinsic, and the source separates the two roles in time: TRIP13 maintains open-state Mad2 for activation during interphase, and disassembles MCC for exit during mitosis. A mitosis-restricted augmentation therefore has a mechanistic basis, and nothing tests it."
+    evidence: ["PMID:30341343"]
+    outcomes:
+      exit_restored_activation_intact: S_SIL_SUPPLIED
+      conflict_persists:               T_TRIP13_INTRINSIC
+      insufficient:                    T_TRIP13_02_REPEAT
+
+  - id: TRIP13_F3
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does TRIP13/APC15 augmentation improve silencing at residual BubR1, exploiting the BubR1-containing substrate rather than replacing it?"
+    why_unresolved: "TRIP13 acts on a BubR1-containing complex, so dependency makes it compensatory rather than dead. Whether a weaker MCC is still a usable substrate at limiting BubR1 is unasked."
+    outcomes:
+      improves_at_residual_bubr1: S_SIL_SUPPLIED
+      no_improvement:             T_TRIP13_F3_NULL
+      insufficient:               T_TRIP13_F3_REPEAT
+
+  - id: POOL01
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Is the kinetochore pool of BubR1 the functionally limiting one, so that a pool-confined gain is sufficient?"
+    why_unresolved: "A pool-confined change was treated as a failed route to whole-cell abundance, which assumes whole-cell abundance is what function needs. The case's own evidence points the other way: residual mutant protein reaches kinetochores, and BubR1 acts there. Nobody has asked whether the pool is enough."
+    evidence: ["PMID:20516114", "PMID:38008853"]
+    outcomes:
+      pool_is_sufficient:     S_POOL_SUFFICES
+      whole_cell_required:    T_POOL_INSUFFICIENT
+      insufficient:           T_POOL01_REPEAT
+
+  - id: FOLD01
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Can the raised-but-non-functional protein be brought to a native, functional state by assisting folding rather than by adding more of it?"
+    why_unresolved: "Abundance and nativeness were conflated. A chaperone-retained or aggregation-prone protein can be abundant and non-functional, and the global-suppressor work reports that rescue of folding defects runs through refolding rate rather than thermodynamic stability. Nothing tests whether this substrate's functional fraction can be raised independently of its total."
+    evidence: ["PMID:36037221", "PMID:20516114"]
+    outcomes:
+      functional_fraction_raised: S_STABILISED_FUNCTIONAL
+      abundance_without_function: T_FOLD_INTRINSIC
+      insufficient:               T_FOLD01_REPEAT
+
+  - id: LIMFN01
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Which function is actually limiting missegregation in this state?"
+    why_unresolved: "A composite that supplies alignment, activation and silencing and does not lower missegregation says the limiting quantity was none of them. Attachment error-correction rate, kinetochore-microtubule turnover and cohesion are candidates the map has never separated."
+    outcomes:
+      a_supplied_function_was_limiting: S_RETEST_COMPOSITE
+      another_quantity_is_limiting:     S_NEW_CONTROL_VARIABLE
+      insufficient:                     T_LIMFN01_REPEAT
+  - {id: S_RETEST_COMPOSITE, kind: state, label: "One of the supplied functions was limiting after all: the composite is revalidated with that function's contribution isolated"}
+  - {id: S_NEW_CONTROL_VARIABLE, kind: state, label: "A control variable outside this map limits missegregation in this state: it must be named and searched before any route can address it"}
+
+  - id: COMPOSITE02
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does a different configuration of the same components — different stoichiometry, or temporal separation — resolve the conflict?"
+    why_unresolved: "A conflict in one configuration is not a property of the component set. TRIP13's own two roles are temporally separable, which is the existence proof that configuration matters here."
+    outcomes:
+      reconfiguration_works: S_COMPOSITE_VALIDATED
+      conflict_intrinsic:    T_COMPOSITE_INTRINSIC
+      insufficient:          T_COMPOSITE02_REPEAT
+
+  - id: ACT02
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Can arrest competence be supplied through the MPS1 phosphorylation cascade, transiently rather than chronically?"
+    why_unresolved: "The first two search depths found no component; the third found a mechanistic handle — a sequential multi-target MPS1 phosphorylation cascade promotes checkpoint signalling. The same depth found that CHRONIC checkpoint activation causes myelosuppression and gastrointestinal atrophy in vivo, so the sustained form of this variable is organism-level harmful while a transient form is not covered by that evidence."
+    evidence: ["PMID:28072388", "PMID:38806674"]
+    outcomes:
+      transient_supply_works:   S_ACT_SUPPLIED
+      only_chronic_supply_works: T_ACT_CHRONIC_UNSAFE
+      no_supply:                T_ACT_EXHAUSTED
+      insufficient:             T_ACT02_REPEAT
+
+  # ---------- F4: remove the cells rather than prevent the error ----------
+  - {id: CV_CLEARANCE_ENTRY, kind: state, label: "F4 entry: the aneuploid cell fraction is itself a control variable, and the only one that can touch aneuploidy already established"}
+  - id: CLEAR01
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: TISSUE_MODEL
+    label: "Can the aneuploid cell fraction be lowered by promoting selective elimination of aneuploid cells?"
+    why_unresolved: "Selective elimination of aneuploid cells is documented — cell competition removes segmental aneuploid cells in Drosophila imaginal discs, lineage-specific elimination operates in embryos and stem-cell-derived models, and depletion of aneuploid cells is shaped by cell-to-cell interactions. None of it is in a human MVA context, and none of it is an actuator yet."
+    evidence: ["PMID:33847264", "PMID:42409819", "PMID:40466636"]
+    outcomes:
+      fraction_lowered_population_viable: S_TISSUE_FRACTION_FALLS
+      population_depleted:                T_CLEAR_DEPLETES
+      no_selective_elimination:           T_CLEAR_NULL
+      insufficient:                       T_CLEAR01_REPEAT
+
+  - id: CLIN02
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
+    label: "Which clinical feature, in which tissue, on what timescale, is linked to aneuploid burden?"
+    why_unresolved: "A null on one chosen clinical measure does not close the link; it closes that measure. The phenotype is multi-system and the burden-to-feature mapping is unquantified for this disorder."
+    outcomes:
+      a_linked_feature_exists: S_CLINICAL_MODIFIED
+      no_feature_links:        T_CLINICAL_LINK_ABSENT
+      unassessable:            T_CLIN02_BLOCKED
+
+  - id: XSCALE03
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: TISSUE_MODEL
+    label: "Is selection or clearance, rather than per-division fidelity, what sets the tissue aneuploid fraction here?"
+    why_unresolved: "Per-division fidelity improving without the tissue fraction falling means the fraction is set by something else. That is a different control variable, and it is the F4 one."
+    outcomes:
+      selection_dominates:    CV_CLEARANCE_ENTRY
+      fidelity_dominates:     T_AGGREGATION_UNEXPLAINED
+      insufficient:           T_XSCALE03_REPEAT
+
+  # new genuine terminals from the expansion
+  - {id: T_CV_ABUNDANCE_EXHAUSTED, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "Every identified actuator of BubR1 abundance failed on this substrate across two search depths"}
+  - {id: T_STAB03_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Actuator engagement not validated: repeat"}
+  - {id: T_CENPE_F3_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Boosting CENP-E does not help at residual BubR1 and no further CENP-E-directed experiment is identifiable"}
+  - {id: T_CENPE_F3_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_KIF18A_F3_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "KIF18A modulation does not help at residual BubR1"}
+  - {id: T_KIF18A_F3_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_COMBO_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial abundance plus flux modification is still insufficient, and no further combination of the mapped control variables is identifiable"}
+  - {id: T_UNSAFE_COMBO, kind: terminal, terminal: UNSAFE, label: "The combination harms the population where neither component did"}
+  - {id: T_COMBO_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_TRIP13_INTRINSIC, kind: terminal, terminal: PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE, label: "The activation and silencing roles cannot be separated even temporally: one protein cannot be augmented for one without costing the other"}
+  - {id: T_TRIP13_02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_TRIP13_F3_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "TRIP13 augmentation does not help at residual BubR1"}
+  - {id: T_TRIP13_F3_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: S_POOL_SUFFICES, kind: state, label: "The kinetochore pool is the functionally limiting one, so a pool-confined abundance gain is enough and whole-cell restoration is not required"}
+  - {id: T_POOL_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "The kinetochore pool is not sufficient and whole-cell abundance is required, which returns the route to CV_BUBR1_ABUNDANCE with its actuators already enumerated"}
+  - {id: T_POOL01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_FOLD_INTRINSIC, kind: terminal, terminal: PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE, label: "The protein cannot be made native by assisting folding: abundance and nativeness are not separable for this substrate"}
+  - {id: T_FOLD01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_LIMFN01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_COMPOSITE_INTRINSIC, kind: terminal, terminal: PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE, label: "The component set conflicts in every reachable configuration"}
+  - {id: T_COMPOSITE02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_ACT_CHRONIC_UNSAFE, kind: terminal, terminal: UNSAFE, label: "Arrest competence can only be supplied chronically, and chronic checkpoint activation causes myelosuppression and gastrointestinal atrophy in vivo. This closes the variable in its sustained form on evidence about the variable, not about one actuator"}
+  - {id: T_ACT_EXHAUSTED, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "No way to supply arrest competence survived three search depths and a mechanistic-handle test"}
+  - {id: T_ACT02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_CLEAR_DEPLETES, kind: terminal, terminal: UNSAFE, label: "Selective elimination lowers the aneuploid fraction by depleting the population: the confounder B08 and B18 exist to catch, arriving as the mechanism rather than as an artefact"}
+  - {id: T_CLEAR_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No selective elimination of aneuploid cells is inducible in this context"}
+  - {id: T_CLEAR01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
+  - {id: T_CLINICAL_LINK_ABSENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No clinical feature is linked to aneuploid burden on any assessable measure"}
+  - {id: T_CLIN02_BLOCKED, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Not assessable: no intervention or longitudinal observation in this child is authorised"}
+  - {id: T_AGGREGATION_UNEXPLAINED, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Fidelity dominates and the tissue fraction still does not fall: the discrepancy has no identified next experiment"}
+  - {id: T_XSCALE03_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
 
 edges:
   # forward reachability from the case state
@@ -522,7 +802,7 @@ edges:
   # completely, so BubR1's requirement is independent of its CENP-E-recruitment role and cannot be
   # compensated by inhibiting Aurora kinases. PMID:38354735's BubR1-independent pathway is measured
   # purely as CENP-E intensity relative to CENP-C — localisation, with no functional readout.
-  - {from: C_CENPE, to: T_CENPE_DEPENDENT, label: GROUNDED, note: "Fig. 6f and Fig. 5c of PMID:41120314; the BubR1-independent route of PMID:38354735 is localisation only", evidence: ["PMID:41120314", "PMID:38354735"]}
+  - {from: C_CENPE, to: S_CENPE_BUBR1_DEPENDENT, label: GROUNDED, note: "Fig. 6f and Fig. 5c of PMID:41120314; the BubR1-independent route of PMID:38354735 is localisation only", evidence: ["PMID:41120314", "PMID:38354735"]}
   - {from: C_KIF18A, to: DEP_KIF18A, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_FLUX, to: DEP_FLUX, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_TRIP13, to: DEP_TRIP13, label: EXPERIMENTAL_UNKNOWN}
@@ -604,10 +884,34 @@ edges:
   - {from: F2_COMPLETE, to: COMPOSITE_VALID, label: EXPERIMENTAL_UNKNOWN, note: "The assembled system must be shown to produce the state, not credited for its parts"}
   - {from: S_COMPOSITE_VALIDATED, to: CANONICAL_CELLULAR_STATE, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Validated as a system in the tested context; transfer to a relevant cell type remains separate"}
   # backward regression from the target, merged where it meets the forward graph
-  - {from: T_NO_ACTUATOR, to: C_KIF18A, label: GROUNDED, family_transition: true, note: "Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family"}
+  - {from: S_P1P4_EXHAUSTED, to: C_KIF18A, label: GROUNDED, family_transition: true, note: "Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family"}
   - {from: T_EXP01_CEILING, to: STAB01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true, note: "Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?"}
 
 # Transitions that are grounded and therefore traversed rather than branched.
+  # ================= Rule 1: the continuation after each retired leaf =================
+  - {from: S_CASE_REFRACTORY, to: STAB03, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "Four actuators failed; the control variable has three more identified and untried"}
+  - {from: S_P1P4_EXHAUSTED, to: STAB03, label: EXPERIMENTAL_UNKNOWN, note: "Same move for the reference class: actuators are not the variable"}
+  - {from: S_CENPE_BUBR1_DEPENDENT, to: CENPE_F3, label: EXPERIMENTAL_UNKNOWN, note: "Dependency reclassifies CENP-E from F2 to F3 instead of closing it"}
+  - {from: S_KIF18A_BUBR1_DEPENDENT, to: KIF18A_F3, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_TRIP13_BUBR1_DEPENDENT, to: TRIP13_F3, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_FLUX_NEEDS_MORE_BUBR1, to: COMBO01, label: EXPERIMENTAL_UNKNOWN, note: "F1 and F3 in combination, which the map had never considered because the families were treated as alternatives"}
+  - {from: S_TRIP13_CONFLICTED, to: TRIP13_02, label: EXPERIMENTAL_UNKNOWN, note: "The two roles are temporally separate in the source, so the conflict is not established as intrinsic"}
+  - {from: S_POOL_SUFFICES, to: FUNCVAL01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "Function under the pool-confined gain is still its own question"}
+  - {from: S_POOL_ONLY, to: POOL01, label: EXPERIMENTAL_UNKNOWN, note: "Whether the pool is enough was assumed, never asked"}
+  - {from: S_PRESENT_NON_NATIVE, to: FOLD01, label: EXPERIMENTAL_UNKNOWN, note: "Abundance and nativeness were conflated"}
+  - {from: S_RETEST_COMPOSITE, to: COMPOSITE_VALID, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "Revalidation of the same branch with a different configuration"}
+  - {from: S_COMPOSITE_INEFFECTIVE, to: LIMFN01, label: EXPERIMENTAL_UNKNOWN, note: "If supplying three functions changes nothing, the limiting quantity is a fourth"}
+  - {from: S_COMPOSITE_CONFLICTED, to: COMPOSITE02, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_ACT_NO_COMPONENT_YET, to: ACT02, label: EXPERIMENTAL_UNKNOWN, note: "A third search depth found a mechanistic handle and a toxicity boundary; both are new"}
+  - {from: S_AGGREGATION_FAILS, to: XSCALE03, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_CLINICAL_LINK_UNRESOLVED, to: CLIN02, label: EXPERIMENTAL_UNKNOWN}
+  # F4 is reachable from the established-burden state and from the aggregation failure: it is the only
+  # family that can act on aneuploidy that already exists.
+  - {from: S_ESTABLISHED_BURDEN, to: CV_CLEARANCE_ENTRY, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Improving future divisions cannot undo an aneuploid cell that exists; removing it is a different variable"}
+  - {from: CV_CLEARANCE_ENTRY, to: CLEAR01, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_ESTABLISHED_BURDEN, to: IRREV01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "And the prospective component remains, whatever is fixed"}
+  - {from: S_NEW_CONTROL_VARIABLE, to: BYPASS_ACT, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "A variable outside the map must be named and searched; the nearest existing discovery node is where that search re-enters"}
+
 grounded_facts:
   - {id: G_KINASE_DISPENSABLE, statement: "Neither kinase activity nor the 265-residue kinase domain is required for checkpoint or stable attachments (731X restores both)", evidence: ["PMID:20516114"], consequence: "Any route premised on restoring BubR1 kinase activity is eliminated and does not appear in this map"}
   - {id: G_SEPARABLE, statement: "Alignment and checkpoint are separable functions (Y155C restores alignment and not checkpoint; 483X the converse)", evidence: ["PMID:20516114"], consequence: "Composite bypass must supply each function separately; one component is not assumed to cover both"}

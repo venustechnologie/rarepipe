@@ -40,9 +40,9 @@ computed beside the functional one.
 
 | destination | distance | unavoidable branches | `BYPASS_ACT` an unavoidable gate? |
 |---|---|---|---|
-| `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | none | no |
-| `FUNCTIONAL_CELLULAR_TARGET` | 2: `DEP_FLUX`, `SAFE01` | none | no |
-| `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `DEP_FLUX`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | no |
+| `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` | none | no |
+| `FUNCTIONAL_CELLULAR_TARGET` | 2: `CENPE_F3`, `SAFE01` | none | no |
+| `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE02` | `IRREV01`, `SAFE_ORG`, `XSCALE02` | no |
 
 **`BYPASS_ACT` is not an unavoidable gate to either cell-level destination.** Checkpoint
 activation is therefore a route-specific requirement and a mechanistic diagnostic, not a
@@ -72,9 +72,9 @@ SAFE01 appears in two campaigns because it is component-specific: whichever camp
 
 | destination | unresolved branches | campaigns needed | not covered by any campaign |
 |---|---|---|---|
-| `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4: `FLUX01`, `TRIP13_01`, `BYPASS_ACT`, `COMPOSITE_VALID` | `BYPASS_ACT`, `COMPOSITE_VALID` |
-| `FUNCTIONAL_CELLULAR_TARGET` | 2: `DEP_FLUX`, `SAFE01` | 1: `FLUX01` | none |
-| `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `DEP_FLUX`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | 6: `FLUX01`, `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` |
+| `CANONICAL_CELLULAR_STATE` | 5: `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` | 4: `TRIP13_01`, `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID` | `BYPASS_ACT`, `CENPE_F3`, `COMPOSITE_VALID` |
+| `FUNCTIONAL_CELLULAR_TARGET` | 2: `CENPE_F3`, `SAFE01` | 2: `FLUX01`, `CENPE_F3` | `CENPE_F3` |
+| `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE02` | 7: `FLUX01`, `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE_ORG`, `XSCALE02` | `ACT_SAFETY01`, `CENPE_F3`, `CLEAR01`, `IRREV01`, `SAFE_ORG`, `XSCALE02` |
 
 ## Reachability
 
@@ -93,7 +93,7 @@ No probability is attached to any of them, and none is available.
 |---|---|---|---|
 | `CANONICAL_CELLULAR_STATE` | YES, 5 branch(es) | **YES** | none |
 | `FUNCTIONAL_CELLULAR_TARGET` | YES, 2 branch(es) | **YES** | none |
-| `ORGANISM_TARGET` | YES, 7 branch(es) | NO | `IRREV01`=`established_and_fixed`, `IRREV01`=`unestablished`, `SAFE_ORG`=`harm`, `SAFE_ORG`=`unassessable`, `XSCALE01`=`no_aggregate`, `XSCALE01`=`untestable`, and 2 more |
+| `ORGANISM_TARGET` | YES, 7 branch(es) | NO | `IRREV01`=`established_and_fixed`, `IRREV01`=`unestablished`, `SAFE_ORG`=`harm`, `SAFE_ORG`=`unassessable`, `XSCALE02`=`unassessable` |
 
 `ROBUST_REACHABILITY` is `NOT_ESTABLISHED` for every row above.
 
@@ -106,10 +106,10 @@ the branch outcomes it implies, and the continuation is computed rather than wai
 |---|---|---|---|
 | `lower_missegregation_population_preserved` | **reached** | 5 left | the cell-level functional state is reached by a non-canonical route; the risk gate `ACT_SAFETY01` becomes live and the tissue scale opens |
 | `lower_missegregation_population_harmed` | 3 left | 8 left | `SAFE01` closes on safety grounds; no benefit verdict overrides it, and the flux component is out as a route whatever it did to missegregation |
-| `no_reduction` | 5 left | 9 left | flux is not the controllable physics for this state; `C_KIF18A` remains the other named alignment candidate and the abundance family is untouched |
+| `no_reduction` | 2 left | 7 left | flux is not the controllable physics for this state; `C_KIF18A` remains the other named alignment candidate and the abundance family is untouched |
 | `lower_missegregation_benefit_needs_residual_bubr1` | **reached** | 5 left |  |
-| `benefit_absent_in_limiting_regime` | 5 left | 9 left |  |
-| `insufficient_or_invalid` | 7 left | 11 left | nothing moves; the named validity gate is repeated at BubR1-limiting |
+| `benefit_absent_in_limiting_regime` | 2 left | 7 left |  |
+| `insufficient_or_invalid` | 4 left | 9 left | nothing moves; the named validity gate is repeated at BubR1-limiting |
 
 ## Priorities, reported separately
 
@@ -136,7 +136,7 @@ experiment away, and the risk question it needs is not in a dish at all.
 ## Where the route map says to look first
 
 From today, the smallest set of unresolved branch nodes that would establish the target is
-**2**: `DEP_FLUX`, `SAFE01`.
+**2**: `CENPE_F3`, `SAFE01`.
 
 **That count alone would mislead, so it is split by kind.** A branch entered only through a
 missing physical actuator is a *component discovery* — find something nobody has described —
@@ -145,7 +145,7 @@ interchangeable units of work, and the shortest route by count is not the shorte
 
 | branch | kind |
 |---|---|
-| `DEP_FLUX` | runnable measurement |
+| `CENPE_F3` | runnable measurement |
 | `SAFE01` | runnable measurement |
 
 Runnable measurements on that route: **2 of 2**.
@@ -163,35 +163,52 @@ Distances are to `FUNCTIONAL_CELLULAR_TARGET` unless stated otherwise.
 
 | branch | kind | needs | best outcome | what remains after it | runnable |
 |---|---|---|---|---|---|
-| `CHAR01` | runnable measurement | CELL_MODEL | `destabilised_like_reference` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `EXP01` | runnable measurement | CELL_MODEL | `full_function` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `STAB01` | runnable measurement | CELL_MODEL | `steady_state_increased` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `STAB02` | runnable measurement | CELL_MODEL | `case_allele_stabilised` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `FUNCVAL01` | runnable measurement | CELL_MODEL | `functional` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `XFER01` | runnable measurement | GOVERNANCE_ABSENT | `transfers` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `SAFE01` | runnable measurement | CELL_MODEL | `preserved` | 1: `DEP_FLUX` | 1 |
-| `SAFE02` | runnable measurement | CELL_MODEL | `preserved` | 1: `DEP_FLUX` | 1 |
-| `EXPRVAL01` | runnable measurement | CELL_MODEL | `construct_limited` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `COMPOSITE_VALID` | runnable measurement | CELL_MODEL | `system_validated` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `DEP_KIF18A` | runnable measurement | CELL_MODEL | `independent_of_bubr1` | 2: `DEP_FLUX`, `SAFE01` | 2 |
+| `CHAR01` | runnable measurement | CELL_MODEL | `destabilised_like_reference` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `EXP01` | runnable measurement | CELL_MODEL | `full_function` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `STAB01` | runnable measurement | CELL_MODEL | `steady_state_increased` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `STAB02` | runnable measurement | CELL_MODEL | `case_allele_stabilised` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `FUNCVAL01` | runnable measurement | CELL_MODEL | `functional` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `XFER01` | runnable measurement | GOVERNANCE_ABSENT | `transfers` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `SAFE01` | runnable measurement | CELL_MODEL | `preserved` | 1: `CENPE_F3` | 1 |
+| `SAFE02` | runnable measurement | CELL_MODEL | `preserved` | 1: `CENPE_F3` | 1 |
+| `EXPRVAL01` | runnable measurement | CELL_MODEL | `construct_limited` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `COMPOSITE_VALID` | runnable measurement | CELL_MODEL | `system_validated` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `DEP_KIF18A` | runnable measurement | CELL_MODEL | `independent_of_bubr1` | 2: `CENPE_F3`, `SAFE01` | 2 |
 | `DEP_FLUX` | runnable measurement | CELL_MODEL | `independent_of_bubr1` | 1: `SAFE01` | 1 |
-| `DEP_TRIP13` | runnable measurement | CELL_MODEL | `independent_and_specific` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `BYPASS_ACT` | component discovery | CELL_MODEL | `grounded_component_found` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `ACT_SAFETY01` | runnable measurement | ORGANISM_MODEL | `not_required_for_this_state` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `XSCALE01` | runnable measurement | TISSUE_MODEL | `fraction_falls` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `IRREV01` | runnable measurement | ORGANISM_MODEL | `prospective_component_exists` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `XSCALE02` | runnable measurement | ORGANISM_MODEL | `course_modified` | 2: `DEP_FLUX`, `SAFE01` | 2 |
-| `SAFE_ORG` | runnable measurement | ORGANISM_MODEL | `no_harm` | 2: `DEP_FLUX`, `SAFE01` | 2 |
+| `DEP_TRIP13` | runnable measurement | CELL_MODEL | `independent_and_specific` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `BYPASS_ACT` | component discovery | CELL_MODEL | `grounded_component_found` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `ACT_SAFETY01` | runnable measurement | ORGANISM_MODEL | `not_required_for_this_state` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `XSCALE01` | runnable measurement | TISSUE_MODEL | `fraction_falls` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `IRREV01` | runnable measurement | ORGANISM_MODEL | `prospective_component_exists` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `XSCALE02` | runnable measurement | ORGANISM_MODEL | `course_modified` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `SAFE_ORG` | runnable measurement | ORGANISM_MODEL | `no_harm` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `STAB03` | runnable measurement | CELL_MODEL | `abundance_raised` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `CENPE_F3` | runnable measurement | CELL_MODEL | `improves_at_residual_bubr1` | 1: `SAFE01` | 1 |
+| `KIF18A_F3` | runnable measurement | CELL_MODEL | `improves_at_residual_bubr1` | 1: `SAFE01` | 1 |
+| `COMBO01` | runnable measurement | CELL_MODEL | `combination_sufficient` | 1: `SAFE01` | 1 |
+| `TRIP13_02` | runnable measurement | CELL_MODEL | `exit_restored_activation_intact` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `TRIP13_F3` | runnable measurement | CELL_MODEL | `improves_at_residual_bubr1` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `POOL01` | runnable measurement | CELL_MODEL | `pool_is_sufficient` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `FOLD01` | runnable measurement | CELL_MODEL | `functional_fraction_raised` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `LIMFN01` | runnable measurement | CELL_MODEL | `a_supplied_function_was_limiting` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `COMPOSITE02` | runnable measurement | CELL_MODEL | `reconfiguration_works` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `ACT02` | runnable measurement | CELL_MODEL | `transient_supply_works` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `CLEAR01` | runnable measurement | TISSUE_MODEL | `fraction_lowered_population_viable` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `CLIN02` | runnable measurement | ORGANISM_MODEL | `a_linked_feature_exists` | 2: `CENPE_F3`, `SAFE01` | 2 |
+| `XSCALE03` | runnable measurement | TISSUE_MODEL | `selection_dominates` | 2: `CENPE_F3`, `SAFE01` | 2 |
 
 ### Highest-leverage opportunities
 
 Branches with an admissible outcome that leaves **one or no** further experiment between the case
 state and a chain whose remaining steps are grounded:
 
-- `SAFE01` = `preserved` → then only `DEP_FLUX` remains
-- `SAFE02` = `preserved` → then only `DEP_FLUX` remains
+- `SAFE01` = `preserved` → then only `CENPE_F3` remains
+- `SAFE02` = `preserved` → then only `CENPE_F3` remains
 - `DEP_FLUX` = `independent_of_bubr1` → then only `SAFE01` remains
 - `DEP_FLUX` = `benefit_requires_residual_bubr1` → then only `SAFE01` remains
+- `CENPE_F3` = `improves_at_residual_bubr1` → then only `SAFE01` remains
+- `KIF18A_F3` = `improves_at_residual_bubr1` → then only `SAFE01` remains
+- `COMBO01` = `combination_sufficient` → then only `SAFE01` remains
 
 ## Branch nodes: every admissible outcome, continued
 
@@ -203,10 +220,10 @@ Does this exact allele destabilise the protein at all? Cycloheximide chase, HSP9
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `destabilised_like_reference` | `S_ABUNDANCE_LOW` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `not_destabilised` | `S_ABUNDANCE_NORMAL` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `destabilised_other_mechanism` | `S_ABUNDANCE_LOW_OTHER` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `not_expressible` | `S_NOT_EXPRESSIBLE` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `destabilised_like_reference` | `S_ABUNDANCE_LOW` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `not_destabilised` | `S_ABUNDANCE_NORMAL` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `destabilised_other_mechanism` | `S_ABUNDANCE_LOW_OTHER` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `not_expressible` | `S_NOT_EXPRESSIBLE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `EXP01`
 
@@ -216,13 +233,13 @@ At matched abundance, are alignment, silencing and segregation normal for the ex
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `full_function` | `S_FUNCTION_OK` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `alignment_defect` | `B_ALIGN_DEFECT` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `silencing_defect` | `B_SIL_DEFECT` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `segregation_defect` | `B_SEG_DEFECT` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `multiple_defects` | `B_MULTI_DEFECT` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `matched_not_achieved` | `T_EXP01_CEILING` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `confounded_invalid` | `T_EXP01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `full_function` | `S_FUNCTION_OK` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `alignment_defect` | `B_ALIGN_DEFECT` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `silencing_defect` | `B_SIL_DEFECT` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `segregation_defect` | `B_SEG_DEFECT` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `multiple_defects` | `B_MULTI_DEFECT` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `matched_not_achieved` | `T_EXP01_CEILING` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `confounded_invalid` | `T_EXP01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `STAB01`
 
@@ -232,11 +249,11 @@ Can the steady-state abundance of a misfolding kinase-domain BubR1 missense prot
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `steady_state_increased` | `S_REF_STABILISABLE` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `turnover_reduced_only` | `B_TURNOVER_ONLY` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `local_pool_only` | `T_POOL_ONLY` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `no_stabilisation` | `T_NO_ACTUATOR` (`NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `insufficient` | `T_STAB01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `steady_state_increased` | `S_REF_STABILISABLE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `turnover_reduced_only` | `B_TURNOVER_ONLY` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `local_pool_only` | `S_POOL_ONLY` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_stabilisation` | `S_P1P4_EXHAUSTED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_STAB01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `STAB02`
 
@@ -246,9 +263,9 @@ Does the working perturbation raise the exact case allele's abundance toward wil
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `case_allele_stabilised` | `S_CASE_STABILISABLE` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `case_allele_refractory` | `T_CASE_REFRACTORY` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `insufficient` | `T_STAB02_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `case_allele_stabilised` | `S_CASE_STABILISABLE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `case_allele_refractory` | `S_CASE_REFRACTORY` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_STAB02_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `FUNCVAL01`
 
@@ -258,9 +275,9 @@ Is the protein stabilised by that perturbation functional, or merely present?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `functional` | `S_STABILISED_FUNCTIONAL` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `not_functional` | `T_PRESENT_NOT_FUNCTIONAL` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `insufficient` | `T_FUNCVAL_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `functional` | `S_STABILISED_FUNCTIONAL` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `not_functional` | `S_PRESENT_NON_NATIVE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_FUNCVAL_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `XFER01`
 
@@ -270,9 +287,9 @@ Does the effect hold in a cell type relevant to this child?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `transfers` | `S_XFER_OK` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `does_not_transfer` | `T_NO_TRANSFER` (`CONTEXT_TRANSFER_REQUIRED`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `cannot_be_tested` | `T_XFER_BLOCKED` (`CONTEXT_TRANSFER_REQUIRED`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `transfers` | `S_XFER_OK` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `does_not_transfer` | `T_NO_TRANSFER` (`CONTEXT_TRANSFER_REQUIRED`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `cannot_be_tested` | `T_XFER_BLOCKED` (`GOVERNANCE_BLOCKED`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `SAFE01`
 
@@ -282,9 +299,9 @@ Does the bypass component preserve viability, division rate and cell death?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `preserved` | `S_POP_SAFE_F2` (state) | 1 still unresolved: `DEP_FLUX` |
-| `harm` | `T_UNSAFE` (`UNSAFE`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `insufficient` | `T_SAFE01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `preserved` | `S_POP_SAFE_F2` (state) | 1 still unresolved: `CENPE_F3` |
+| `harm` | `T_UNSAFE` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_SAFE01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `SAFE02`
 
@@ -294,9 +311,9 @@ Does the physical stabilisation manipulation itself preserve viability, division
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `preserved` | `S_POP_SAFE_F1B` (state) | 1 still unresolved: `DEP_FLUX` |
-| `harm` | `T_UNSAFE_F1` (`UNSAFE`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `insufficient` | `T_SAFE02_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `preserved` | `S_POP_SAFE_F1B` (state) | 1 still unresolved: `CENPE_F3` |
+| `harm` | `T_UNSAFE_F1` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_SAFE02_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `EXPRVAL01`
 
@@ -306,9 +323,9 @@ Is the failure to reach wild-type-comparable abundance a property of the constru
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `construct_limited` | `S_ABUNDANCE_LOW` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `protein_limited` | `S_PROTEIN_CEILING` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `insufficient` | `T_EXPR_INVALID` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `construct_limited` | `S_ABUNDANCE_LOW` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `protein_limited` | `S_PROTEIN_CEILING` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_EXPR_INVALID` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `COMPOSITE_VALID`
 
@@ -318,10 +335,10 @@ Does the assembled composite system actually lower chromosome missegregation whi
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `system_validated` | `S_COMPOSITE_VALIDATED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `functions_conflict` | `T_COMPOSITE_CONFLICT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `no_improvement` | `T_COMPOSITE_NULL` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `insufficient` | `T_COMPOSITE_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `system_validated` | `S_COMPOSITE_VALIDATED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `functions_conflict` | `S_COMPOSITE_CONFLICTED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_improvement` | `S_COMPOSITE_INEFFECTIVE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_COMPOSITE_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `DEP_KIF18A`
 
@@ -331,9 +348,9 @@ Does KIF18A support chromosome alignment when BubR1 is limiting, or does its con
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `independent_of_bubr1` | `S_ALIGN_SUPPLIED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `requires_bubr1` | `T_KIF18A_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `unestablished` | `T_KIF18A_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `independent_of_bubr1` | `S_ALIGN_SUPPLIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `requires_bubr1` | `S_KIF18A_BUBR1_DEPENDENT` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_KIF18A_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `DEP_FLUX`
 
@@ -345,9 +362,9 @@ Does modifying poleward flux lower missegregation in a BubR1-limiting background
 |---|---|---|
 | `independent_of_bubr1` | `S_FLUX_LOWERS_MIS` (state) | 1 still unresolved: `SAFE01` |
 | `benefit_requires_residual_bubr1` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
-| `benefit_absent_in_limiting_regime` | `T_FLUX_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `no_reduction` | `S_FLUX_NOT_THE_LEVER` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `unestablished` | `T_FLUX_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `benefit_absent_in_limiting_regime` | `S_FLUX_NEEDS_MORE_BUBR1` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_reduction` | `S_FLUX_NOT_THE_LEVER` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_FLUX_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `DEP_TRIP13`
 
@@ -357,10 +374,10 @@ Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit without req
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `independent_and_specific` | `S_SIL_SUPPLIED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `requires_bubr1` | `T_TRIP13_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `degrades_activation` | `T_TRIP13_CONFLICT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `unestablished` | `T_TRIP13_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `independent_and_specific` | `S_SIL_SUPPLIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `requires_bubr1` | `S_TRIP13_BUBR1_DEPENDENT` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `degrades_activation` | `S_TRIP13_CONFLICTED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_TRIP13_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `BYPASS_ACT`
 
@@ -370,8 +387,8 @@ Is there a physically realisable way to supply checkpoint activation independent
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `grounded_component_found` | `S_ACT_SUPPLIED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `no_component` | `T_ACT_NO_ACTUATOR` (`NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `grounded_component_found` | `S_ACT_SUPPLIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_component` | `S_ACT_NO_COMPONENT_YET` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `ACT_SAFETY01`
 
@@ -381,9 +398,9 @@ Is checkpoint competence required for this case on tumour-predisposition grounds
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `not_required_for_this_state` | `S_CHECKPOINT_RISK_RESOLVED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `checkpoint_competence_required` | `S_ACT_COMPETENCE_REQUIRED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `unestablished` | `T_ACT_RISK_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `not_required_for_this_state` | `S_CHECKPOINT_RISK_RESOLVED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `checkpoint_competence_required` | `S_ACT_COMPETENCE_REQUIRED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_ACT_RISK_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `XSCALE01`
 
@@ -393,9 +410,9 @@ Does improving per-division fidelity lower the aneuploid cell fraction in a rele
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `fraction_falls` | `S_TISSUE_FRACTION_FALLS` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `no_aggregate` | `T_NO_TISSUE_EFFECT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `untestable` | `T_TISSUE_UNTESTABLE` (`CONTEXT_TRANSFER_REQUIRED`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `fraction_falls` | `S_TISSUE_FRACTION_FALLS` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_aggregate` | `S_AGGREGATION_FAILS` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `untestable` | `T_TISSUE_UNTESTABLE` (`GOVERNANCE_BLOCKED`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `IRREV01`
 
@@ -405,9 +422,9 @@ Is the already-established component of the phenotype reversible by improving mi
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `prospective_component_exists` | `S_PROSPECTIVE_EXISTS` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `established_and_fixed` | `T_IRREVERSIBLE` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `unestablished` | `T_IRREV_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `prospective_component_exists` | `S_PROSPECTIVE_EXISTS` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `established_and_fixed` | `S_ESTABLISHED_BURDEN` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unestablished` | `T_IRREV_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `XSCALE02`
 
@@ -417,9 +434,9 @@ Does a lower tissue aneuploid fraction modify a measurable feature of the clinic
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `course_modified` | `S_CLINICAL_MODIFIED` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `no_change` | `T_NO_CLINICAL_EFFECT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `unassessable` | `T_CLINICAL_UNTESTABLE` (`CONTEXT_TRANSFER_REQUIRED`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `course_modified` | `S_CLINICAL_MODIFIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_change` | `S_CLINICAL_LINK_UNRESOLVED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unassessable` | `T_CLINICAL_UNTESTABLE` (`GOVERNANCE_BLOCKED`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ### `SAFE_ORG`
 
@@ -429,9 +446,183 @@ Does the manipulation avoid organism-level harm?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `no_harm` | `S_ORG_SAFE` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `harm` | `T_UNSAFE_ORG` (`UNSAFE`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `unassessable` | `T_ORG_SAFETY_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
+| `no_harm` | `S_ORG_SAFE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `harm` | `T_UNSAFE_ORG` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unassessable` | `T_ORG_SAFETY_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `STAB03`
+
+Does an actuator outside the four already interrogated raise this substrate's steady-state abundance — CHIP/STUB1 triage, autophagic-lysosomal clearance, or HSP70/DNAJ co-chaperone capacity?
+
+*Why unresolved:* CV_BUBR1_ABUNDANCE was never closed; four actuators were. Named machinery outside P1-P4 exists and has been shown to govern missense-variant abundance in other proteins: CHIP's co-chaperone and E3 activities are separable, a disease variant of another receptor is cleared by autophagy, and HSP90 buffers deleterious missense variation in BRCA1.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `abundance_raised` | `S_REF_STABILISABLE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `turnover_reduced_only` | `B_TURNOVER_ONLY` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_effect` | `T_CV_ABUNDANCE_EXHAUSTED` (`SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_STAB03_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `CENPE_F3`
+
+Does raising CENP-E activity improve alignment at the residual BubR1 this case has, exploiting the dependency rather than being blocked by it?
+
+*Why unresolved:* CENP-E needs BubR1 for its congression function, which closes it as a replacement and opens it as an F3 candidate: if the residual protein is enough to support a boosted CENP-E, the dependency is a lever instead of an obstacle. No experiment has tried it at limiting BubR1.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `improves_at_residual_bubr1` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `needs_more_bubr1` | `S_FLUX_NEEDS_MORE_BUBR1` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_improvement` | `T_CENPE_F3_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_CENPE_F3_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `KIF18A_F3`
+
+Does modulating KIF18A improve alignment at residual BubR1?
+
+*Why unresolved:* Same shape as CENP-E, and KIF18A is the better-handled of the two. Its congression role runs through CENP-E and therefore through BubR1, which makes it compensatory rather than independent, and the flux work already uses KIF18A depletion as the state it rescues.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `improves_at_residual_bubr1` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `worsens_alignment` | `S_FLUX_NOT_THE_LEVER` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_improvement` | `T_KIF18A_F3_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_KIF18A_F3_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `COMBO01`
+
+Does a partial abundance gain plus flux modification reach the functional state where neither does alone?
+
+*Why unresolved:* A benefit that needs more BubR1 than the case has is not a closed route if abundance can be raised a little. F1 and F3 were treated as alternatives; in combination the abundance requirement of the flux benefit may be met without full restoration. Untested in either direction.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `combination_sufficient` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `still_insufficient` | `T_COMBO_INSUFFICIENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `combination_harmful` | `T_UNSAFE_COMBO` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_COMBO_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `TRIP13_02`
+
+Does temporally restricted TRIP13 augmentation restore exit without degrading activation?
+
+*Why unresolved:* The conflict is not intrinsic, and the source separates the two roles in time: TRIP13 maintains open-state Mad2 for activation during interphase, and disassembles MCC for exit during mitosis. A mitosis-restricted augmentation therefore has a mechanistic basis, and nothing tests it.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `exit_restored_activation_intact` | `S_SIL_SUPPLIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `conflict_persists` | `T_TRIP13_INTRINSIC` (`PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_TRIP13_02_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `TRIP13_F3`
+
+Does TRIP13/APC15 augmentation improve silencing at residual BubR1, exploiting the BubR1-containing substrate rather than replacing it?
+
+*Why unresolved:* TRIP13 acts on a BubR1-containing complex, so dependency makes it compensatory rather than dead. Whether a weaker MCC is still a usable substrate at limiting BubR1 is unasked.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `improves_at_residual_bubr1` | `S_SIL_SUPPLIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_improvement` | `T_TRIP13_F3_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_TRIP13_F3_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `POOL01`
+
+Is the kinetochore pool of BubR1 the functionally limiting one, so that a pool-confined gain is sufficient?
+
+*Why unresolved:* A pool-confined change was treated as a failed route to whole-cell abundance, which assumes whole-cell abundance is what function needs. The case's own evidence points the other way: residual mutant protein reaches kinetochores, and BubR1 acts there. Nobody has asked whether the pool is enough.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `pool_is_sufficient` | `S_POOL_SUFFICES` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `whole_cell_required` | `T_POOL_INSUFFICIENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_POOL01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `FOLD01`
+
+Can the raised-but-non-functional protein be brought to a native, functional state by assisting folding rather than by adding more of it?
+
+*Why unresolved:* Abundance and nativeness were conflated. A chaperone-retained or aggregation-prone protein can be abundant and non-functional, and the global-suppressor work reports that rescue of folding defects runs through refolding rate rather than thermodynamic stability. Nothing tests whether this substrate's functional fraction can be raised independently of its total.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `functional_fraction_raised` | `S_STABILISED_FUNCTIONAL` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `abundance_without_function` | `T_FOLD_INTRINSIC` (`PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_FOLD01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `LIMFN01`
+
+Which function is actually limiting missegregation in this state?
+
+*Why unresolved:* A composite that supplies alignment, activation and silencing and does not lower missegregation says the limiting quantity was none of them. Attachment error-correction rate, kinetochore-microtubule turnover and cohesion are candidates the map has never separated.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `a_supplied_function_was_limiting` | `S_RETEST_COMPOSITE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `another_quantity_is_limiting` | `S_NEW_CONTROL_VARIABLE` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_LIMFN01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `COMPOSITE02`
+
+Does a different configuration of the same components — different stoichiometry, or temporal separation — resolve the conflict?
+
+*Why unresolved:* A conflict in one configuration is not a property of the component set. TRIP13's own two roles are temporally separable, which is the existence proof that configuration matters here.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `reconfiguration_works` | `S_COMPOSITE_VALIDATED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `conflict_intrinsic` | `T_COMPOSITE_INTRINSIC` (`PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_COMPOSITE02_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `ACT02`
+
+Can arrest competence be supplied through the MPS1 phosphorylation cascade, transiently rather than chronically?
+
+*Why unresolved:* The first two search depths found no component; the third found a mechanistic handle — a sequential multi-target MPS1 phosphorylation cascade promotes checkpoint signalling. The same depth found that CHRONIC checkpoint activation causes myelosuppression and gastrointestinal atrophy in vivo, so the sustained form of this variable is organism-level harmful while a transient form is not covered by that evidence.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `transient_supply_works` | `S_ACT_SUPPLIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `only_chronic_supply_works` | `T_ACT_CHRONIC_UNSAFE` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_supply` | `T_ACT_EXHAUSTED` (`SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_ACT02_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `CLEAR01`
+
+Can the aneuploid cell fraction be lowered by promoting selective elimination of aneuploid cells?
+
+*Why unresolved:* Selective elimination of aneuploid cells is documented — cell competition removes segmental aneuploid cells in Drosophila imaginal discs, lineage-specific elimination operates in embryos and stem-cell-derived models, and depletion of aneuploid cells is shaped by cell-to-cell interactions. None of it is in a human MVA context, and none of it is an actuator yet.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `fraction_lowered_population_viable` | `S_TISSUE_FRACTION_FALLS` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `population_depleted` | `T_CLEAR_DEPLETES` (`UNSAFE`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_selective_elimination` | `T_CLEAR_NULL` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_CLEAR01_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `CLIN02`
+
+Which clinical feature, in which tissue, on what timescale, is linked to aneuploid burden?
+
+*Why unresolved:* A null on one chosen clinical measure does not close the link; it closes that measure. The phenotype is multi-system and the burden-to-feature mapping is unquantified for this disorder.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `a_linked_feature_exists` | `S_CLINICAL_MODIFIED` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `no_feature_links` | `T_CLINICAL_LINK_ABSENT` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `unassessable` | `T_CLIN02_BLOCKED` (`GOVERNANCE_BLOCKED`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+
+### `XSCALE03`
+
+Is selection or clearance, rather than per-division fidelity, what sets the tissue aneuploid fraction here?
+
+*Why unresolved:* Per-division fidelity improving without the tissue fraction falling means the fraction is set by something else. That is a different control variable, and it is the F4 one.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `selection_dominates` | `CV_CLEARANCE_ENTRY` (state) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `fidelity_dominates` | `T_AGGREGATION_UNEXPLAINED` (`DECLARED_SCIENTIFIC_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
+| `insufficient` | `T_XSCALE03_REPEAT` (`BOUNDED_FRONTIER`) | 2 still unresolved: `CENPE_F3`, `SAFE01` |
 
 ## Transitions by grounding label
 
@@ -439,9 +630,9 @@ Does the manipulation avoid organism-level harm?
 |---|---|---|
 | `GROUNDED` | 33 | traversed directly; no branch created |
 | `CONTEXT_TRANSFER_REQUIRED` | 2 | the relation holds somewhere else and the transfer is unestablished |
-| `EXPERIMENTAL_UNKNOWN` | 23 | a branch node; outcomes enumerated above |
-| `PHYSICAL_ACTUATOR_MISSING` | 5 | the requirement is grounded and no component is known to supply it |
-| `CONCEPTUALLY_SUFFICIENT_ONLY` | 9 | sufficient in model; not a physical claim |
+| `EXPERIMENTAL_UNKNOWN` | 41 | a branch node; outcomes enumerated above |
+| `PHYSICAL_ACTUATOR_MISSING` | 6 | the requirement is grounded and no component is known to supply it |
+| `CONCEPTUALLY_SUFFICIENT_ONLY` | 10 | sufficient in model; not a physical claim |
 | `UNSAFE` | 0 | closed on safety grounds |
 
 **`PHYSICAL_ACTUATOR_MISSING` transitions:**
@@ -451,6 +642,7 @@ Does the manipulation avoid organism-level harm?
 - `B_MULTI_DEFECT` → `BYPASS_ACT`
 - `S_ACT_COMPETENCE_REQUIRED` → `BYPASS_ACT` — Reopens component discovery for checkpoint activation — and only this result authorises reopening it
 - `T_EXP01_CEILING` → `STAB01` — Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?
+- `S_NEW_CONTROL_VARIABLE` → `BYPASS_ACT` — A variable outside the map must be named and searched; the nearest existing discovery node is where that search re-enters
 
 **`CONTEXT_TRANSFER_REQUIRED` transitions:**
 
@@ -496,8 +688,13 @@ edge and opens another branch".
 - *re-entry:* `S_FLUX_NOT_THE_LEVER` → `CHAR01` — And the abundance family is untouched by a flux null
 - *re-entry:* `S_ACT_COMPETENCE_REQUIRED` → `BYPASS_ACT` — Reopens component discovery for checkpoint activation — and only this result authorises reopening it
 - *re-entry:* `S_ACT_COMPETENCE_REQUIRED` → `CHAR01` — The abundance family supplies checkpoint competence through BubR1 itself, so it re-enters at its own first experiment
-- *family transition:* `T_NO_ACTUATOR` → `C_KIF18A` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
+- *family transition:* `S_P1P4_EXHAUSTED` → `C_KIF18A` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
 - *family transition:* `T_EXP01_CEILING` → `STAB01` — Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?
+- *re-entry:* `S_CASE_REFRACTORY` → `STAB03` — Four actuators failed; the control variable has three more identified and untried
+- *re-entry:* `S_POOL_SUFFICES` → `FUNCVAL01` — Function under the pool-confined gain is still its own question
+- *re-entry:* `S_RETEST_COMPOSITE` → `COMPOSITE_VALID` — Revalidation of the same branch with a different configuration
+- *re-entry:* `S_ESTABLISHED_BURDEN` → `IRREV01` — And the prospective component remains, whatever is fixed
+- *re-entry:* `S_NEW_CONTROL_VARIABLE` → `BYPASS_ACT` — A variable outside the map must be named and searched; the nearest existing discovery node is where that search re-enters
 
 ## The graph
 
@@ -562,12 +759,12 @@ graph TD
   S_PROSPECTIVE_EXISTS["S_PROSPECTIVE_EXISTS"]
   S_ORG_SAFE["S_ORG_SAFE"]
   ORGANISM_TARGET[/"ORGANISM_TARGET"/]
-  T_ORGANISM_REACHED(("T_ORGANISM_REACHED<br/>TARGET_REACHED_IN_MODEL"))
-  T_NO_TISSUE_EFFECT(("T_NO_TISSUE_EFFECT<br/>NO_KNOWN_CONTINUATION"))
-  T_TISSUE_UNTESTABLE(("T_TISSUE_UNTESTABLE<br/>CONTEXT_TRANSFER_REQUIRED"))
-  T_IRREVERSIBLE(("T_IRREVERSIBLE<br/>NO_KNOWN_CONTINUATION"))
-  T_NO_CLINICAL_EFFECT(("T_NO_CLINICAL_EFFECT<br/>NO_KNOWN_CONTINUATION"))
-  T_CLINICAL_UNTESTABLE(("T_CLINICAL_UNTESTABLE<br/>CONTEXT_TRANSFER_REQUIRED"))
+  T_ORGANISM_REACHED(("T_ORGANISM_REACHED<br/>ORGANISM_TARGET_REACHED_IN_MODEL"))
+  S_AGGREGATION_FAILS["S_AGGREGATION_FAILS"]
+  T_TISSUE_UNTESTABLE(("T_TISSUE_UNTESTABLE<br/>GOVERNANCE_BLOCKED"))
+  S_ESTABLISHED_BURDEN["S_ESTABLISHED_BURDEN"]
+  S_CLINICAL_LINK_UNRESOLVED["S_CLINICAL_LINK_UNRESOLVED"]
+  T_CLINICAL_UNTESTABLE(("T_CLINICAL_UNTESTABLE<br/>GOVERNANCE_BLOCKED"))
   XSCALE01{{"XSCALE01"}}
   IRREV01{{"IRREV01"}}
   T_IRREV_FRONTIER(("T_IRREV_FRONTIER<br/>BOUNDED_FRONTIER"))
@@ -581,33 +778,81 @@ graph TD
   T_STAB01_REPEAT(("T_STAB01_REPEAT<br/>BOUNDED_FRONTIER"))
   T_STAB02_REPEAT(("T_STAB02_REPEAT<br/>BOUNDED_FRONTIER"))
   T_FUNCVAL_REPEAT(("T_FUNCVAL_REPEAT<br/>BOUNDED_FRONTIER"))
-  T_POOL_ONLY(("T_POOL_ONLY<br/>NO_KNOWN_CONTINUATION"))
-  T_NO_ACTUATOR(("T_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
-  T_CASE_REFRACTORY(("T_CASE_REFRACTORY<br/>NO_KNOWN_CONTINUATION"))
-  T_PRESENT_NOT_FUNCTIONAL(("T_PRESENT_NOT_FUNCTIONAL<br/>NO_KNOWN_CONTINUATION"))
+  S_POOL_ONLY["S_POOL_ONLY"]
+  S_P1P4_EXHAUSTED["S_P1P4_EXHAUSTED"]
+  S_CASE_REFRACTORY["S_CASE_REFRACTORY"]
+  S_PRESENT_NON_NATIVE["S_PRESENT_NON_NATIVE"]
   T_NO_TRANSFER(("T_NO_TRANSFER<br/>CONTEXT_TRANSFER_REQUIRED"))
-  T_XFER_BLOCKED(("T_XFER_BLOCKED<br/>CONTEXT_TRANSFER_REQUIRED"))
+  T_XFER_BLOCKED(("T_XFER_BLOCKED<br/>GOVERNANCE_BLOCKED"))
   S_PROTEIN_CEILING["S_PROTEIN_CEILING"]
   T_UNSAFE_F1(("T_UNSAFE_F1<br/>UNSAFE"))
   T_SAFE02_REPEAT(("T_SAFE02_REPEAT<br/>BOUNDED_FRONTIER"))
-  T_COMPOSITE_CONFLICT(("T_COMPOSITE_CONFLICT<br/>NO_KNOWN_CONTINUATION"))
-  T_COMPOSITE_NULL(("T_COMPOSITE_NULL<br/>NO_KNOWN_CONTINUATION"))
+  S_COMPOSITE_CONFLICTED["S_COMPOSITE_CONFLICTED"]
+  S_COMPOSITE_INEFFECTIVE["S_COMPOSITE_INEFFECTIVE"]
   T_COMPOSITE_REPEAT(("T_COMPOSITE_REPEAT<br/>BOUNDED_FRONTIER"))
   T_UNSAFE(("T_UNSAFE<br/>UNSAFE"))
   T_SAFE01_REPEAT(("T_SAFE01_REPEAT<br/>BOUNDED_FRONTIER"))
-  T_CENPE_DEPENDENT(("T_CENPE_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
-  T_KIF18A_DEPENDENT(("T_KIF18A_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
+  S_CENPE_BUBR1_DEPENDENT["S_CENPE_BUBR1_DEPENDENT"]
+  S_KIF18A_BUBR1_DEPENDENT["S_KIF18A_BUBR1_DEPENDENT"]
   T_KIF18A_FRONTIER(("T_KIF18A_FRONTIER<br/>BOUNDED_FRONTIER"))
   S_FLUX_COMPENSATORY["S_FLUX_COMPENSATORY"]
   S_FLUX_NOT_THE_LEVER["S_FLUX_NOT_THE_LEVER"]
-  T_FLUX_DEPENDENT(("T_FLUX_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
+  S_FLUX_NEEDS_MORE_BUBR1["S_FLUX_NEEDS_MORE_BUBR1"]
   T_FLUX_FRONTIER(("T_FLUX_FRONTIER<br/>BOUNDED_FRONTIER"))
-  T_TRIP13_DEPENDENT(("T_TRIP13_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
-  T_TRIP13_CONFLICT(("T_TRIP13_CONFLICT<br/>NO_KNOWN_CONTINUATION"))
+  S_TRIP13_BUBR1_DEPENDENT["S_TRIP13_BUBR1_DEPENDENT"]
+  S_TRIP13_CONFLICTED["S_TRIP13_CONFLICTED"]
   T_TRIP13_FRONTIER(("T_TRIP13_FRONTIER<br/>BOUNDED_FRONTIER"))
-  T_ALIGN_NO_ACTUATOR(("T_ALIGN_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
-  T_SIL_NO_ACTUATOR(("T_SIL_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
-  T_ACT_NO_ACTUATOR(("T_ACT_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
+  T_ALIGN_NO_ACTUATOR(("T_ALIGN_NO_ACTUATOR<br/>SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED"))
+  T_SIL_NO_ACTUATOR(("T_SIL_NO_ACTUATOR<br/>SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED"))
+  S_ACT_NO_COMPONENT_YET["S_ACT_NO_COMPONENT_YET"]
+  STAB03{{"STAB03"}}
+  CENPE_F3{{"CENPE_F3"}}
+  KIF18A_F3{{"KIF18A_F3"}}
+  COMBO01{{"COMBO01"}}
+  TRIP13_02{{"TRIP13_02"}}
+  TRIP13_F3{{"TRIP13_F3"}}
+  POOL01{{"POOL01"}}
+  FOLD01{{"FOLD01"}}
+  LIMFN01{{"LIMFN01"}}
+  S_RETEST_COMPOSITE["S_RETEST_COMPOSITE"]
+  S_NEW_CONTROL_VARIABLE["S_NEW_CONTROL_VARIABLE"]
+  COMPOSITE02{{"COMPOSITE02"}}
+  ACT02{{"ACT02"}}
+  CV_CLEARANCE_ENTRY["CV_CLEARANCE_ENTRY"]
+  CLEAR01{{"CLEAR01"}}
+  CLIN02{{"CLIN02"}}
+  XSCALE03{{"XSCALE03"}}
+  T_CV_ABUNDANCE_EXHAUSTED(("T_CV_ABUNDANCE_EXHAUSTED<br/>SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED"))
+  T_STAB03_REPEAT(("T_STAB03_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_CENPE_F3_NULL(("T_CENPE_F3_NULL<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_CENPE_F3_REPEAT(("T_CENPE_F3_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_KIF18A_F3_NULL(("T_KIF18A_F3_NULL<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_KIF18A_F3_REPEAT(("T_KIF18A_F3_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_COMBO_INSUFFICIENT(("T_COMBO_INSUFFICIENT<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_UNSAFE_COMBO(("T_UNSAFE_COMBO<br/>UNSAFE"))
+  T_COMBO_REPEAT(("T_COMBO_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_TRIP13_INTRINSIC(("T_TRIP13_INTRINSIC<br/>PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE"))
+  T_TRIP13_02_REPEAT(("T_TRIP13_02_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_TRIP13_F3_NULL(("T_TRIP13_F3_NULL<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_TRIP13_F3_REPEAT(("T_TRIP13_F3_REPEAT<br/>BOUNDED_FRONTIER"))
+  S_POOL_SUFFICES["S_POOL_SUFFICES"]
+  T_POOL_INSUFFICIENT(("T_POOL_INSUFFICIENT<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_POOL01_REPEAT(("T_POOL01_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_FOLD_INTRINSIC(("T_FOLD_INTRINSIC<br/>PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE"))
+  T_FOLD01_REPEAT(("T_FOLD01_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_LIMFN01_REPEAT(("T_LIMFN01_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_COMPOSITE_INTRINSIC(("T_COMPOSITE_INTRINSIC<br/>PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE"))
+  T_COMPOSITE02_REPEAT(("T_COMPOSITE02_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_ACT_CHRONIC_UNSAFE(("T_ACT_CHRONIC_UNSAFE<br/>UNSAFE"))
+  T_ACT_EXHAUSTED(("T_ACT_EXHAUSTED<br/>SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED"))
+  T_ACT02_REPEAT(("T_ACT02_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_CLEAR_DEPLETES(("T_CLEAR_DEPLETES<br/>UNSAFE"))
+  T_CLEAR_NULL(("T_CLEAR_NULL<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_CLEAR01_REPEAT(("T_CLEAR01_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_CLINICAL_LINK_ABSENT(("T_CLINICAL_LINK_ABSENT<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_CLIN02_BLOCKED(("T_CLIN02_BLOCKED<br/>GOVERNANCE_BLOCKED"))
+  T_AGGREGATION_UNEXPLAINED(("T_AGGREGATION_UNEXPLAINED<br/>DECLARED_SCIENTIFIC_FRONTIER"))
+  T_XSCALE03_REPEAT(("T_XSCALE03_REPEAT<br/>BOUNDED_FRONTIER"))
   CHAR01 -->|destabilised_like_reference| S_ABUNDANCE_LOW
   CHAR01 -->|not_destabilised| S_ABUNDANCE_NORMAL
   CHAR01 -->|destabilised_other_mechanism| S_ABUNDANCE_LOW_OTHER
@@ -621,14 +866,14 @@ graph TD
   EXP01 -->|confounded_invalid| T_EXP01_REPEAT
   STAB01 -->|steady_state_increased| S_REF_STABILISABLE
   STAB01 -->|turnover_reduced_only| B_TURNOVER_ONLY
-  STAB01 -->|local_pool_only| T_POOL_ONLY
-  STAB01 -->|no_stabilisation| T_NO_ACTUATOR
+  STAB01 -->|local_pool_only| S_POOL_ONLY
+  STAB01 -->|no_stabilisation| S_P1P4_EXHAUSTED
   STAB01 -->|insufficient| T_STAB01_REPEAT
   STAB02 -->|case_allele_stabilised| S_CASE_STABILISABLE
-  STAB02 -->|case_allele_refractory| T_CASE_REFRACTORY
+  STAB02 -->|case_allele_refractory| S_CASE_REFRACTORY
   STAB02 -->|insufficient| T_STAB02_REPEAT
   FUNCVAL01 -->|functional| S_STABILISED_FUNCTIONAL
-  FUNCVAL01 -->|not_functional| T_PRESENT_NOT_FUNCTIONAL
+  FUNCVAL01 -->|not_functional| S_PRESENT_NON_NATIVE
   FUNCVAL01 -->|insufficient| T_FUNCVAL_REPEAT
   XFER01 -->|transfers| S_XFER_OK
   XFER01 -->|does_not_transfer| T_NO_TRANSFER
@@ -643,38 +888,86 @@ graph TD
   EXPRVAL01 -->|protein_limited| S_PROTEIN_CEILING
   EXPRVAL01 -->|insufficient| T_EXPR_INVALID
   COMPOSITE_VALID -->|system_validated| S_COMPOSITE_VALIDATED
-  COMPOSITE_VALID -->|functions_conflict| T_COMPOSITE_CONFLICT
-  COMPOSITE_VALID -->|no_improvement| T_COMPOSITE_NULL
+  COMPOSITE_VALID -->|functions_conflict| S_COMPOSITE_CONFLICTED
+  COMPOSITE_VALID -->|no_improvement| S_COMPOSITE_INEFFECTIVE
   COMPOSITE_VALID -->|insufficient| T_COMPOSITE_REPEAT
   DEP_KIF18A -->|independent_of_bubr1| S_ALIGN_SUPPLIED
-  DEP_KIF18A -->|requires_bubr1| T_KIF18A_DEPENDENT
+  DEP_KIF18A -->|requires_bubr1| S_KIF18A_BUBR1_DEPENDENT
   DEP_KIF18A -->|unestablished| T_KIF18A_FRONTIER
   DEP_FLUX -->|independent_of_bubr1| S_FLUX_LOWERS_MIS
   DEP_FLUX -->|benefit_requires_residual_bubr1| S_FLUX_COMPENSATORY
-  DEP_FLUX -->|benefit_absent_in_limiting_regime| T_FLUX_DEPENDENT
+  DEP_FLUX -->|benefit_absent_in_limiting_regime| S_FLUX_NEEDS_MORE_BUBR1
   DEP_FLUX -->|no_reduction| S_FLUX_NOT_THE_LEVER
   DEP_FLUX -->|unestablished| T_FLUX_FRONTIER
   DEP_TRIP13 -->|independent_and_specific| S_SIL_SUPPLIED
-  DEP_TRIP13 -->|requires_bubr1| T_TRIP13_DEPENDENT
-  DEP_TRIP13 -->|degrades_activation| T_TRIP13_CONFLICT
+  DEP_TRIP13 -->|requires_bubr1| S_TRIP13_BUBR1_DEPENDENT
+  DEP_TRIP13 -->|degrades_activation| S_TRIP13_CONFLICTED
   DEP_TRIP13 -->|unestablished| T_TRIP13_FRONTIER
   BYPASS_ACT -->|grounded_component_found| S_ACT_SUPPLIED
-  BYPASS_ACT -->|no_component| T_ACT_NO_ACTUATOR
+  BYPASS_ACT -->|no_component| S_ACT_NO_COMPONENT_YET
   ACT_SAFETY01 -->|not_required_for_this_state| S_CHECKPOINT_RISK_RESOLVED
   ACT_SAFETY01 -->|checkpoint_competence_required| S_ACT_COMPETENCE_REQUIRED
   ACT_SAFETY01 -->|unestablished| T_ACT_RISK_FRONTIER
   XSCALE01 -->|fraction_falls| S_TISSUE_FRACTION_FALLS
-  XSCALE01 -->|no_aggregate| T_NO_TISSUE_EFFECT
+  XSCALE01 -->|no_aggregate| S_AGGREGATION_FAILS
   XSCALE01 -->|untestable| T_TISSUE_UNTESTABLE
   IRREV01 -->|prospective_component_exists| S_PROSPECTIVE_EXISTS
-  IRREV01 -->|established_and_fixed| T_IRREVERSIBLE
+  IRREV01 -->|established_and_fixed| S_ESTABLISHED_BURDEN
   IRREV01 -->|unestablished| T_IRREV_FRONTIER
   XSCALE02 -->|course_modified| S_CLINICAL_MODIFIED
-  XSCALE02 -->|no_change| T_NO_CLINICAL_EFFECT
+  XSCALE02 -->|no_change| S_CLINICAL_LINK_UNRESOLVED
   XSCALE02 -->|unassessable| T_CLINICAL_UNTESTABLE
   SAFE_ORG -->|no_harm| S_ORG_SAFE
   SAFE_ORG -->|harm| T_UNSAFE_ORG
   SAFE_ORG -->|unassessable| T_ORG_SAFETY_FRONTIER
+  STAB03 -->|abundance_raised| S_REF_STABILISABLE
+  STAB03 -->|turnover_reduced_only| B_TURNOVER_ONLY
+  STAB03 -->|no_effect| T_CV_ABUNDANCE_EXHAUSTED
+  STAB03 -->|insufficient| T_STAB03_REPEAT
+  CENPE_F3 -->|improves_at_residual_bubr1| S_FLUX_COMPENSATORY
+  CENPE_F3 -->|needs_more_bubr1| S_FLUX_NEEDS_MORE_BUBR1
+  CENPE_F3 -->|no_improvement| T_CENPE_F3_NULL
+  CENPE_F3 -->|insufficient| T_CENPE_F3_REPEAT
+  KIF18A_F3 -->|improves_at_residual_bubr1| S_FLUX_COMPENSATORY
+  KIF18A_F3 -->|worsens_alignment| S_FLUX_NOT_THE_LEVER
+  KIF18A_F3 -->|no_improvement| T_KIF18A_F3_NULL
+  KIF18A_F3 -->|insufficient| T_KIF18A_F3_REPEAT
+  COMBO01 -->|combination_sufficient| S_FLUX_COMPENSATORY
+  COMBO01 -->|still_insufficient| T_COMBO_INSUFFICIENT
+  COMBO01 -->|combination_harmful| T_UNSAFE_COMBO
+  COMBO01 -->|insufficient| T_COMBO_REPEAT
+  TRIP13_02 -->|exit_restored_activation_intact| S_SIL_SUPPLIED
+  TRIP13_02 -->|conflict_persists| T_TRIP13_INTRINSIC
+  TRIP13_02 -->|insufficient| T_TRIP13_02_REPEAT
+  TRIP13_F3 -->|improves_at_residual_bubr1| S_SIL_SUPPLIED
+  TRIP13_F3 -->|no_improvement| T_TRIP13_F3_NULL
+  TRIP13_F3 -->|insufficient| T_TRIP13_F3_REPEAT
+  POOL01 -->|pool_is_sufficient| S_POOL_SUFFICES
+  POOL01 -->|whole_cell_required| T_POOL_INSUFFICIENT
+  POOL01 -->|insufficient| T_POOL01_REPEAT
+  FOLD01 -->|functional_fraction_raised| S_STABILISED_FUNCTIONAL
+  FOLD01 -->|abundance_without_function| T_FOLD_INTRINSIC
+  FOLD01 -->|insufficient| T_FOLD01_REPEAT
+  LIMFN01 -->|a_supplied_function_was_limiting| S_RETEST_COMPOSITE
+  LIMFN01 -->|another_quantity_is_limiting| S_NEW_CONTROL_VARIABLE
+  LIMFN01 -->|insufficient| T_LIMFN01_REPEAT
+  COMPOSITE02 -->|reconfiguration_works| S_COMPOSITE_VALIDATED
+  COMPOSITE02 -->|conflict_intrinsic| T_COMPOSITE_INTRINSIC
+  COMPOSITE02 -->|insufficient| T_COMPOSITE02_REPEAT
+  ACT02 -->|transient_supply_works| S_ACT_SUPPLIED
+  ACT02 -->|only_chronic_supply_works| T_ACT_CHRONIC_UNSAFE
+  ACT02 -->|no_supply| T_ACT_EXHAUSTED
+  ACT02 -->|insufficient| T_ACT02_REPEAT
+  CLEAR01 -->|fraction_lowered_population_viable| S_TISSUE_FRACTION_FALLS
+  CLEAR01 -->|population_depleted| T_CLEAR_DEPLETES
+  CLEAR01 -->|no_selective_elimination| T_CLEAR_NULL
+  CLEAR01 -->|insufficient| T_CLEAR01_REPEAT
+  CLIN02 -->|a_linked_feature_exists| S_CLINICAL_MODIFIED
+  CLIN02 -->|no_feature_links| T_CLINICAL_LINK_ABSENT
+  CLIN02 -->|unassessable| T_CLIN02_BLOCKED
+  XSCALE03 -->|selection_dominates| CV_CLEARANCE_ENTRY
+  XSCALE03 -->|fidelity_dominates| T_AGGREGATION_UNEXPLAINED
+  XSCALE03 -->|insufficient| T_XSCALE03_REPEAT
   S0_CASE -->|GROUNDED| S_MISSEGREGATION
   S0_CASE -->|GROUNDED| S_CLASS_PREMISE
   S_CLASS_PREMISE -->|EXPERIMENTAL_UNKNOWN| CHAR01
@@ -685,7 +978,7 @@ graph TD
   S_MISSEGREGATION -->|GROUNDED| C_FLUX
   S_MISSEGREGATION -->|GROUNDED| C_TRIP13
   S_MISSEGREGATION -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ACT
-  C_CENPE -->|GROUNDED| T_CENPE_DEPENDENT
+  C_CENPE -->|GROUNDED| S_CENPE_BUBR1_DEPENDENT
   C_KIF18A -->|EXPERIMENTAL_UNKNOWN| DEP_KIF18A
   C_FLUX -->|EXPERIMENTAL_UNKNOWN| DEP_FLUX
   C_TRIP13 -->|EXPERIMENTAL_UNKNOWN| DEP_TRIP13
@@ -745,8 +1038,28 @@ graph TD
   ORGANISM_TARGET -->|CONCEPTUALLY_SUFFICIENT_ONLY| T_ORGANISM_REACHED
   F2_COMPLETE -->|EXPERIMENTAL_UNKNOWN| COMPOSITE_VALID
   S_COMPOSITE_VALIDATED -->|CONCEPTUALLY_SUFFICIENT_ONLY| CANONICAL_CELLULAR_STATE
-  T_NO_ACTUATOR -.->|GROUNDED| C_KIF18A
+  S_P1P4_EXHAUSTED -.->|GROUNDED| C_KIF18A
   T_EXP01_CEILING -.->|PHYSICAL_ACTUATOR_MISSING| STAB01
+  S_CASE_REFRACTORY -.->|EXPERIMENTAL_UNKNOWN| STAB03
+  S_P1P4_EXHAUSTED -->|EXPERIMENTAL_UNKNOWN| STAB03
+  S_CENPE_BUBR1_DEPENDENT -->|EXPERIMENTAL_UNKNOWN| CENPE_F3
+  S_KIF18A_BUBR1_DEPENDENT -->|EXPERIMENTAL_UNKNOWN| KIF18A_F3
+  S_TRIP13_BUBR1_DEPENDENT -->|EXPERIMENTAL_UNKNOWN| TRIP13_F3
+  S_FLUX_NEEDS_MORE_BUBR1 -->|EXPERIMENTAL_UNKNOWN| COMBO01
+  S_TRIP13_CONFLICTED -->|EXPERIMENTAL_UNKNOWN| TRIP13_02
+  S_POOL_SUFFICES -.->|EXPERIMENTAL_UNKNOWN| FUNCVAL01
+  S_POOL_ONLY -->|EXPERIMENTAL_UNKNOWN| POOL01
+  S_PRESENT_NON_NATIVE -->|EXPERIMENTAL_UNKNOWN| FOLD01
+  S_RETEST_COMPOSITE -.->|EXPERIMENTAL_UNKNOWN| COMPOSITE_VALID
+  S_COMPOSITE_INEFFECTIVE -->|EXPERIMENTAL_UNKNOWN| LIMFN01
+  S_COMPOSITE_CONFLICTED -->|EXPERIMENTAL_UNKNOWN| COMPOSITE02
+  S_ACT_NO_COMPONENT_YET -->|EXPERIMENTAL_UNKNOWN| ACT02
+  S_AGGREGATION_FAILS -->|EXPERIMENTAL_UNKNOWN| XSCALE03
+  S_CLINICAL_LINK_UNRESOLVED -->|EXPERIMENTAL_UNKNOWN| CLIN02
+  S_ESTABLISHED_BURDEN -->|CONCEPTUALLY_SUFFICIENT_ONLY| CV_CLEARANCE_ENTRY
+  CV_CLEARANCE_ENTRY -->|EXPERIMENTAL_UNKNOWN| CLEAR01
+  S_ESTABLISHED_BURDEN -.->|EXPERIMENTAL_UNKNOWN| IRREV01
+  S_NEW_CONTROL_VARIABLE -.->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ACT
   S_XFER_OK --> F1_COMPLETE
   S_POP_SAFE_F1B --> F1_COMPLETE
   S_ALIGN_SUPPLIED --> F2_COMPLETE
@@ -791,11 +1104,11 @@ decision-relevant fact is which branch gates a whole family:
 
 | family | unavoidable branches |
 |---|---|
-| F1 abundance | `CHAR01`, `EXP01`, `FUNCVAL01`, `SAFE02`, `STAB01`, `STAB02`, `XFER01` |
+| F1 abundance | `CHAR01`, `EXP01`, `FUNCVAL01`, `SAFE02`, `STAB01`, `XFER01` |
 | F2 bypass | `BYPASS_ACT`, `DEP_TRIP13`, `SAFE01` |
 
 The two families are blocked by different kinds of thing. **F1** is a strict chain: all
-7 of its branches are unavoidable and 7 are runnable measurements, so it
+6 of its branches are unavoidable and 6 are runnable measurements, so it
 is long but every step is work someone can do. **F2** is gated by
 `BYPASS_ACT`, which is a component discovery — the one hole the external search could not fill.
 
@@ -849,12 +1162,12 @@ thing this map was built to stop.
 
 | needs | branches | meaning |
 |---|---|---|
-| `CELL_MODEL` | `BYPASS_ACT`, `CHAR01`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_KIF18A`, `DEP_TRIP13`, `EXP01`, `EXPRVAL01`, `FUNCVAL01`, `SAFE01`, `SAFE02`, `STAB01`, `STAB02` | runnable now — a human cell line and standard assays |
-| `TISSUE_MODEL` | `XSCALE01` | needs a tissue-level model that does not exist for this case |
-| `ORGANISM_MODEL` | `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE02` | needs organism-level or longitudinal data |
+| `CELL_MODEL` | `ACT02`, `BYPASS_ACT`, `CENPE_F3`, `CHAR01`, `COMBO01`, `COMPOSITE02`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_KIF18A`, `DEP_TRIP13`, `EXP01`, `EXPRVAL01`, `FOLD01`, `FUNCVAL01`, `KIF18A_F3`, `LIMFN01`, `POOL01`, `SAFE01`, `SAFE02`, `STAB01`, `STAB02`, `STAB03`, `TRIP13_02`, `TRIP13_F3` | runnable now — a human cell line and standard assays |
+| `TISSUE_MODEL` | `CLEAR01`, `XSCALE01`, `XSCALE03` | needs a tissue-level model that does not exist for this case |
+| `ORGANISM_MODEL` | `ACT_SAFETY01`, `CLIN02`, `IRREV01`, `SAFE_ORG`, `XSCALE02` | needs organism-level or longitudinal data |
 | `GOVERNANCE_ABSENT` | `XFER01` | blocked by governance, not biology: no patient material is available and none may be acquired |
 
-13 of 19 branches need nothing but a cell line. Of those, 2 sit on the shortest route to `FUNCTIONAL_CELLULAR_TARGET`: `DEP_FLUX`, `SAFE01`.
+24 of 33 branches need nothing but a cell line. Of those, 2 sit on the shortest route to `FUNCTIONAL_CELLULAR_TARGET`: `CENPE_F3`, `SAFE01`.
 
 `CHAR01` remains the first bench experiment on the abundance family: cheapest, upstream of every
 other F1 branch, and no patient material.
@@ -880,6 +1193,249 @@ constitutional: much of the burden is developmental and already laid down, and i
 fidelity prospectively does not undo an aneuploid cell that already exists. Which part of the
 phenotype is still ahead of this child is unestablished, and it bounds what any route here can
 address. Cell-level reachability is not disease resolution, and this map does not claim it.
+
+## Frontier audit
+
+Every leaf, and why it is allowed to be one. The acceptance criterion is that no leaf exists
+merely because reasoning stopped one step after an experiment.
+
+1 node(s) typed as terminal are not leaves at all — they close one family and
+open another, so they are excluded from the audit below: `T_EXP01_CEILING`.
+
+| terminal kind | count | why a leaf may remain | leaves |
+|---|---|---|---|
+| `ORGANISM_TARGET_REACHED_IN_MODEL` | 1 | the organism-level state is reached in model | `T_ORGANISM_REACHED` |
+| `UNSAFE` | 6 | closed on safety grounds; no benefit verdict overrides it | `T_ACT_CHRONIC_UNSAFE`, `T_CLEAR_DEPLETES`, `T_UNSAFE`, `T_UNSAFE_COMBO`, `T_UNSAFE_F1`, `T_UNSAFE_ORG` |
+| `GOVERNANCE_BLOCKED` | 4 | blocked by governance, not biology — no material, no intervention, no recontact | `T_CLIN02_BLOCKED`, `T_CLINICAL_UNTESTABLE`, `T_TISSUE_UNTESTABLE`, `T_XFER_BLOCKED` |
+| `PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE` | 3 | the continuation contradicts evidence already in hand | `T_COMPOSITE_INTRINSIC`, `T_FOLD_INTRINSIC`, `T_TRIP13_INTRINSIC` |
+| `SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED` | 4 | bounded external search ran and returned nothing | `T_ACT_EXHAUSTED`, `T_ALIGN_NO_ACTUATOR`, `T_CV_ABUNDANCE_EXHAUSTED`, `T_SIL_NO_ACTUATOR` |
+| `DECLARED_SCIENTIFIC_FRONTIER` | 8 | no next experiment or search is currently identifiable | `T_AGGREGATION_UNEXPLAINED`, `T_CENPE_F3_NULL`, `T_CLEAR_NULL`, `T_CLINICAL_LINK_ABSENT`, `T_COMBO_INSUFFICIENT`, `T_KIF18A_F3_NULL`, `T_POOL_INSUFFICIENT`, `T_TRIP13_F3_NULL` |
+| `CONTEXT_TRANSFER_REQUIRED` | 1 | the transfer is unestablished and named | `T_NO_TRANSFER` |
+| `BOUNDED_FRONTIER` | 27 | a validity failure: the same condition is repeated, so reasoning has not stopped | `T_ACT02_REPEAT`, `T_ACT_RISK_FRONTIER`, `T_CENPE_F3_REPEAT`, `T_CLEAR01_REPEAT`, `T_COMBO_REPEAT`, `T_COMPOSITE02_REPEAT`, `T_COMPOSITE_REPEAT`, `T_EXP01_REPEAT`, `T_EXPR_INVALID`, `T_FLUX_FRONTIER`, `T_FOLD01_REPEAT`, `T_FUNCVAL_REPEAT`, `T_IRREV_FRONTIER`, `T_KIF18A_F3_REPEAT`, `T_KIF18A_FRONTIER`, `T_LIMFN01_REPEAT`, `T_ORG_SAFETY_FRONTIER`, `T_POOL01_REPEAT`, `T_SAFE01_REPEAT`, `T_SAFE02_REPEAT`, `T_STAB01_REPEAT`, `T_STAB02_REPEAT`, `T_STAB03_REPEAT`, `T_TRIP13_02_REPEAT`, `T_TRIP13_F3_REPEAT`, `T_TRIP13_FRONTIER`, `T_XSCALE03_REPEAT` |
+
+**Unexpanded frontiers remaining: 0.** The acceptance criterion is met: every leaf is a target, a safety closure, a governance block, an evidence incompatibility, an exhausted search, a declared frontier, or a validity repeat.
+
+### What the audit retired
+
+`NO_KNOWN_CONTINUATION` is gone from the vocabulary. All thirteen nodes that carried it were
+branches nobody had expanded — not impossibilities, not safety closures, not exhausted searches.
+Each became a state with a real next question, and that is where most of this map's growth came
+from.
+
+## The city
+
+### Distinct biological states
+
+61 states. Each is a condition the case can be in, not a step in a protocol.
+
+- `B_ALIGN_DEFECT` — Alignment remains defective at matched abundance: the central region function is not supplied by this protein
+- `B_MULTI_DEFECT` — More than one function remains defective at matched abundance
+- `B_SEG_DEFECT` — Segregation remains defective at matched abundance
+- `B_SIL_DEFECT` — Silencing remains defective at matched abundance
+- `B_TURNOVER_ONLY` — Turnover measurably slowed without a steady-state rise: another process, most likely synthesis or folding capacity, is rate-limiting
+- `CANONICAL_CELLULAR_STATE` — Canonical cell state: alignment, activation, silencing, low missegregation, viability, division and no added death — the trajectory a normal cell takes
+- `CV_CLEARANCE_ENTRY` — F4 entry: the aneuploid cell fraction is itself a control variable, and the only one that can touch aneuploidy already established
+- `C_CENPE` — CENP-E/kinesin-7: demonstrated to initiate chromosome congression of polar chromosomes, and physically manipulable (depletion, inhibition, truncation constructs)
+- `C_FLUX` — Microtubule poleward flux: reported as a target for modifying chromosome segregation errors — a physical handle on the microtubule side rather than on kinetochore signalling
+- `C_KIF18A` — KIF18A: promotes chromosome congression in cooperation with CENP-E downstream of CENP-C, identified in a genome-wide Cas9 screen; physically manipulable (knockout, inhibitors)
+- `C_TRIP13` — TRIP13 with APC15: catalytic MCC disassembly drives timely mitotic exit; degron-tagged depletion shows the requirement, so the state is physically manipulable
+- `S0_CASE` — Current case state: compound heterozygous BUB1B, truncating allele plus kinase-domain missense allele; mosaic variegated aneuploidy
+- `S_ABUNDANCE_LOW` — This allele's protein is present at reduced steady-state abundance
+- `S_ABUNDANCE_LOW_OTHER` — Reduced abundance by a route that is not HSP90-dependent misfolding, so P1/P2 grounding does not apply
+- `S_ABUNDANCE_NORMAL` — This allele's protein is present at normal abundance, so any defect is not an abundance defect
+- `S_ACT_COMPETENCE_REQUIRED` — Checkpoint competence is required on predisposition grounds: the functional target gains a conjunct and the activation question becomes a real gate, to be supplied by either family
+- `S_ACT_NO_COMPONENT_YET` — No component survived function-first discovery for checkpoint activation at the first depth; a named mechanistic handle exists at the second
+- `S_ACT_SUPPLIED` — Checkpoint activation supplied independently of the child's BubR1
+- `S_AGGREGATION_FAILS` — Per-division fidelity improved and the tissue aneuploid fraction did not fall
+- `S_ALIGN_SUPPLIED` — Chromosome alignment supplied independently of the child's BubR1
+- `S_CASE_REFRACTORY` — The reference class stabilises and this allele does not under the tested actuator
+- `S_CASE_STABILISABLE` — The same perturbation raises the exact case allele's steady-state abundance
+- `S_CENPE_BUBR1_DEPENDENT` — CENP-E's congression function requires BubR1, so it cannot replace it — which makes it a candidate for exploiting it instead
+- `S_CHECKPOINT_RISK_RESOLVED` — The tumour-predisposition consequence of checkpoint competence is resolved for this case
+- `S_CLASS_PREMISE` — Class-level premise: kinase-domain missense reduces BubR1 abundance via misfolding and elevated turnover. MC_0005 PARTIALLY_SUPPORTED on 0 establishing / 11 indirect records
+- `S_CLINICAL_LINK_UNRESOLVED` — Tissue aneuploidy fell without a measurable change in the clinical feature that was chosen
+- `S_CLINICAL_MODIFIED` — A measurable feature of the clinical course is modified
+- `S_COMPOSITE_CONFLICTED` — Components supply their functions individually and conflict as an assembled system in the tested configuration
+- `S_COMPOSITE_INEFFECTIVE` — The assembled system did not lower missegregation, so the functions supplied were not the limiting ones
+- `S_COMPOSITE_VALIDATED` — The assembled composite system was directly shown to lower chromosome missegregation while holding the required functional state and population safety
+- `S_ESTABLISHED_BURDEN` — The developmental component already laid down is not addressable by improving future divisions
+- `S_FLUX_COMPENSATORY` — Flux manipulation lowers missegregation with the population preserved, and the benefit depends on residual BubR1: a compensatory route — residual function exploited, a different physical process altered
+- `S_FLUX_LOWERS_MIS` — Modifying poleward flux lowers missegregation in a BubR1-limited background
+- `S_FLUX_NEEDS_MORE_BUBR1` — The flux benefit is present in replete cells and absent at the limiting end: it needs more BubR1 than this case has
+- `S_FLUX_NOT_THE_LEVER` — The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state
+- `S_FUNCTION_OK` — At matched abundance the exact altered protein supports alignment, silencing and segregation
+- `S_KIF18A_BUBR1_DEPENDENT` — KIF18A's alignment role requires BubR1
+- `S_MATCHED_ACHIEVABLE` — The exact allele can be held at wild-type-comparable abundance in a human cell
+- `S_MISSEGREGATION` — Chromosome missegregation and aneuploidy (the disease state)
+- `S_MIS_LOWERED` — Chromosome missegregation is low, by whatever route produced it
+- `S_NEW_CONTROL_VARIABLE` — A control variable outside this map limits missegregation in this state: it must be named and searched before any route can address it
+- `S_NOT_EXPRESSIBLE` — The exact allele did not reach wild-type-comparable abundance in the tested construct and condition — a property of this construct and promoter, not yet a property of the protein
+- `S_ORG_SAFE` — No organism-level harm from the manipulation
+- `S_P1P4_EXHAUSTED` — Not controllable through the four interrogated mechanisms (HSP90, proteasomal, SIRT2, FBXW7). Four actuators, not the control variable
+- `S_POOL_ONLY` — The abundance change is confined to the kinetochore pool
+- `S_POOL_SUFFICES` — The kinetochore pool is the functionally limiting one, so a pool-confined abundance gain is enough and whole-cell restoration is not required
+- `S_POP_SAFE_ANY` — The manipulation that got here has its own population safety established
+- `S_POP_SAFE_F1` — No increase in cell death, no loss of viability or division rate, under EXP01's ectopic-expression condition
+- `S_POP_SAFE_F1B` — No increase in cell death, no loss of viability or division rate, under the actual physical stabilisation manipulation
+- `S_POP_SAFE_F2` — No increase in cell death, no loss of viability or division rate, under the bypass component
+- `S_PRESENT_NON_NATIVE` — Abundance was raised and function was not restored: the protein is present without being native
+- `S_PROSPECTIVE_EXISTS` — Part of the phenotype is still ahead of the child and therefore addressable in principle
+- `S_PROTEIN_CEILING` — The protein itself cannot be held at wild-type-comparable abundance by expression alone — a real ceiling, established rather than assumed
+- `S_REF_STABILISABLE` — A perturbation raises the steady-state abundance of the reference destabilised substrates (I909T / L1012P)
+- `S_RETEST_COMPOSITE` — One of the supplied functions was limiting after all: the composite is revalidated with that function's contribution isolated
+- `S_SIL_SUPPLIED` — Checkpoint silencing supplied independently of the child's BubR1
+- `S_STABILISED_FUNCTIONAL` — The protein stabilised by that perturbation is functional, not merely present
+- `S_TISSUE_FRACTION_FALLS` — The aneuploid cell fraction falls in a tissue relevant to this child's phenotype
+- `S_TRIP13_BUBR1_DEPENDENT` — TRIP13-driven exit requires BubR1
+- `S_TRIP13_CONFLICTED` — Augmenting TRIP13 restored exit at the cost of checkpoint activation
+- `S_XFER_OK` — The effect transfers to a cell type relevant to this child
+
+### Experiment and observation nodes
+
+33 branches, carrying 115 admissible outcomes between them.
+
+| branch | needs | outcomes |
+|---|---|---|
+| `ACT02` | CELL_MODEL | `transient_supply_works`, `only_chronic_supply_works`, `no_supply`, `insufficient` |
+| `ACT_SAFETY01` | ORGANISM_MODEL | `not_required_for_this_state`, `checkpoint_competence_required`, `unestablished` |
+| `BYPASS_ACT` | CELL_MODEL | `grounded_component_found`, `no_component` |
+| `CENPE_F3` | CELL_MODEL | `improves_at_residual_bubr1`, `needs_more_bubr1`, `no_improvement`, `insufficient` |
+| `CHAR01` | CELL_MODEL | `destabilised_like_reference`, `not_destabilised`, `destabilised_other_mechanism`, `not_expressible` |
+| `CLEAR01` | TISSUE_MODEL | `fraction_lowered_population_viable`, `population_depleted`, `no_selective_elimination`, `insufficient` |
+| `CLIN02` | ORGANISM_MODEL | `a_linked_feature_exists`, `no_feature_links`, `unassessable` |
+| `COMBO01` | CELL_MODEL | `combination_sufficient`, `still_insufficient`, `combination_harmful`, `insufficient` |
+| `COMPOSITE02` | CELL_MODEL | `reconfiguration_works`, `conflict_intrinsic`, `insufficient` |
+| `COMPOSITE_VALID` | CELL_MODEL | `system_validated`, `functions_conflict`, `no_improvement`, `insufficient` |
+| `DEP_FLUX` | CELL_MODEL | `independent_of_bubr1`, `benefit_requires_residual_bubr1`, `benefit_absent_in_limiting_regime`, `no_reduction`, `unestablished` |
+| `DEP_KIF18A` | CELL_MODEL | `independent_of_bubr1`, `requires_bubr1`, `unestablished` |
+| `DEP_TRIP13` | CELL_MODEL | `independent_and_specific`, `requires_bubr1`, `degrades_activation`, `unestablished` |
+| `EXP01` | CELL_MODEL | `full_function`, `alignment_defect`, `silencing_defect`, `segregation_defect`, `multiple_defects`, `matched_not_achieved`, `confounded_invalid` |
+| `EXPRVAL01` | CELL_MODEL | `construct_limited`, `protein_limited`, `insufficient` |
+| `FOLD01` | CELL_MODEL | `functional_fraction_raised`, `abundance_without_function`, `insufficient` |
+| `FUNCVAL01` | CELL_MODEL | `functional`, `not_functional`, `insufficient` |
+| `IRREV01` | ORGANISM_MODEL | `prospective_component_exists`, `established_and_fixed`, `unestablished` |
+| `KIF18A_F3` | CELL_MODEL | `improves_at_residual_bubr1`, `worsens_alignment`, `no_improvement`, `insufficient` |
+| `LIMFN01` | CELL_MODEL | `a_supplied_function_was_limiting`, `another_quantity_is_limiting`, `insufficient` |
+| `POOL01` | CELL_MODEL | `pool_is_sufficient`, `whole_cell_required`, `insufficient` |
+| `SAFE01` | CELL_MODEL | `preserved`, `harm`, `insufficient` |
+| `SAFE02` | CELL_MODEL | `preserved`, `harm`, `insufficient` |
+| `SAFE_ORG` | ORGANISM_MODEL | `no_harm`, `harm`, `unassessable` |
+| `STAB01` | CELL_MODEL | `steady_state_increased`, `turnover_reduced_only`, `local_pool_only`, `no_stabilisation`, `insufficient` |
+| `STAB02` | CELL_MODEL | `case_allele_stabilised`, `case_allele_refractory`, `insufficient` |
+| `STAB03` | CELL_MODEL | `abundance_raised`, `turnover_reduced_only`, `no_effect`, `insufficient` |
+| `TRIP13_02` | CELL_MODEL | `exit_restored_activation_intact`, `conflict_persists`, `insufficient` |
+| `TRIP13_F3` | CELL_MODEL | `improves_at_residual_bubr1`, `no_improvement`, `insufficient` |
+| `XFER01` | GOVERNANCE_ABSENT | `transfers`, `does_not_transfer`, `cannot_be_tested` |
+| `XSCALE01` | TISSUE_MODEL | `fraction_falls`, `no_aggregate`, `untestable` |
+| `XSCALE02` | ORGANISM_MODEL | `course_modified`, `no_change`, `unassessable` |
+| `XSCALE03` | TISSUE_MODEL | `selection_dominates`, `fidelity_dominates`, `insufficient` |
+
+### Convergence points
+
+States several different worlds arrive at. These are where the map collapses rather than
+branching, and they are why this is not a tree.
+
+| state | worlds arriving |
+|---|---|
+| `C_KIF18A` | 8 |
+| `STAB01` | 5 |
+| `S_FLUX_COMPENSATORY` | 4 |
+| `ORGANISM_TARGET` | 4 |
+| `F2_COMPLETE` | 4 |
+| `BYPASS_ACT` | 4 |
+| `S_SIL_SUPPLIED` | 3 |
+| `S_MIS_LOWERED` | 3 |
+| `S_CHECKPOINT_RISK_RESOLVED` | 3 |
+| `S_ALIGN_SUPPLIED` | 3 |
+| `EXP01` | 3 |
+| `C_TRIP13` | 3 |
+| `CHAR01` | 3 |
+
+### External-search frontiers
+
+Branches whose resolution needs knowledge from outside this case, with what has been searched.
+
+| branch | status |
+|---|---|
+| `ACT02` | The first two search depths found no component; the third found a mechanistic handle — a sequential multi-target MPS1 phosphorylation cascade promotes checkpoint signalling. The same depth found that  |
+| `BYPASS_ACT` | The TPR-KNL1 route is grounded as a requirement, not as a suppliable component. |
+| `STAB01` | Search closed at 50 queries over four rounds: no record raises abundance or slows turnover of a destabilised BubR1 missense protein. P1/P2 are grounded only in the destabilising direction. |
+
+### Grounded direct transitions
+
+33 transitions are traversed directly rather than branched, because the evidence
+settles them. A caveat is recorded as an applicability boundary, not as a fork.
+
+- `S0_CASE` → `S_MISSEGREGATION` — Observed phenotype: random aneuploidies and elevated premature chromatid separation, confirmed cytogenetically
+- `S0_CASE` → `S_CLASS_PREMISE` — The missense allele sits in the protein kinase domain, from the case's own protein-feature evidence [mechanism_run_RUN_20261005T142213Z_dd4b1e]
+- `S_MISSEGREGATION` → `C_CENPE` — CENP-E is required for congression of polar chromosomes [PMID:41120314]
+- `S_MISSEGREGATION` → `C_KIF18A` — KIF18A promotes congression, from a genome-wide screen [PMID:41218610]
+- `S_MISSEGREGATION` → `C_FLUX` — Poleward flux reported as a target for modifying segregation errors [PMID:39541344]
+- `S_MISSEGREGATION` → `C_TRIP13` — TRIP13 and APC15 drive mitotic exit by MCC turnover [PMID:30341343]
+- `C_CENPE` → `S_CENPE_BUBR1_DEPENDENT` — Fig. 6f and Fig. 5c of PMID:41120314; the BubR1-independent route of PMID:38354735 is localisation only [PMID:41120314, PMID:38354735]
+- `S_FUNCTION_OK` → `S_MATCHED_ACHIEVABLE` — EXP01 returning full function entails matched abundance was achieved, which is its own gate
+- `S_XFER_OK` → `F1_COMPLETE` — AND-node member
+- `S_FUNCTION_OK` → `S_POP_SAFE_F1` — Observed by EXP01's required safety readouts, which gate its own outcome assignment
+- `B_ALIGN_DEFECT` → `C_KIF18A` — Alignment must be supplied independently. The requirement is grounded (central region 484-715); the component is not
+- `B_MULTI_DEFECT` → `C_KIF18A` — Composite replacement: each lost function must be supplied, and the functions are separable, so they must be supplied separately [PMID:20516114]
+- `S_PROTEIN_CEILING` → `C_KIF18A` — Bypass remains available
+- `S_NOT_EXPRESSIBLE` → `C_KIF18A` — Bypass remains available as an alternative continuation
+- `S_ALIGN_SUPPLIED` → `F2_COMPLETE` — AND-node member
+- `S_SIL_SUPPLIED` → `F2_COMPLETE` — AND-node member
+- `S_ACT_SUPPLIED` → `F2_COMPLETE` — AND-node member
+- `S_POP_SAFE_F2` → `F2_COMPLETE` — AND-node member
+- `S_POP_SAFE_F1B` → `F1_COMPLETE` — AND-node member
+- `CANONICAL_CELLULAR_STATE` → `S_MIS_LOWERED` — The canonical trajectory entails the terminal state; it is one route to it, not the definition of it
+- `S_FLUX_NOT_THE_LEVER` → `C_KIF18A` — The other named alignment candidate remains
+- `S_FLUX_LOWERS_MIS` → `S_ALIGN_SUPPLIED` — It also supplies alignment, which the canonical state still needs
+- `S_POP_SAFE_F1B` → `S_POP_SAFE_ANY` — Either family's own safety observation satisfies the functional target's safety conjunct
+- `S_POP_SAFE_F2` → `S_POP_SAFE_ANY` — Either family's own safety observation satisfies the functional target's safety conjunct
+- `S_MIS_LOWERED` → `FUNCTIONAL_CELLULAR_TARGET` — AND-node member
+- `S_POP_SAFE_ANY` → `FUNCTIONAL_CELLULAR_TARGET` — AND-node member
+- `S_CHECKPOINT_RISK_RESOLVED` → `ORGANISM_TARGET` — AND-node member: the risk gate sits on organism advancement, not on the cell state
+- `S_CLINICAL_MODIFIED` → `ORGANISM_TARGET` — AND-node member
+- `S_PROSPECTIVE_EXISTS` → `ORGANISM_TARGET` — AND-node member: without a prospective component there is nothing for a route to change
+- `S_ORG_SAFE` → `ORGANISM_TARGET` — AND-node member
+- `S_P1P4_EXHAUSTED` → `C_KIF18A` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
+
+## Control variables and actuators
+
+A failed or unsafe actuator closes the actuator. It closes the control variable only when the
+evidence speaks to the variable itself.
+
+| control variable | actuators tried | identified, untried | intrinsically unsafe? |
+|---|---|---|---|
+| `CV_BUBR1_ABUNDANCE` | `HSP90_folding`, `proteasomal_clearance`, `SIRT2_K668`, `FBXW7_T620` | `CHIP_STUB1_triage`, `autophagy_lysosomal`, `HSP70_DNAJ_cochaperone` | NOT_ESTABLISHED |
+| `CV_POLEWARD_FLUX` | none | `low_dose_taxol`, `HAUS8_depletion`, `NuMA_depletion`, `KIF4A_depletion` | NOT_ESTABLISHED |
+| `CV_CHROMOSOME_ALIGNMENT` | none | `CENP_E`, `KIF18A`, `poleward_flux` | NOT_ESTABLISHED |
+| `CV_CHECKPOINT_ACTIVATION` | none | `MPS1_phosphorylation_cascade` | PARTLY — chronic activation causes myelosuppression and gastrointestinal atrophy in vivo, so the sustained form of this variable carries organism-leve |
+| `CV_CHECKPOINT_SILENCING` | none | `TRIP13_APC15`, `UBR5` | NOT_ESTABLISHED |
+| `CV_ANEUPLOID_CELL_FRACTION` | none | `cell_competition`, `lineage_specific_elimination` | NOT_ESTABLISHED, and in tension with this project's own guards: a falling aneuploid fraction through selective loss is exactly the confounder B08 and  |
+
+## Strategy families
+
+- **`F1_REPAIR`** — restore or stabilise the altered protein
+- **`F2_REPLACE`** — supply the required function independently of it
+- **`F3_EXPLOIT_AND_ALTER`** — exploit the residual function that is present while altering another physical process
+- **`F4_REMOVE`** — do not prevent the error; remove the cells that carry it
+
+`F4_REMOVE` is new, and it arrived from the frontier audit rather than from a search: asking why
+"the established burden is fixed" was allowed to be a leaf produced the only family that can act
+on aneuploidy which already exists.
+
+## City size
+
+| | count |
+|---|---|
+| state nodes | 61 |
+| branch nodes | 33 |
+| all_of nodes | 4 |
+| terminal nodes | 55 |
+| edges | 92 |
+| admissible outcomes across all branches | 115 |
+| control variables | 6 |
+| strategy families | 4 |
+| campaigns | 4 |
 
 ## What this map does not claim
 

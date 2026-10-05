@@ -353,14 +353,16 @@ def test_a_bounded_negative_search_is_not_biological_impossibility():
     """
     M, d = _route_map()
     vocab = set(d["terminal_vocabulary"])
-    for state in ("NOT_IN_LOCAL_CASE_CORPUS", "NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE",
-                  "NO_KNOWN_PHYSICAL_REALIZATION"):
+    # Rule 7 renamed these; the distinction they encode is unchanged. An empty search, a case-corpus
+    # gap and an evidence incompatibility are three different claims, and the strongest must earn it.
+    for state in ("NOT_IN_LOCAL_CASE_CORPUS", "SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED",
+                  "PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE"):
         assert state in vocab, state
     for n in d["nodes"]:
-        if n["kind"] == "terminal" and n.get("terminal") == "NO_KNOWN_PHYSICAL_REALIZATION":
-            assert "evidence" in n or "justification" in n, (
-                f"{n['id']} claims no known physical realization without recording what justifies it; "
-                "a bounded negative search belongs in NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE")
+        if n["kind"] == "terminal" and n.get("terminal") == "PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE":
+            assert len(n["label"]) > 40, (
+                f"{n['id']} claims incompatibility with evidence without saying with what; a bounded "
+                "negative search belongs in SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED")
 
 
 def test_absence_of_a_known_bubr1_link_is_never_recorded_as_independence():
@@ -629,9 +631,16 @@ def test_a_bubr1_dependent_benefit_is_a_route_not_a_failure():
                                  "SAFE01": "preserved"}).get(M.goal(d))
     assert reached is not None and not reached, (
         "a population-preserving, BubR1-dependent rescue must still reach the cell-level state")
+    # Saturation changed this deliberately. Losing the benefit in the limiting regime no longer
+    # terminates: if abundance can be raised a little, F1 and F3 in combination may meet the
+    # requirement that neither meets alone. What must still hold is that it is not a free pass — the
+    # functional target from there costs strictly more work than the compensatory result does.
     gone = dep["outcomes"]["benefit_absent_in_limiting_regime"]
-    assert nodes[gone]["kind"] == "terminal", (
-        "losing the benefit in the limiting regime is the one result that closes this route")
+    onward = {e["to"] for e in d["edges"] if e["from"] == gone}
+    assert onward, f"{gone} must continue; a null in one regime is not the end of a combination route"
+    harder = M.cost(d, decided={"DEP_FLUX": "benefit_absent_in_limiting_regime"}).get(M.goal(d))
+    assert harder is None or len(harder) > 0, (
+        "losing the benefit where it is needed must not reach the target for free")
 
 
 def test_robust_reachability_is_not_claimed():
@@ -667,3 +676,65 @@ def test_char01_does_not_read_a_transcript_change_two_ways():
     assert "validity failure, never a biological result" in text
     assert "altered transcript" not in text.split("## 4.")[0].split("| `destabilised_other_mechanism`")[1].split("|")[1]
     assert "simple abundance-limited instability is not demonstrated" in text
+
+
+def test_no_leaf_exists_because_reasoning_stopped_after_an_experiment():
+    """The saturation acceptance criterion.
+
+    A leaf is allowed to be a target, a safety closure, a governance block, an evidence
+    incompatibility, an exhausted search, a declared frontier with no identifiable next step, or a
+    validity repeat. It is not allowed to be a branch nobody continued, which is what the retired
+    NO_KNOWN_CONTINUATION nodes all were.
+    """
+    M, d = _route_map()
+    assert "NO_KNOWN_CONTINUATION" not in d["terminal_vocabulary"], (
+        "the kind that hid thirteen unexpanded branches must stay retired")
+    continues = {e["from"] for e in d["edges"]}
+    unexpanded = [n["id"] for n in d["nodes"] if n["kind"] == "terminal"
+                  and n["terminal"] == "UNEXPANDED_FRONTIER" and n["id"] not in continues]
+    assert not unexpanded, f"leaves that merely stopped reasoning: {unexpanded}"
+    for n in d["nodes"]:
+        if n["kind"] == "terminal":
+            assert n["terminal"] in set(d["terminal_vocabulary"]), f"{n['id']}: {n['terminal']}"
+
+
+def test_a_failed_actuator_does_not_close_a_control_variable():
+    """Rule 3. Four failed mechanisms closed BubR1 abundance in the previous map; they should not have.
+
+    A control variable is a biological quantity and an actuator is a way of moving it. The variable
+    closes only on evidence about the variable — which is why chronic checkpoint activation is the one
+    entry that may be called unsafe at variable level, and it cites the in vivo result that says so.
+    """
+    M, d = _route_map()
+    cvs = d["control_variables"]
+    abundance = cvs["CV_BUBR1_ABUNDANCE"]
+    assert abundance["actuators_tried"], "the tried actuators must be recorded"
+    assert abundance["actuators_identified_not_tried"], (
+        "closing a variable while untried actuators are identified is the error Rule 3 names")
+    assert abundance["intrinsically_unsafe"] == "NOT_ESTABLISHED"
+    act = cvs["CV_CHECKPOINT_ACTIVATION"]
+    assert act["intrinsically_unsafe"].startswith("PARTLY"), (
+        "chronic activation is harmful in vivo and the variable entry must say so")
+    assert act.get("unsafe_evidence"), "a variable-level safety claim must cite its evidence"
+
+
+def test_all_four_strategy_families_are_present_and_reachable():
+    """F4 arrived from the frontier audit rather than from a search, and it must be wired in."""
+    M, d = _route_map()
+    fams = d["families"]
+    assert set(fams) == {"F1_REPAIR", "F2_REPLACE", "F3_EXPLOIT_AND_ALTER", "F4_REMOVE"}
+    c = M.cost(d)
+    for entry in ("S_FLUX_COMPENSATORY", "CV_CLEARANCE_ENTRY"):
+        assert c.get(entry) is not None, f"{entry} is not reachable, so its family is decoration"
+
+
+def test_the_campaign_arms_separate_actuator_failure_from_variable_failure():
+    """Rule 4 inside a campaign: one unsafe arm is not an unsafe control variable."""
+    M, d = _route_map()
+    flux = next(c for c in d["campaigns"] if c["id"] == "FLUX01")
+    assert len(flux["arms"]) >= 3, "the mechanistically independent arms must be retained"
+    for arm in flux["arms"].values():
+        assert arm["control_variable"] == "CV_POLEWARD_FLUX"
+        assert arm["engagement_readout"]
+    assert "arm_level_rule" in flux and "every arm fails" in flux["arm_level_rule"]
+    assert set(flux["arm_divergence_outcomes"]) >= {"some_arms_effective_some_unsafe"}

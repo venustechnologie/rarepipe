@@ -119,30 +119,44 @@ def validate(d: dict) -> list[str]:
 
 
 def successors(d: dict, nid: str, nodes: dict, out_edges: dict, *, follow_reentry: bool) -> list[str]:
-    node = nodes[nid]
+    node = nodes.get(nid)
+    if node is None:
+        return []      # a dangling reference is reported by validate(); it must not crash the walk
     if node["kind"] == "branch":
         return list((node.get("outcomes") or {}).values())
     return [e["to"] for e in out_edges.get(nid, []) if follow_reentry or not e.get("reentry")]
 
 
 def cycles(d: dict, nodes: dict, out_edges: dict) -> list[str]:
-    """Acyclic once deliberate re-entry edges are removed; a cycle anywhere else is a modelling error."""
-    colour: dict[str, int] = {}
+    """Acyclic once deliberate re-entry edges are removed; a cycle anywhere else is a modelling error.
+
+    Iterative rather than recursive: the recursive form blew Python's stack once the map grew past a
+    hundred nodes, which is the wrong way for a validator to fail.
+    """
+    WHITE, GREY, BLACK = 0, 1, 2
+    colour = dict.fromkeys(nodes, WHITE)
     found: list[str] = []
-
-    def walk(nid: str, path: list[str]) -> None:
-        colour[nid] = 1
-        for nxt in successors(d, nid, nodes, out_edges, follow_reentry=False):
-            if colour.get(nxt) == 1:
-                found.append(f"cycle through non-reentry edges: {' -> '.join(path + [nid, nxt])}")
-            elif colour.get(nxt) is None:
-                walk(nxt, path + [nid])
-        colour[nid] = 2
-
-    for nid in nodes:
-        if colour.get(nid) is None:
-            walk(nid, [])
-    return found
+    for root in nodes:
+        if colour[root] != WHITE:
+            continue
+        stack: list[tuple[str, list[str]]] = [(root, [])]
+        while stack:
+            nid, path = stack.pop()
+            if nid == "__pop__":
+                colour[path[0]] = BLACK
+                continue
+            if colour.get(nid) == GREY:
+                continue
+            colour[nid] = GREY
+            stack.append(("__pop__", [nid]))
+            for nxt in successors(d, nid, nodes, out_edges, follow_reentry=False):
+                if nxt not in nodes:
+                    continue
+                if colour.get(nxt) == GREY:
+                    found.append(f"cycle through non-reentry edges: {' -> '.join(path + [nid, nxt])}")
+                elif colour.get(nxt) == WHITE:
+                    stack.append((nxt, path + [nid]))
+    return sorted(set(found))
 
 
 PARETO_CAP = 8      # candidate sets kept per node; bounds the cross-product at AND nodes
@@ -851,6 +865,158 @@ def render(d: dict) -> str:
     A("fidelity prospectively does not undo an aneuploid cell that already exists. Which part of the")
     A("phenotype is still ahead of this child is unestablished, and it bounds what any route here can")
     A("address. Cell-level reachability is not disease resolution, and this map does not claim it.")
+    A("")
+    A("## Frontier audit")
+    A("")
+    A("Every leaf, and why it is allowed to be one. The acceptance criterion is that no leaf exists")
+    A("merely because reasoning stopped one step after an experiment.")
+    A("")
+    ALLOWED = {
+      "FUNCTIONAL_TARGET_REACHED": "the cell-level state is reached",
+      "ORGANISM_TARGET_REACHED_IN_MODEL": "the organism-level state is reached in model",
+      "UNSAFE": "closed on safety grounds; no benefit verdict overrides it",
+      "GOVERNANCE_BLOCKED": "blocked by governance, not biology — no material, no intervention, no recontact",
+      "PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE": "the continuation contradicts evidence already in hand",
+      "SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED": "bounded external search ran and returned nothing",
+      "DECLARED_SCIENTIFIC_FRONTIER": "no next experiment or search is currently identifiable",
+      "BOUNDED_FRONTIER": "a validity failure: the same condition is repeated, so reasoning has not stopped",
+      "NOT_IN_LOCAL_CASE_CORPUS": "absent from the case corpus only",
+      "CONTEXT_TRANSFER_REQUIRED": "the transfer is unestablished and named",
+      "UNEXPANDED_FRONTIER": "**NOT ALLOWED** — reasoning stopped one step after an experiment",
+    }
+    continues = {e["from"] for e in d["edges"]}
+    by_kind: dict[str, list[dict]] = {}
+    carries_on: list[str] = []
+    for n in d["nodes"]:
+        if n["kind"] != "terminal":
+            continue
+        if n["id"] in continues:
+            carries_on.append(n["id"])     # closes one family and opens another: not a leaf
+            continue
+        by_kind.setdefault(n["terminal"], []).append(n)
+    A(f"{len(carries_on)} node(s) typed as terminal are not leaves at all — they close one family and")
+    A("open another, so they are excluded from the audit below: "
+      + ", ".join("`" + x + "`" for x in sorted(carries_on)) + ".")
+    A("")
+    A("| terminal kind | count | why a leaf may remain | leaves |")
+    A("|---|---|---|---|")
+    for kind in d["terminal_vocabulary"]:
+        got = by_kind.get(kind, [])
+        if not got:
+            continue
+        A(f"| `{kind}` | {len(got)} | {ALLOWED.get(kind, '')} "
+          f"| {', '.join('`' + x['id'] + '`' for x in sorted(got, key=lambda y: y['id']))} |")
+    A("")
+    bad = by_kind.get("UNEXPANDED_FRONTIER", [])
+    A(f"**Unexpanded frontiers remaining: {len(bad)}.**"
+      + (" " + ", ".join('`' + x["id"] + '`' for x in bad) if bad else
+         " The acceptance criterion is met: every leaf is a target, a safety closure, a governance"
+         " block, an evidence incompatibility, an exhausted search, a declared frontier, or a validity"
+         " repeat."))
+    A("")
+    A("### What the audit retired")
+    A("")
+    A("`NO_KNOWN_CONTINUATION` is gone from the vocabulary. All thirteen nodes that carried it were")
+    A("branches nobody had expanded — not impossibilities, not safety closures, not exhausted searches.")
+    A("Each became a state with a real next question, and that is where most of this map's growth came")
+    A("from.")
+    A("")
+    A("## The city")
+    A("")
+    A("### Distinct biological states")
+    A("")
+    states = sorted((n for n in d["nodes"] if n["kind"] == "state"), key=lambda n: n["id"])
+    A(f"{len(states)} states. Each is a condition the case can be in, not a step in a protocol.")
+    A("")
+    for n in states:
+        A(f"- `{n['id']}` — {n['label']}")
+    A("")
+    A("### Experiment and observation nodes")
+    A("")
+    A(f"{len(branches)} branches, carrying "
+      f"{sum(len(b.get('outcomes') or {}) for b in branches)} admissible outcomes between them.")
+    A("")
+    A("| branch | needs | outcomes |")
+    A("|---|---|---|")
+    for b in sorted(branches, key=lambda n: n["id"]):
+        A(f"| `{b['id']}` | {b.get('requires','?')} "
+          f"| {', '.join('`' + k + '`' for k in (b.get('outcomes') or {}))} |")
+    A("")
+    A("### Convergence points")
+    A("")
+    A("States several different worlds arrive at. These are where the map collapses rather than")
+    A("branching, and they are why this is not a tree.")
+    A("")
+    inbound: dict[str, int] = {}
+    for e in d["edges"]:
+        inbound[e["to"]] = inbound.get(e["to"], 0) + 1
+    for b in branches:
+        for t in (b.get("outcomes") or {}).values():
+            inbound[t] = inbound.get(t, 0) + 1
+    conv = sorted(((v, k) for k, v in inbound.items() if v >= 3), reverse=True)
+    A("| state | worlds arriving |")
+    A("|---|---|")
+    for v, k in conv:
+        A(f"| `{k}` | {v} |")
+    A("")
+    A("### External-search frontiers")
+    A("")
+    A("Branches whose resolution needs knowledge from outside this case, with what has been searched.")
+    A("")
+    A("| branch | status |")
+    A("|---|---|")
+    for b in sorted(branches, key=lambda n: n["id"]):
+        if b.get("resolves_by") == "COMPONENT_DISCOVERY" or "search" in (b.get("why_unresolved") or "").lower():
+            A(f"| `{b['id']}` | {' '.join((b.get('why_unresolved') or '').split())[:200]} |")
+    A("")
+    A("### Grounded direct transitions")
+    A("")
+    g_edges = [e for e in d["edges"] if e["label"] == "GROUNDED"]
+    A(f"{len(g_edges)} transitions are traversed directly rather than branched, because the evidence")
+    A("settles them. A caveat is recorded as an applicability boundary, not as a fork.")
+    A("")
+    for e in g_edges:
+        if e.get("note"):
+            A(f"- `{e['from']}` → `{e['to']}` — {e['note']}"
+              + (f" [{', '.join(e['evidence'])}]" if e.get("evidence") else ""))
+    A("")
+    A("## Control variables and actuators")
+    A("")
+    A("A failed or unsafe actuator closes the actuator. It closes the control variable only when the")
+    A("evidence speaks to the variable itself.")
+    A("")
+    A("| control variable | actuators tried | identified, untried | intrinsically unsafe? |")
+    A("|---|---|---|---|")
+    for cv, spec in (d.get("control_variables") or {}).items():
+        tried = ", ".join("`" + x + "`" for x in spec.get("actuators_tried", [])) or "none"
+        untried = ", ".join("`" + x + "`" for x in spec.get("actuators_identified_not_tried", [])) or "none"
+        unsafe = str(spec.get("intrinsically_unsafe", "NOT_ESTABLISHED"))
+        A(f"| `{cv}` | {tried} | {untried} | {' '.join(unsafe.split())[:150]} |")
+    A("")
+    A("## Strategy families")
+    A("")
+    for fid, text in (d.get("families") or {}).items():
+        A(f"- **`{fid}`** — {text}")
+    A("")
+    A("`F4_REMOVE` is new, and it arrived from the frontier audit rather than from a search: asking why")
+    A("\"the established burden is fixed\" was allowed to be a leaf produced the only family that can act")
+    A("on aneuploidy which already exists.")
+    A("")
+    A("## City size")
+    A("")
+    kinds: dict[str, int] = {}
+    for n in d["nodes"]:
+        kinds[n["kind"]] = kinds.get(n["kind"], 0) + 1
+    A("| | count |")
+    A("|---|---|")
+    for k in ("state", "branch", "all_of", "terminal"):
+        A(f"| {k} nodes | {kinds.get(k, 0)} |")
+    A(f"| edges | {len(d['edges'])} |")
+    A(f"| admissible outcomes across all branches | "
+      f"{sum(len(n.get('outcomes') or {}) for n in d['nodes'] if n['kind'] == 'branch')} |")
+    A(f"| control variables | {len(d.get('control_variables') or {})} |")
+    A(f"| strategy families | {len(d.get('families') or {})} |")
+    A(f"| campaigns | {len(d.get('campaigns') or [])} |")
     A("")
     A("## What this map does not claim")
     A("")

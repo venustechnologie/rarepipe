@@ -59,6 +59,32 @@
   "adjudication_outcome": "No candidate is established as BubR1-independent for the function it would supply. CENP-E has a BubR1-independent route to the outer corona (PMID:38354735) while the mechanism by which it initiates congression is explicitly BubR1-dependent (PMID:41120314) \u2014 localisation is not function, which is the same distinction Y155C forces. The three bypass branches therefore hold named candidates with open dependency questions rather than grounded components.",
   "documents": [
     {
+      "source_id": "PMID:19065665",
+      "title": "Spindle assembly checkpoint and p53 deficiencies cooperate for tumorigenesis in mice.",
+      "pub_year": "2009",
+      "journal": "",
+      "bytes": 1007,
+      "sha256": "e118d1d52a80a803cb2034d88e23a3428bf847a9cfe839a3d32af840f9f053f3",
+      "matched_queries": [
+        "Mad2 heterozygous mice tumour incidence chromosomal instability"
+      ],
+      "triage_score": 9,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:28072388",
+      "title": "A sequential multi-target Mps1 phosphorylation cascade promotes spindle checkpoint signaling.",
+      "pub_year": "2017",
+      "journal": "",
+      "bytes": 1231,
+      "sha256": "0ba8bc5e70276c32b5d9822198b9465217424ab1a91ae62961f2ec96f1b6b5da",
+      "matched_queries": [
+        "MAD1 tethering kinetochore ectopic mitotic arrest reconstituted"
+      ],
+      "triage_score": 11,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:28564602",
       "title": "Mad2 Overexpression Uncovers a Critical Role for TRIP13 in Mitotic Exit.",
       "pub_year": "2017",
@@ -86,6 +112,32 @@
       "status": "FOUND_IN_INDEX"
     },
     {
+      "source_id": "PMID:33847264",
+      "title": "Cell competition removes segmental aneuploid cells from &lt;i&gt;Drosophila&lt;/i&gt; imaginal disc-derived tissues based on ribosomal protein gene dose.",
+      "pub_year": "2021",
+      "journal": "",
+      "bytes": 1180,
+      "sha256": "a47741474fba54854efa16e7e1e0b723df75b84664c6abcdd472841f5a10af77",
+      "matched_queries": [
+        "cell competition removes aneuploid cells in tissue"
+      ],
+      "triage_score": 3,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:34544131",
+      "title": "Selective functional inhibition of a tumor-derived p53 mutant by cytosolic chaperones identified using split-YFP in budding yeast.",
+      "pub_year": "2021",
+      "journal": "",
+      "bytes": 1911,
+      "sha256": "a96b4b64e41caeb6abd644910903d52d5942446aa090e70fb1ee299f0a3272a2",
+      "matched_queries": [
+        "HSP70 HSP40 co-chaperone client rescue missense mutant level"
+      ],
+      "triage_score": 6,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:36108046",
       "title": "Recovery from spindle checkpoint-mediated arrest requires a novel Dnt1-dependent APC/C activation mechanism.",
       "pub_year": "2022",
@@ -97,6 +149,34 @@
         "p31comet TRIP13 MAD2 checkpoint silencing measured"
       ],
       "triage_score": 19,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:36322655",
+      "title": "Biallelic germline mutations in MAD1L1 induce a syndrome of aneuploidy with high tumor susceptibility.",
+      "pub_year": "2022",
+      "journal": "",
+      "bytes": 1181,
+      "sha256": "f041365f76ce94b382cb1e988be066ca4c6fb8cc74b348caa01de6eda3b1f80e",
+      "matched_queries": [
+        "aneuploid cell clearance p53 competition tissue",
+        "spindle assembly checkpoint deficiency tumour predisposition aneuploidy"
+      ],
+      "triage_score": 16,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:37796616",
+      "title": "Biallelic MAD2L1BP (p31comet) mutation is associated with mosaic aneuploidy and juvenile granulosa cell tumors.",
+      "pub_year": "2023",
+      "journal": "",
+      "bytes": 1309,
+      "sha256": "25079b400cf790303dffe8a2bfd636e843b1880aacf327f6601f89b1bd5962f3",
+      "matched_queries": [
+        "BubR1 hypomorphic mice tumour incidence",
+        "Mad2 heterozygous mice tumour incidence chromosomal instability"
+      ],
+      "triage_score": 27,
       "status": "FOUND_IN_INDEX"
     },
     {
@@ -113,6 +193,19 @@
       "status": "FOUND_IN_INDEX"
     },
     {
+      "source_id": "PMID:38806674",
+      "title": "Chronic spindle assembly checkpoint activation causes myelosuppression and gastrointestinal atrophy.",
+      "pub_year": "2024",
+      "journal": "",
+      "bytes": 1423,
+      "sha256": "1f383fe3cdd9a5ec7a383fafb04d940c2d63e22deede56518cf08316a12dad7f",
+      "matched_queries": [
+        "MPS1 hyperactivation checkpoint strength increased measured"
+      ],
+      "triage_score": 11,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:39541344",
       "title": "Microtubule poleward flux as a target for modifying chromosome segregation errors.",
       "pub_year": "2024",
@@ -125,6 +218,19 @@
         "poleward flux chromosome segregation errors human"
       ],
       "triage_score": 12,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:40466636",
+      "title": "Depletion of aneuploid cells is shaped by cell-to-cell interactions.",
+      "pub_year": "2025",
+      "journal": "",
+      "bytes": 1125,
+      "sha256": "5a522f4148a4fbac150f26d8ad50f24a32b36eb77450385594377602342ee31f",
+      "matched_queries": [
+        "selective elimination of aneuploid cells measured"
+      ],
+      "triage_score": 2,
       "status": "FOUND_IN_INDEX"
     },
     {
@@ -158,6 +264,59 @@
         "chromosome congression CENP-E end-on attachment measured"
       ],
       "triage_score": 11,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:41265458",
+      "title": "HSP90 buffers deleterious genetic variations in BRCA1.",
+      "pub_year": "2025",
+      "journal": "",
+      "bytes": 1204,
+      "sha256": "38b4668f3595f36aa55ec1b9d07859fe1d2ad5f35c16bb0ede4e146eff496b00",
+      "matched_queries": [
+        "co-translational folding missense variant steady-state level"
+      ],
+      "triage_score": 6,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:41525846",
+      "title": "A GluN2B disease-associated variant promotes the degradation of NMDA receptors via autophagy.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 1603,
+      "sha256": "8ff976dbc19021d16cc994993bff532577a2ac07d6f31c28510cfa256efa4531",
+      "matched_queries": [
+        "autophagy lysosomal degradation misfolded protein steady-state abundance"
+      ],
+      "triage_score": 6,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:42409819",
+      "title": "Embryo quality control via lineage-specific aneuploid cell elimination in embryos and stem cell-derived embryo models.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 1262,
+      "sha256": "5175244c280d92c24be4ae37fd480dc344642b502d4755ec84b0c64be50b4896",
+      "matched_queries": [
+        "aneuploid cell clearance p53 competition tissue",
+        "selective elimination of aneuploid cells measured"
+      ],
+      "triage_score": 2,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:42567515",
+      "title": "Domain-dependent uncoupling of the co-chaperone and E3 ubiquitin ligase CHIP underlies heterogeneity in spinocerebellar ataxia 48.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 2028,
+      "sha256": "29d5eed4a597b202704b5897865edeee76bcac30f658edd8a158abcb033be71a",
+      "matched_queries": [
+        "co-translational folding missense variant steady-state level"
+      ],
+      "triage_score": 6,
       "status": "FOUND_IN_INDEX"
     },
     {
@@ -226,5 +385,11 @@
     "unifying_finding": "Every experiment across all five ran at BubR1-present or BubR1-absent. None ran at BubR1-limiting, which is this case's actual state, so every published dependency verdict concerns a different regime. That is why each dependency branch keeps an `unestablished` outcome rather than resolving on the published work.",
     "discovery_reopened": false,
     "reason": "Adjudication left two branches populated with named candidates, so broad discovery stays closed per instruction."
+  },
+  "recursive_search_depths": {
+    "depth_1": "function-first discovery for alignment, activation, silencing",
+    "depth_2": "dependency adjudication of each surviving candidate",
+    "depth_3": "opened by the frontier audit, not by a plan: actuators for BubR1 abundance beyond the four interrogated (CHIP/STUB1, autophagy, HSP70/DNAJ), a mechanistic handle for arrest competence (MPS1 cascade) together with the toxicity of chronic activation, the causal-independence and surrogate questions behind the tumour-risk gate, and selective elimination of aneuploid cells \u2014 which became the F4 family",
+    "rule_6_note": "External search is recursive: each depth was reached because a branch hit a missing capability, not because a search phase was scheduled."
   }
 }
