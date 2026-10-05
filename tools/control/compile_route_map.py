@@ -62,6 +62,10 @@ def validate(d: dict) -> list[str]:
                 problems.append(f"{n['id']}: a branch node must enumerate at least two admissible outcomes")
             if not n.get("why_unresolved"):
                 problems.append(f"{n['id']}: a branch node must say why it is unresolved")
+            if n.get("requires") not in set(d["requires_vocabulary"]):
+                problems.append(f"{n['id']}: requires {n.get('requires')!r} not in the closed "
+                                "vocabulary — a branch must say whether it needs only a cell model, a "
+                                "tissue or organism model, or governance that does not exist")
             if n.get("resolves_by") not in set(d["resolves_by_vocabulary"]):
                 problems.append(f"{n['id']}: resolves_by {n.get('resolves_by')!r} not in the closed "
                                 "vocabulary — a branch must declare whether it is a measurement or a "
@@ -301,6 +305,41 @@ def render(d: dict) -> str:
     for k, v in d["target"]["components"].items():
         A(f"- `{k}` — {v}")
     A("")
+    A("## Target semantics audit")
+    A("")
+    A("The cell-level endpoints were audited individually, because a target built from the canonical")
+    A("BubR1 trajectory would reject any synthetic route that reaches the same terminal state another")
+    A("way. Nothing was removed: every endpoint keeps its node, and the canonical state is still")
+    A("computed beside the functional one.")
+    A("")
+    A("| endpoint | verdict | retained as |")
+    A("|---|---|---|")
+    for k, v in (d.get("target_audit") or {}).items():
+        A(f"| `{k}` | `{v['verdict']}` | {v.get('retained_as', 'target conjunct')} |")
+    A("")
+    A("| destination | distance | unavoidable branches | `BYPASS_ACT` an unavoidable gate? |")
+    A("|---|---|---|---|")
+    for dest in ("CANONICAL_CELLULAR_STATE", G, U):
+        if dest not in nodes:
+            continue
+        c = cost(d).get(dest)
+        dom = dominators_for(d, dest)
+        dist = "unreachable" if c is None else f"{len(c)}: " + ", ".join("`" + x + "`" for x in sorted(c))
+        A(f"| `{dest}` | {dist} | {', '.join('`' + x + '`' for x in sorted(dom)) or 'none'} "
+          f"| {'**yes**' if 'BYPASS_ACT' in dom else 'no'} |")
+    A("")
+    A("**`BYPASS_ACT` is not an unavoidable gate to either cell-level destination.** Checkpoint")
+    A("activation is therefore a route-specific requirement and a mechanistic diagnostic, not a")
+    A("universal target conjunct — several iterations were spent hunting a component a synthetic")
+    A("architecture may not need. It stays in the map and in the canonical state; it no longer gates")
+    A("the functional target.")
+    A("")
+    A("What replaced it is narrower and honest: `ACT_SAFETY01`. Checkpoint deficiency predisposes to")
+    A("tumours by a route the missegregation endpoint cannot see, and this disorder already carries")
+    A("embryonal tumour risk. So the question is not \"must the checkpoint signal\" but \"does this case")
+    A("need checkpoint competence for reasons other than fidelity\" — and that is now the one")
+    A("unavoidable branch on the functional target.")
+    A("")
     A("## Where the route map says to look first")
     A("")
     if base is None:
@@ -334,8 +373,10 @@ def render(d: dict) -> str:
     A("still required. Fewer is closer; the set is shown because routes share experiments and summing")
     A("them would invent work that does not exist.")
     A("")
-    A("| branch | kind | best outcome | what remains after it | runnable |")
-    A("|---|---|---|---|---|")
+    A("Distances are to `" + G + "` unless stated otherwise.")
+    A("")
+    A("| branch | kind | needs | best outcome | what remains after it | runnable |")
+    A("|---|---|---|---|---|---|")
     for b in branches:
         best, best_r = None, None
         for name, target in (b.get("outcomes") or {}).items():
@@ -343,11 +384,12 @@ def render(d: dict) -> str:
             if r is not None and (best_r is None or len(r) < len(best_r)):
                 best, best_r = name, r
         if best is None:
-            A(f"| `{b['id']}` | {branch_kind(b['id'])} | — | no admissible outcome reaches the target | — |")
+            A(f"| `{b['id']}` | {branch_kind(b['id'])} | {b.get('requires','?')} | — "
+              f"| no admissible outcome reaches the target | — |")
         else:
             rest = ", ".join("`" + x + "`" for x in sorted(best_r)) if best_r else "**nothing further**"
-            A(f"| `{b['id']}` | {branch_kind(b['id'])} | `{best}` | {len(best_r)}: {rest} "
-              f"| {runnable(best_r)} |")
+            A(f"| `{b['id']}` | {branch_kind(b['id'])} | {b.get('requires','?')} | `{best}` "
+              f"| {len(best_r)}: {rest} | {runnable(best_r)} |")
     A("")
     near = [b for b in branches
             if any((remaining(t) is not None and len(remaining(t)) <= 1)
@@ -568,6 +610,33 @@ def render(d: dict) -> str:
     A("")
     A("Absence of a known BubR1 link was never recorded as independence. Every surviving candidate's")
     A("dependency branch has an `unestablished` outcome, and that is where they all sit today.")
+    A("")
+    A("## What can actually be done now")
+    A("")
+    A("The branches sort into three kinds of work, and treating them as one pool of \"unknowns\" was the")
+    A("thing this map was built to stop.")
+    A("")
+    groups = {}
+    for b in branches:
+        groups.setdefault(b.get("requires", "?"), []).append(b["id"])
+    NEED = {"CELL_MODEL": "runnable now — a human cell line and standard assays",
+            "TISSUE_MODEL": "needs a tissue-level model that does not exist for this case",
+            "ORGANISM_MODEL": "needs organism-level or longitudinal data",
+            "GOVERNANCE_ABSENT": "blocked by governance, not biology: no patient material is available and none may be acquired"}
+    A("| needs | branches | meaning |")
+    A("|---|---|---|")
+    for k in ("CELL_MODEL", "TISSUE_MODEL", "ORGANISM_MODEL", "GOVERNANCE_ABSENT"):
+        if groups.get(k):
+            A(f"| `{k}` | {', '.join('`' + x + '`' for x in sorted(groups[k]))} | {NEED[k]} |")
+    A("")
+    runnable_now = sorted(groups.get("CELL_MODEL", []))
+    on_route = [x for x in runnable_now if base and x in base]
+    A(f"{len(runnable_now)} of {len(branches)} branches need nothing but a cell line. Of those, "
+      f"{len(on_route)} sit on the shortest route to `{G}`"
+      + (": " + ", ".join("`" + x + "`" for x in on_route) if on_route else "") + ".")
+    A("")
+    A("`CHAR01` remains the first bench experiment on the abundance family: cheapest, upstream of every")
+    A("other F1 branch, and no patient material.")
     A("")
     A("## Beyond the cell")
     A("")

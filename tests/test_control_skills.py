@@ -416,7 +416,7 @@ def test_cell_level_reachability_is_not_disease_resolution():
     M, d = _route_map()
     nodes = {n["id"]: n for n in d["nodes"]}
     cell, organism = M.goal(d), M.ultimate(d)
-    assert cell == "CELLULAR_TARGET" and organism, "the scales must be named in the map, not in the tool"
+    assert cell and organism and cell != organism, "both scales must be named in the map, not in the tool"
     assert nodes[cell]["kind"] != "terminal", "the cell-level state must continue, not terminate"
     assert [e for e in d["edges"] if e["from"] == cell], f"{cell} has no outgoing transition"
     c = M.cost(d)
@@ -439,3 +439,55 @@ def test_a_prospective_component_is_not_a_modified_clinical_course():
                       for t in (b.get("outcomes") or {}).values() if t == "S_CLINICAL_MODIFIED"}
     assert "XSCALE02" in branch_sources, "a modified clinical course must come from the scale question"
     assert "IRREV01" not in branch_sources | into_clinical
+
+
+def test_the_functional_target_is_modality_agnostic_but_not_a_loophole():
+    """Two target definitions, both computed, and the functional one must not be a free pass.
+
+    A target assembled from the canonical BubR1 trajectory would reject any synthetic route that
+    reaches the same terminal state another way, which is the opposite of the project's premise. So
+    alignment, activation and silencing were audited and reclassified as canonical intermediates. The
+    guard against that becoming a loophole is that nothing was deleted: the canonical state is still a
+    node with its full conjunction, every endpoint keeps an audit verdict, and the functional target
+    still requires population safety and the checkpoint-risk question.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    audit = d["target_audit"]
+    for endpoint in d["target"]["canonical_conjunction"]:
+        assert endpoint in audit, f"{endpoint} was never audited"
+        assert audit[endpoint].get("basis"), f"{endpoint} has a verdict with no basis"
+    assert "CANONICAL_CELLULAR_STATE" in nodes, "the canonical state must still be computed"
+    functional = nodes[M.goal(d)]
+    assert "S_POP_SAFE_ANY" in functional["of"], "the functional target must still require safety"
+    assert "S_CHECKPOINT_RISK_RESOLVED" in functional["of"], (
+        "reclassifying T_ACT must leave its tumour-predisposition question in the target, not drop it")
+    assert M.cost(d).get("CANONICAL_CELLULAR_STATE") is not None
+
+
+def test_activation_is_route_specific_rather_than_a_universal_gate():
+    """The audit's decisive test, pinned so a later edit cannot quietly reinstate the constraint."""
+    M, d = _route_map()
+    for dest in ("CANONICAL_CELLULAR_STATE", M.goal(d)):
+        assert "BYPASS_ACT" not in M.dominators_for(d, dest), (
+            f"BYPASS_ACT gates {dest}; if that is now true the audit verdict on T_ACT must be revisited")
+    assert "ACT_SAFETY01" in M.dominators_for(d, M.goal(d)), (
+        "the checkpoint-risk question must be unavoidable on the functional target")
+
+
+def test_every_branch_says_what_it_needs_to_be_run():
+    """Runnable in a cell line, needing a model that does not exist, or blocked by governance.
+
+    Without this the map prices "transfect a cell line" the same as "observe this child's clinical
+    course", and the second is not an experiment anyone here can do.
+    """
+    M, d = _route_map()
+    allowed = set(d["requires_vocabulary"])
+    for n in d["nodes"]:
+        if n["kind"] == "branch":
+            assert n.get("requires") in allowed, f"{n['id']}: {n.get('requires')!r}"
+    assert nodes_requiring(d, "GOVERNANCE_ABSENT"), "no branch records a governance block"
+
+
+def nodes_requiring(d, req):
+    return [n["id"] for n in d["nodes"] if n["kind"] == "branch" and n.get("requires") == req]

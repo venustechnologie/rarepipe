@@ -8,8 +8,10 @@ case_ref: MVA_001
 # Reaching it in model says nothing about the child's clinical course, so reasoning continues past it
 # to the next biological scale rather than stopping at a cell.
 target:
-  id: CELLULAR_TARGET
-  conjunction: [T_ALIGN, T_ACT, T_SIL, T_MIS, T_VIA, T_DIV, T_DEATH]
+  id: FUNCTIONAL_CELLULAR_TARGET
+  conjunction: [T_MIS, T_VIA, T_DIV, T_DEATH, T_ACT_RISK]
+  canonical_state: CANONICAL_CELLULAR_STATE
+  canonical_conjunction: [T_ALIGN, T_ACT, T_SIL, T_MIS, T_VIA, T_DIV, T_DEATH]
   components:
     T_ALIGN:  correct chromosome alignment
     T_ACT:    correct checkpoint activation
@@ -18,7 +20,61 @@ target:
     T_VIA:    preserved viability
     T_DIV:    preserved division
     T_DEATH:  no increase in cell death
+    T_ACT_RISK: "checkpoint-competence risk resolved — see the audit"
 
+# ---------------------------------------------------------------- target semantics audit
+# The question: is each endpoint experimentally established as universally necessary for the desired
+# terminal cellular state, or is it the mechanism by which normal cells usually achieve it? A
+# synthetic route that safely produces faithful segregation must not be rejected for failing to
+# reproduce the canonical BubR1 trajectory unless that trajectory is itself indispensable.
+#
+# Nothing is removed. The canonical state is still computed, and every endpoint keeps its node.
+target_audit:
+  T_MIS:
+    verdict: TERMINAL_FUNCTIONAL_REQUIREMENT
+    basis: "Aneuploidy is the disease-defining cellular phenotype. Nothing substitutes for it."
+  T_VIA: &pop
+    verdict: TERMINAL_FUNCTIONAL_REQUIREMENT
+    basis: "A population that is dying, not dividing, or being selected is not a corrected population.
+      These are also what stop permanent mitotic arrest counting as a solution."
+  T_DIV: *pop
+  T_DEATH: *pop
+  T_ALIGN:
+    verdict: CANONICAL_MECHANISTIC_INTERMEDIATE
+    basis: "Alignment is how cells normally reach correct attachment; it is not the fidelity itself.
+      Two retrieved findings separate them. Targeting poleward flux affects chromosome alignment
+      'independently of kinetochore attachment status', so alignment and attachment are dissociable.
+      And the chain from misalignment to aneuploidy is leaky: 'the majority of lagging chromosomes
+      which arise due to chromosome alignment defects are able to integrate into the main nucleus',
+      so an alignment defect does not deterministically produce an aneuploid daughter."
+    evidence: ["PMID:39541344"]
+    retained_as: "route-specific requirement for any route that works through attachment, and a
+      mechanistic diagnostic everywhere else"
+  T_ACT:
+    verdict: CANONICAL_MECHANISTIC_INTERMEDIATE_CONDITIONALLY_NECESSARY
+    basis: "The checkpoint is a response to error, not a producer of fidelity: it 'functions through
+      unattached kinetochores, which generate a soluble mitotic checkpoint complex'. It buys time for
+      correction, so its necessity is conditional on a baseline attachment-error rate — a route that
+      prevented errors upstream would leave it nothing to signal. 483X shows the converse directly:
+      checkpoint-competent and alignment-dead gives a significantly extended mitosis, not fidelity.
+      It is not established as universally necessary for a euploid outcome."
+    evidence: ["PMID:30341343", "PMID:20516114"]
+    retained_as: "mechanistic diagnostic, and a safety question in its own right — see T_ACT_RISK"
+  T_SIL:
+    verdict: CANONICAL_MECHANISTIC_INTERMEDIATE_DOUBLY_CONDITIONAL
+    basis: "Silencing is only required if the checkpoint is engaged — with no sustained signal there is
+      nothing to silence. Its real cost is already carried by the population endpoints: failure to
+      silence means prolonged arrest, which shows up as death, lost division or slippage."
+    retained_as: "route-specific requirement for any route that restores checkpoint signalling"
+  T_ACT_RISK:
+    verdict: TERMINAL_SAFETY_REQUIREMENT
+    basis: "The strongest objection to reclassifying T_ACT, kept rather than argued away. Checkpoint
+      deficiency is a tumour-predisposition mechanism independently of per-division missegregation,
+      and this disorder already carries embryonal tumour risk. A route that reached euploidy without
+      checkpoint competence could leave that liability untouched, and the missegregation endpoint
+      would not see it. Whether checkpoint competence is required for this case on those grounds is
+      itself unresolved, so it enters as a branch rather than as an assumption either way."
+requires_vocabulary: [CELL_MODEL, TISSUE_MODEL, ORGANISM_MODEL, GOVERNANCE_ABSENT]
 label_vocabulary: [GROUNDED, CONTEXT_TRANSFER_REQUIRED, EXPERIMENTAL_UNKNOWN,
                    PHYSICAL_ACTUATOR_MISSING, CONCEPTUALLY_SUFFICIENT_ONLY, UNSAFE]
 resolves_by_vocabulary: [MEASUREMENT, COMPONENT_DISCOVERY]
@@ -65,6 +121,7 @@ nodes:
   - id: CHAR01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does this exact allele destabilise the protein at all? Cycloheximide chase, HSP90 inhibition and MG132 on an exact-allele construct beside wild-type and the reference substrates. No patient material required."
     why_unresolved: "MC_0006 ('this child's missense allele reduces BUBR1 abundance or function') is UNRESOLVED on zero establishing records. Q921H is a kinase-domain substitution that is normal in both level and function, so domain location does not establish instability."
     outcomes:
@@ -78,6 +135,7 @@ nodes:
   - id: EXP01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "At matched abundance, are alignment, silencing and segregation normal for the exact altered protein?"
     why_unresolved: "No experiment has expressed this exact substitution at wild-type-comparable abundance. Checkpoint activation is class-supported and is a replication control, not a discriminator."
     outcomes:
@@ -96,6 +154,7 @@ nodes:
   - id: STAB01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Can the steady-state abundance of a misfolding kinase-domain BubR1 missense protein be raised in a human cell by perturbing folding or degradation machinery?"
     why_unresolved: "Search closed at 50 queries over four rounds: no record raises abundance or slows turnover of a destabilised BubR1 missense protein. P1/P2 are grounded only in the destabilising direction."
     outcomes:
@@ -109,6 +168,7 @@ nodes:
   - id: STAB02
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does the working perturbation raise the exact case allele's abundance toward wild-type?"
     why_unresolved: "Reached only under the STAB01 stop rule; the exact allele has never been placed in such a system."
     outcomes:
@@ -119,6 +179,7 @@ nodes:
   - id: FUNCVAL01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Is the protein stabilised by that perturbation functional, or merely present?"
     why_unresolved: "A chaperone-retained protein can be abundant and non-native. EXP01 answers function at ectopically matched abundance, which is a different condition from function under a stabilising perturbation."
     outcomes:
@@ -129,6 +190,7 @@ nodes:
   - id: XFER01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: GOVERNANCE_ABSENT
     label: "Does the effect hold in a cell type relevant to this child?"
     why_unresolved: "Every result in this map comes from cancer lines. No patient-derived material is available and none may be acquired."
     outcomes:
@@ -139,6 +201,7 @@ nodes:
   - id: SAFE01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does the bypass component preserve viability, division rate and cell death?"
     why_unresolved: "A component that supplies a mitotic function has no safety record until it is named; nothing can be inherited from the abundance route, whose safety readouts are observations about a different manipulation."
     outcomes:
@@ -149,6 +212,7 @@ nodes:
   - id: SAFE02
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does the physical stabilisation manipulation itself preserve viability, division rate and cell death?"
     why_unresolved: "Chaperone and degradation perturbations are broadly cytotoxic at the doses that engage their targets, and EXP01's readouts describe a different manipulation entirely."
     outcomes:
@@ -159,6 +223,7 @@ nodes:
   - id: EXPRVAL01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Is the failure to reach wild-type-comparable abundance a property of the construct and condition rather than the protein?"
     why_unresolved: "Codon usage, promoter strength, tag placement and degradation during expression are all testable, and mitotic checkpoint gene expression is known to be tuned by codon usage."
     outcomes:
@@ -169,6 +234,7 @@ nodes:
   - id: COMPOSITE_VALID
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does the assembled composite system actually lower chromosome missegregation while holding the functional state and population safety?"
     why_unresolved: "No composite has been assembled, and the component functions interact: a protein recruited to supply one function may perturb another."
     outcomes:
@@ -185,6 +251,7 @@ nodes:
   - id: DEP_KIF18A
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does KIF18A support chromosome alignment when BubR1 is limiting, or does its congression role run through CENP-E and therefore through BubR1?"
     why_unresolved: "Full-text adjudication: KIF18A's own paper mentions BubR1 only as a localisation marker, so no experiment places it in a BubR1-limited background. PMID:41120314 additionally shows congression after CENP-E reactivation succeeds without KIF18A activity, so KIF18A is not an alternative driver of the congression-initiation step BubR1 is required for; its remaining relevance is alignment at the metaphase plate. Absence of a direct BubR1 link is not independence."
     outcomes:
@@ -195,10 +262,11 @@ nodes:
   - id: DEP_FLUX
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does modifying poleward flux lower missegregation in a BubR1-limited background, and is the effect independent of residual BubR1?"
     why_unresolved: "Full-text adjudication: BubR1 appears zero times in 454 sentences, so dependency is wholly unaddressed and silence is not independence. What the full text does add is a positive mechanistic argument — by targeting poleward flux, chromosome alignment is affected independently of kinetochore attachment status, which is the axis BubR1 acts on — plus three mechanistically independent perturbations (low-dose taxol, HAUS8 or NuMA codepletion) that rescued misalignment, lagging chromosomes and micronuclei in human RPE-1 and in OVKATE cells, and a stated predictor of when it works (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven, which is the transfer this case needs."
     outcomes:
-      independent_of_bubr1: S_ALIGN_SUPPLIED
+      independent_of_bubr1: S_FLUX_LOWERS_MIS
       requires_bubr1:       T_FLUX_DEPENDENT
       unestablished:        T_FLUX_FRONTIER
 
@@ -208,6 +276,7 @@ nodes:
   - id: DEP_TRIP13
     kind: branch
     resolves_by: MEASUREMENT
+    requires: CELL_MODEL
     label: "Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit without requiring BubR1, and without degrading checkpoint activation?"
     why_unresolved: "Full-text adjudication confirms the trade-off in one system and sharpens it. The two disassembly pathways do not target BubR1 directly (Mad2 for TRIP13/p31comet, Cdc20 for APC15), so dependency is indirect — but the substrate complex contains BubR1, the arrest TRIP13 depletion causes was itself dependent on Mad2 and BubR1 (Fig. 3b), and every experiment ran at BubR1-present. The dual role is demonstrated, not inferred: losing TRIP13 in interphase causes checkpoint activation failure through loss of soluble O-Mad2 (half-time 1.4 h), while losing it just before mitosis causes a dramatic delay in exit. The authors frame TRIP13 as a counter-balance in a delicate equilibrium and note that both loss and overexpression matter, so augmenting it for silencing cannot be assumed to leave activation intact."
     outcomes:
@@ -219,6 +288,7 @@ nodes:
   - id: BYPASS_ACT
     kind: branch
     resolves_by: COMPONENT_DISCOVERY
+    requires: CELL_MODEL
     label: "Is there a physically realisable way to supply checkpoint activation independently?"
     why_unresolved: "The TPR-KNL1 route is grounded as a requirement, not as a suppliable component."
     outcomes:
@@ -226,7 +296,27 @@ nodes:
       no_component:             T_ACT_NO_ACTUATOR
 
   # ---------- terminals ----------
-  - {id: CELLULAR_TARGET, kind: state, label: "Cell-level target reached in model: alignment, activation, silencing, low missegregation, viability, division and no added death, all in the tested system"}
+  # Two definitions, both computed. The canonical state is the full BubR1 trajectory; the functional
+  # target is the terminal state we actually want, open to any physically valid route.
+  - {id: CANONICAL_CELLULAR_STATE, kind: state, label: "Canonical cell state: alignment, activation, silencing, low missegregation, viability, division and no added death — the trajectory a normal cell takes"}
+  - {id: S_MIS_LOWERED, kind: state, label: "Chromosome missegregation is low, by whatever route produced it"}
+  - {id: S_POP_SAFE_ANY, kind: state, label: "The manipulation that got here has its own population safety established"}
+  - {id: S_CHECKPOINT_RISK_RESOLVED, kind: state, label: "The tumour-predisposition consequence of checkpoint competence is resolved for this case"}
+  - {id: FUNCTIONAL_CELLULAR_TARGET, kind: all_of, of: [S_MIS_LOWERED, S_POP_SAFE_ANY, S_CHECKPOINT_RISK_RESOLVED], label: "Functional cell-level target: low missegregation with the population preserved and the checkpoint-risk question resolved, by any physically valid route"}
+  - {id: S_FLUX_LOWERS_MIS, kind: state, label: "Modifying poleward flux lowers missegregation in a BubR1-limited background"}
+
+  - id: ACT_SAFETY01
+    kind: branch
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Is checkpoint competence required for this case on tumour-predisposition grounds, independently of per-division missegregation?"
+    why_unresolved: "Checkpoint deficiency predisposes to tumours by a route the missegregation endpoint does not measure, and this disorder already carries embryonal tumour risk. Nothing establishes whether a euploid-but-checkpoint-deficient state carries that liability, so it is asked rather than assumed either way."
+    outcomes:
+      not_required_for_this_state: S_CHECKPOINT_RISK_RESOLVED
+      checkpoint_competence_required: T_ACT_IS_REQUIRED
+      unestablished: T_ACT_RISK_FRONTIER
+  - {id: T_ACT_IS_REQUIRED, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Checkpoint competence is required on predisposition grounds: the functional target collapses back onto the canonical state and BYPASS_ACT is a real gate after all"}
+  - {id: T_ACT_RISK_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Whether checkpoint competence is needed on predisposition grounds is unestablished; the question is specified and unasked"}
   # ---------- beyond the cell: the scales this map previously stopped short of ----------
   - {id: S_TISSUE_FRACTION_FALLS, kind: state, label: "The aneuploid cell fraction falls in a tissue relevant to this child's phenotype"}
   - {id: S_CLINICAL_MODIFIED, kind: state, label: "A measurable feature of the clinical course is modified"}
@@ -246,6 +336,7 @@ nodes:
   - id: XSCALE01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: TISSUE_MODEL
     label: "Does improving per-division fidelity lower the aneuploid cell fraction in a relevant tissue?"
     why_unresolved: "Every readout in this map is per-division in cultured cells. A tissue's aneuploid fraction is a population property set by division fidelity, selection and clearance together, and nothing here measures the aggregate."
     outcomes:
@@ -256,6 +347,7 @@ nodes:
   - id: IRREV01
     kind: branch
     resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
     label: "Is the already-established component of the phenotype reversible by improving mitotic fidelity from now on?"
     why_unresolved: "Mosaic variegated aneuploidy is constitutional: much of the burden is developmental and already laid down. Improving fidelity prospectively does not undo an aneuploid cell that already exists, and nothing establishes which part of the phenotype is prospective."
     outcomes:
@@ -267,6 +359,7 @@ nodes:
   - id: XSCALE02
     kind: branch
     resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
     label: "Does a lower tissue aneuploid fraction modify a measurable feature of the clinical course?"
     why_unresolved: "The link from aneuploid burden to clinical feature is not quantified for this disorder, and the phenotype is multi-system."
     outcomes:
@@ -277,6 +370,7 @@ nodes:
   - id: SAFE_ORG
     kind: branch
     resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
     label: "Does the manipulation avoid organism-level harm?"
     why_unresolved: "No candidate in this map has an organism-level safety record, and several act on machinery (chaperones, the proteasome, mitotic motors) with broad effects outside mitosis."
     outcomes:
@@ -364,7 +458,7 @@ edges:
   # functional state has observed them in the same experiment rather than assuming them.
   - {from: S_FUNCTION_OK, to: S_POP_SAFE_F1, label: GROUNDED, note: "Observed by EXP01's required safety readouts, which gate its own outcome assignment"}
   - {from: S_ALIGN_SUPPLIED, to: SAFE01, label: EXPERIMENTAL_UNKNOWN, note: "A bypass component has no safety record at all, so population safety is a branch rather than an inherited property"}
-  - {from: F1_COMPLETE, to: CELLULAR_TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Restoring abundance of a functional protein in the relevant cell is sufficient in model. Population endpoints (viability, division, death) must still be observed, never assumed"}
+  - {from: F1_COMPLETE, to: CANONICAL_CELLULAR_STATE, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Restoring abundance of a functional protein in the relevant cell is sufficient in model. Population endpoints (viability, division, death) must still be observed, never assumed"}
   - {from: B_TURNOVER_ONLY, to: STAB01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "Re-enters STAB01 on the folding-capacity arm (P1-R) rather than the degradative arm. A deliberate loop: the same branch node asked of a different arm"}
   # negative EXP01 branches route into the bypass family
   - {from: B_ALIGN_DEFECT, to: C_KIF18A, label: GROUNDED, note: "Alignment must be supplied independently. The requirement is grounded (central region 484-715); the component is not"}
@@ -394,9 +488,19 @@ edges:
   - {from: S_POP_SAFE_F1B, to: F1_COMPLETE, label: GROUNDED, note: "AND-node member"}
   # Reaching the cell-level state is not the disease being addressed. Three separate questions follow,
   # and the third bounds the other two whatever they return.
-  - {from: CELLULAR_TARGET, to: XSCALE01, label: EXPERIMENTAL_UNKNOWN, note: "Per-division fidelity to tissue aneuploid fraction"}
-  - {from: CELLULAR_TARGET, to: IRREV01, label: EXPERIMENTAL_UNKNOWN, note: "How much of the phenotype is still ahead of the child"}
-  - {from: CELLULAR_TARGET, to: SAFE_ORG, label: EXPERIMENTAL_UNKNOWN, note: "Organism-level safety of whatever actuator got here"}
+  - {from: CANONICAL_CELLULAR_STATE, to: S_MIS_LOWERED, label: GROUNDED, note: "The canonical trajectory entails the terminal state; it is one route to it, not the definition of it"}
+  - {from: CANONICAL_CELLULAR_STATE, to: ACT_SAFETY01, label: EXPERIMENTAL_UNKNOWN, note: "Even the canonical route must answer this, though for it the answer is expected to be trivial"}
+  - {from: S_FLUX_LOWERS_MIS, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "The flux work measures lagging chromosomes and micronuclei directly — the terminal endpoint, not a canonical intermediate", evidence: ["PMID:39541344"]}
+  - {from: S_FLUX_LOWERS_MIS, to: S_ALIGN_SUPPLIED, label: GROUNDED, note: "It also supplies alignment, which the canonical state still needs"}
+  - {from: S_FLUX_LOWERS_MIS, to: ACT_SAFETY01, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_POP_SAFE_F1B, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
+  - {from: S_POP_SAFE_F2, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
+  - {from: S_MIS_LOWERED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
+  - {from: S_POP_SAFE_ANY, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
+  - {from: S_CHECKPOINT_RISK_RESOLVED, to: FUNCTIONAL_CELLULAR_TARGET, label: GROUNDED, note: "AND-node member"}
+  - {from: FUNCTIONAL_CELLULAR_TARGET, to: XSCALE01, label: EXPERIMENTAL_UNKNOWN, note: "Per-division fidelity to tissue aneuploid fraction"}
+  - {from: FUNCTIONAL_CELLULAR_TARGET, to: IRREV01, label: EXPERIMENTAL_UNKNOWN, note: "How much of the phenotype is still ahead of the child"}
+  - {from: FUNCTIONAL_CELLULAR_TARGET, to: SAFE_ORG, label: EXPERIMENTAL_UNKNOWN, note: "Organism-level safety of whatever actuator got here"}
   - {from: S_TISSUE_FRACTION_FALLS, to: XSCALE02, label: EXPERIMENTAL_UNKNOWN}
   - {from: S_CLINICAL_MODIFIED, to: ORGANISM_TARGET, label: GROUNDED, note: "AND-node member"}
   - {from: S_PROSPECTIVE_EXISTS, to: ORGANISM_TARGET, label: GROUNDED, note: "AND-node member: without a prospective component there is nothing for a route to change"}
@@ -407,7 +511,7 @@ edges:
   # worry: the same protein supports checkpoint activation and drives mitotic exit, so augmenting it
   # for silencing cannot be assumed to leave activation intact.
   - {from: F2_COMPLETE, to: COMPOSITE_VALID, label: EXPERIMENTAL_UNKNOWN, note: "The assembled system must be shown to produce the state, not credited for its parts"}
-  - {from: S_COMPOSITE_VALIDATED, to: CELLULAR_TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Validated as a system in the tested context; transfer to a relevant cell type remains separate"}
+  - {from: S_COMPOSITE_VALIDATED, to: CANONICAL_CELLULAR_STATE, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Validated as a system in the tested context; transfer to a relevant cell type remains separate"}
   # backward regression from the target, merged where it meets the forward graph
   - {from: T_NO_ACTUATOR, to: C_KIF18A, label: GROUNDED, family_transition: true, note: "Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family"}
   - {from: T_EXP01_CEILING, to: STAB01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true, note: "Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?"}
