@@ -97,9 +97,40 @@ def test_case_identity_and_drug_hunting_are_both_refused_before_a_query_is_sent(
     assert check_search_query("BUB1B BUBR1 kinase domain protein abundance")
     with pytest.raises(DisclosureRefused):
         check_search_query("BUB1B p.(Asn1067Ser) functional assay")
-    for drug_query in ("BUB1B inhibitor treatment", "BUBR1 gene therapy rescue", "aneuploidy drug repurposing"):
+    for drug_query in ("BUB1B kinase treatment", "BUBR1 gene therapy rescue", "aneuploidy drug repurposing"):
         with pytest.raises(RetrievalRefused):
             check_search_query(drug_query)
+
+
+def test_perturbation_vocabulary_is_searchable_and_therapeutic_intent_is_not():
+    """Search governance and therapeutic-output governance are separate concerns.
+
+    Refusing the word "inhibitor" made experimental cell biology unsearchable: a mechanism is
+    established by perturbing a system and measuring what moves, and the paper this case rests on
+    identifies its own mechanism with geldanamycin, cycloheximide and MG132. The module contradicted
+    itself, too — "knockdown" and "sirna" score positively in RELEVANCE_TERMS, so triage rewarded the
+    experiments retrieval refused to look for. Perturbation vocabulary is therefore allowed and
+    therapeutic framing is still refused; the prohibition on turning "inhibiting X raised Y" into
+    "administer an inhibitor of X" is enforced over the output, not by crippling the search.
+    """
+    for mechanistic in ("BUBR1 HSP90 inhibition protein level", "BUBR1 proteasome inhibition MG132",
+                        "FBXW7 knockdown BubR1 stability", "SIRT2 depletion BubR1 abundance",
+                        "BUBR1 degrader", "kinase inhibition BUBR1 turnover",
+                        "BUBR1 shRNA rescue overexpression"):
+        assert check_search_query(mechanistic), mechanistic
+    for therapeutic in ("BUBR1 drug treatment", "niacin therapy for aneuploidy",
+                        "BUBR1 therapeutic repurposing", "HSP90 small molecule screen",
+                        "BUBR1 clinical trial dosing", "gene therapy BUB1B",
+                        "BUBR1 efficacy in patients", "treating aneuploidy"):
+        with pytest.raises(RetrievalRefused):
+            check_search_query(therapeutic)
+
+
+def test_every_named_perturbation_term_actually_passes_the_gate():
+    """The allow-list is not decoration: each term must be searchable on its own."""
+    from rarepipe.stages.mechanism.retrieve import PERTURBATION_VOCABULARY
+    for term in PERTURBATION_VOCABULARY:
+        assert check_search_query(f"BUBR1 {term}"), term
 
 
 def test_the_exact_allele_is_searched_locally_and_never_becomes_a_query(corpus, adjudication, tmp_path):

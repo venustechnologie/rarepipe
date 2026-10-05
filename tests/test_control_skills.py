@@ -197,3 +197,63 @@ def test_every_source_the_stability_document_cites_is_in_its_snapshot():
     cited = set(re.findall(r"PMID:\d+", text))
     assert cited, "the stability document cites nothing"
     assert cited <= declared, f"cited but not in the snapshot: {sorted(cited - declared)}"
+
+
+# ------------------------------------------------- therapeutic-output governance over the case documents
+
+def test_no_case_document_turns_a_perturbation_into_a_recommendation():
+    """The other half of the search-policy split, and the half with the teeth.
+
+    Retrieval may now look for experiments that inhibited, depleted or degraded something. The line
+    that must not be crossed is the inference from "inhibiting X raised Y in a cell" to "administer an
+    inhibitor of X". The dose and recommendation patterns already guard the skills; a document that
+    reports a stabilisation search is exactly where that inference would surface, so it is guarded
+    here too.
+
+    The check is negation-aware, and it has to be: these documents state the prohibition explicitly,
+    so "It does not say that niacin should be given to this child" contains the forbidden phrase while
+    asserting its opposite. A guard that fires on its own disclaimer gets worked around, which is worse
+    than no guard.
+
+    What this does not catch: a recommendation in a sentence that happens to carry an unrelated
+    negation before it. The window is one sentence, so the evasion has to be deliberate; the guard is
+    a floor, not a proof.
+    """
+    import re as _re
+
+    from check_skills import DOSE, RECOMMEND
+
+    NEGATION = _re.compile(r"\b(not|never|nothing|cannot|no|without|neither|nor)\b", _re.I)
+    docs = sorted((ROOT / "docs/control").glob("MVA_*.md"))
+    assert docs, "no case documents found to check"
+    findings = []
+    for path in docs:
+        text = path.read_text()
+        for pattern, why in ((DOSE, "dose"), (RECOMMEND, "recommendation")):
+            for match in pattern.finditer(text):
+                start = max((text.rfind(c, 0, match.start()) for c in ".!?\n"), default=-1) + 1
+                if NEGATION.search(text[start:match.start()]):
+                    continue
+                findings.append(f"{path.name} contains an un-negated {why}: {match.group(0)!r}")
+    assert not findings, findings
+
+
+def test_the_recommendation_guard_still_catches_an_actual_recommendation():
+    """Negation-awareness must not have turned the guard off."""
+    import re as _re
+
+    from check_skills import RECOMMEND
+
+    NEGATION = _re.compile(r"\b(not|never|nothing|cannot|no|without|neither|nor)\b", _re.I)
+
+    def flags(text: str) -> bool:
+        for match in RECOMMEND.finditer(text):
+            start = max((text.rfind(c, 0, match.start()) for c in ".!?\n"), default=-1) + 1
+            if not NEGATION.search(text[start:match.start()]):
+                return True
+        return False
+
+    assert flags("Given the stabilisation result, nicotinic acid should be given to this child.")
+    assert flags("We recommend raising BubR1 abundance in the patient.")
+    assert not flags("It does not say that niacin should be given to this child.")
+    assert not flags("Nothing here means a chaperone perturbation should be administered.")

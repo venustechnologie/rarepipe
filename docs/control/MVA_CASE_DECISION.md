@@ -97,7 +97,9 @@ remaining biological uncertainty.
 ## The experiment that would change it
 
 Specified in full, with its precommitted interpretation matrix, in
-`MVA_EXP01_DECISION_PACKET.md`. In outline:
+`MVA_EXP01_DECISION_PACKET.md`, and as an execution-ready protocol in `MVA_EXP01_PROTOCOL.md`. The
+separate question of whether this protein can be stabilised at all is `MVA_STAB01_PROTOCOL.md`, which
+answers physical controllability and never function. In outline:
 
 Deplete endogenous BubR1 (shRNA in U2OS or HeLa, as in PMID:20516114 Fig. 4) and express an
 RNAi-insensitive construct carrying this child's exact substitution at wild-type-comparable level,

@@ -39,15 +39,68 @@
       "BUBR1 PP2A B56 stability",
       "BUBR1 geldanamycin",
       "BUBR1 protein level restored overexpression"
+    ],
+    "round_3_perturbation_vocabulary": [
+      "BUBR1 HSP90 inhibition protein level",
+      "BUBR1 proteasome inhibition MG132 stability",
+      "FBXW7 knockdown BubR1 stability",
+      "SIRT2 depletion BubR1 abundance",
+      "BUBR1 cycloheximide chase turnover",
+      "BUBR1 geldanamycin protein level",
+      "BUBR1 deubiquitinase knockdown stability",
+      "BUBR1 CBP acetyltransferase abundance",
+      "BUBR1 lysine 668 deacetylation abundance",
+      "BUB1B missense destabilised protein rescue chaperone",
+      "destabilised missense protein proteostasis steady-state level rescue",
+      "misfolded missense protein HSP90 inhibition degradation rescue"
     ]
   },
   "retrieval": {
     "page_size": 25,
-    "unique_records_seen": 354,
-    "documents_stored": 14
+    "unique_records_seen": 460,
+    "documents_stored": 19
   },
   "note": "Stored documents are the cited set plus every candidate that passed the BubR1-plus-stability screen, so a rejection recorded in MVA_BUBR1_STABILITY_REALIZATION.md can be checked against the same text that produced it.",
   "documents": [
+    {
+      "source_id": "PMID:17406666",
+      "pmcid": null,
+      "title": "Mad3 KEN boxes mediate both Cdc20 and Mad3 turnover, and are critical for the spindle checkpoint.",
+      "pub_year": "2007",
+      "journal": "",
+      "bytes": 2059,
+      "sha256": "200dda637f8995f4e17208646ba58bbf143464e84a2427b39f9a5e7c547065cf",
+      "matched_queries": [
+        "BUBR1 cycloheximide chase turnover"
+      ],
+      "triage_score": 11,
+      "triage_reasons": [
+        "checkpoint",
+        "mitotic checkpoint",
+        "kinetochore"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:18556659",
+      "pmcid": null,
+      "title": "The spindle checkpoint functions of Mad3 and Mad2 depend on a Mad3 KEN box-mediated interaction with Cdc20-anaphase-promoting complex (APC/C).",
+      "pub_year": "2008",
+      "journal": "",
+      "bytes": 1681,
+      "sha256": "b45403bf124952687e214a27a9f56177580c24bd9687a988a554ddac9788c51b",
+      "matched_queries": [
+        "BUBR1 cycloheximide chase turnover"
+      ],
+      "triage_score": 15,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "mitotic checkpoint",
+        "kinetochore"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
     {
       "source_id": "PMID:19371599",
       "pmcid": null,
@@ -115,6 +168,24 @@
       "status": "FOUND_IN_INDEX"
     },
     {
+      "source_id": "PMID:23812934",
+      "pmcid": null,
+      "title": "BubR1 is frequently repressed in acute myeloid leukemia and its re-expression sensitizes cells to antimitotic therapy.",
+      "pub_year": "2013",
+      "journal": "",
+      "bytes": 1720,
+      "sha256": "5597db055c2d5c92b3d0bcdee496ba68a86055c8be00570bd981298ef5ad3874",
+      "matched_queries": [
+        "FBXW7 knockdown BubR1 stability"
+      ],
+      "triage_score": 7,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:24825348",
       "pmcid": null,
       "title": "SIRT2 induces the checkpoint kinase BubR1 to increase lifespan.",
@@ -130,6 +201,41 @@
         "checkpoint",
         "mitotic checkpoint",
         "hypomorph"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:25672491",
+      "pmcid": null,
+      "title": "Selective Sirt2 inhibition by ligand-induced rearrangement of the active site.",
+      "pub_year": "2015",
+      "journal": "",
+      "bytes": 1175,
+      "sha256": "e8259aa6c0b5e615f7ab264532f2045bb3382a4274cee1fd7360dca4de420e53",
+      "matched_queries": [
+        "SIRT2 depletion BubR1 abundance"
+      ],
+      "triage_score": 3,
+      "triage_reasons": [
+        "checkpoint"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:27226494",
+      "pmcid": null,
+      "title": "EZH2 is required for mouse oocyte meiotic maturation by interacting with and stabilizing spindle assembly checkpoint protein BubRI.",
+      "pub_year": "2016",
+      "journal": "",
+      "bytes": 1431,
+      "sha256": "6fe569bc117f9ad36d1c2f3a12b7ac45b5bcdd309e2bdba442b646db3b28ef78",
+      "matched_queries": [
+        "BUBR1 CBP acetyltransferase abundance"
+      ],
+      "triage_score": 11,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint"
       ],
       "status": "FOUND_IN_INDEX"
     },
@@ -354,5 +460,6 @@
       ],
       "status": "FOUND_IN_INDEX"
     }
-  ]
+  ],
+  "search_policy_note": "Round 3 was only possible after search governance was separated from therapeutic-output governance: the earlier filter refused any query containing 'inhibition', which made these records unreachable. PMID:25672491 is the clearest consequence \u2014 selective Sirt2 inhibition destabilising BubR1 in human cells is the loss-of-function direction of the mechanism PMID:24825348 establishes by gain of function, and it supplies the human context that one lacked."
 }

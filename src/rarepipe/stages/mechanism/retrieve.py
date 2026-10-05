@@ -28,10 +28,30 @@ PMC_EFETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=p
 TEXT_MINING_LICENCES = re.compile(r"text mining|creativecommons|CC BY|open access|open-access", re.I)
 UA = {"User-Agent": "rarepipe-mechanism-retrieval"}
 
-# PRD 006 §38-39: agents must not drift into intervention search.
-THERAPY_TERMS = re.compile(
-    r"\b(drug|drugs|treatment|therapy|therapeutic|therapeutics|repurpos\w*|inhibitor|agonist|antagonist|"
-    r"compound screen|small molecule|gene therapy|crispr|mrna (therapy|replacement)|dosing|clinical trial)\b", re.I)
+# PRD 006 §38-39, as amended: search governance and therapeutic-output governance are separate
+# concerns, and conflating them cost us real biology.
+#
+# The original filter refused any query containing "inhibitor", which made most of experimental cell
+# biology unsearchable: mechanisms are established by perturbing a system and measuring what moves.
+# The paper this case rests on identifies its own mechanism with geldanamycin, cycloheximide and
+# MG132. The inconsistency was visible in this very module — "knockdown" and "sirna" score positively
+# in RELEVANCE_TERMS below, so triage rewarded exactly the experiments search refused to look for.
+#
+# So the gate now refuses therapeutic *intent*, not perturbation *vocabulary*. An agent may search for
+# an experiment that inhibited, depleted or degraded something. What it may not do is turn
+# "inhibiting X raised Y in a cell" into "administer an inhibitor of X" — that is an output concern,
+# enforced over the generated documents by the recommendation and dose guards in
+# tools/control/check_skills.py, not by crippling retrieval.
+THERAPEUTIC_INTENT_TERMS = re.compile(
+    r"\b(drug|drugs|treatment|treat|treating|therapy|therapies|therapeutic|therapeutics|repurpos\w*|"
+    r"compound screen|small molecule|gene therapy|crispr|mrna (therapy|replacement)|dosing|dose|doses|"
+    r"clinical trial|patients? (should|receive|benefit)|efficacy|indication)\b", re.I)
+# Named here so the split is explicit and testable rather than an accident of the pattern above:
+# research perturbation vocabulary that must stay searchable.
+PERTURBATION_VOCABULARY = ("inhibitor", "inhibition", "inhibiting", "knockdown", "knockout", "depletion",
+                           "depleted", "degrader", "degradation", "proteasome inhibition",
+                           "kinase inhibition", "sirna", "shrna", "degron", "overexpression", "rescue")
+THERAPY_TERMS = THERAPEUTIC_INTENT_TERMS  # retained name for existing callers
 
 RELEVANCE_TERMS = {
     "patient": 4, "patient-derived": 5, "fibroblast": 4, "lymphoblastoid": 4, "primary cells": 3,
@@ -52,11 +72,16 @@ class RetrievalRefused(ValueError):
 
 
 def check_search_query(query: str) -> str:
-    """Two gates: no case identity out, no intervention search in."""
+    """Two gates: no case identity out, no therapeutic intent in.
+
+    Perturbation vocabulary is deliberately allowed: inhibition, knockdown, depletion and degradation
+    are how experimental biology establishes a mechanism. Therapeutic framing is still refused.
+    """
     check_query(query)
-    if THERAPY_TERMS.search(query):
+    if THERAPEUTIC_INTENT_TERMS.search(query):
         raise RetrievalRefused(
-            f"query looks like intervention search, which Stage 06 must not start: {query!r}")
+            f"query carries therapeutic intent, which Stage 06 must not start: {query!r}. Searching for a "
+            "perturbation experiment is allowed; searching for something to give a patient is not")
     return query
 
 

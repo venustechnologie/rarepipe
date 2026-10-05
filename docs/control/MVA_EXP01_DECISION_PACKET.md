@@ -8,6 +8,8 @@ domain — `assess()` returns class level `function_persists` on I909T and L1012
 with a matched-abundance measurement — so it can no longer separate H01 from H02. It appears below as a
 replication control.
 
+Bench procedure: `MVA_EXP01_PROTOCOL.md`. This packet stays the decision authority.
+
 This packet adds no new branch vocabulary. The six required outcomes are a view over the deterministic
 rules already in `rarepipe.stages.prospective.rules`, and the endpoint ids are the ones EXP01 already
 declares. Nothing here invents a numerical threshold: every criterion is relative to the wild-type
@@ -70,10 +72,17 @@ kinase-domain substitution:
 
 Replication control, not a discriminator:
 
+| id | endpoint | criterion |
+|---|---|---|
 | `E01_ACT` | checkpoint activation (nocodazole response, MPM-2) | within the justified reference range of the wild-type arm; a prolonged arrest is not automatically better |
+
+If the exact allele fails this while the restored-abundance reference arm succeeds, that is informative
+and is reported — an unexpected activation failure at matched abundance would itself be a finding.
 
 Mechanistic, where useful — these explain a defect, they do not decide one:
 
+| id | endpoint | criterion |
+|---|---|---|
 | `E01_KT` | kinetochore localisation | comparable to wild type (optional) |
 | `E01_PP2A` | PP2A-B56 recruitment | comparable to wild type (optional) |
 
