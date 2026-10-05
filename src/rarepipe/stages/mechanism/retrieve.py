@@ -44,13 +44,21 @@ UA = {"User-Agent": "rarepipe-mechanism-retrieval"}
 # tools/control/check_skills.py, not by crippling retrieval.
 THERAPEUTIC_INTENT_TERMS = re.compile(
     r"\b(drug|drugs|treatment|treat|treating|therapy|therapies|therapeutic|therapeutics|repurpos\w*|"
-    r"compound screen|small molecule|gene therapy|crispr|mrna (therapy|replacement)|dosing|dose|doses|"
+    r"gene therapy|mrna (therapy|replacement)|dosing|dose|doses|"
     r"clinical trial|patients? (should|receive|benefit)|efficacy|indication)\b", re.I)
 # Named here so the split is explicit and testable rather than an accident of the pattern above:
 # research perturbation vocabulary that must stay searchable.
+#
+# "crispr", "small molecule" and "compound screen" were opened for mechanistic retrieval after the
+# second-round search missed genetic modifier and proteostasis screens entirely — a screen is how the
+# unbiased version of "what changes this protein's abundance" gets asked, and all three words name a
+# laboratory method rather than an intention to treat anyone. "gene therapy" stays blocked, and is
+# blocked twice over because "therapy" alone matches inside it.
 PERTURBATION_VOCABULARY = ("inhibitor", "inhibition", "inhibiting", "knockdown", "knockout", "depletion",
                            "depleted", "degrader", "degradation", "proteasome inhibition",
-                           "kinase inhibition", "sirna", "shrna", "degron", "overexpression", "rescue")
+                           "kinase inhibition", "sirna", "shrna", "degron", "overexpression", "rescue",
+                           "crispr", "small molecule", "compound screen", "modifier screen",
+                           "proteostasis", "genetic screen")
 THERAPY_TERMS = THERAPEUTIC_INTENT_TERMS  # retained name for existing callers
 
 RELEVANCE_TERMS = {

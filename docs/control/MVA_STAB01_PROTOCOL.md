@@ -16,7 +16,8 @@ that the case allele is special. The exact case allele is only tested after a pe
 reference class — stated as a stop rule in §6.
 
 **Perturbations are research control variables.** Every agent below is a tool for setting a state
-variable in a dish. Nothing here is a treatment recommendation, and no result licenses one.
+variable in a dish. Nothing here is a treatment recommendation, and no result licenses one — including
+the opened search vocabulary: a compound used to perturb a cell is not a candidate for anybody.
 
 ---
 
@@ -39,22 +40,56 @@ misread as correction of misfolding.
 
 ## 2. Mechanisms to interrogate
 
-All four come from the grounded evidence, not from a catalogue:
+**Grounded mechanism and proposed rescue direction are not the same claim, and this protocol keeps them
+apart.** What is grounded is that a mechanism *governs* this protein's abundance. What is proposed is
+that running it backwards raises abundance. The second does not follow from the first, and every
+reverse-direction arm below is an experimental hypothesis with no supporting evidence yet.
 
-| id | mechanism | perturbation direction | grounded in |
+### Grounded — the mechanism governs this substrate class
+
+| id | mechanism | what is demonstrated | source |
 |---|---|---|---|
-| P1 | HSP90-dependent folding | both: HSP90 inhibition is the established destabiliser (geldanamycin); chaperone capacity raised by HSF1 activation or HSP70/HSP40 co-expression is the untested direction | PMID:20516114 (M3) |
-| P2 | proteasomal clearance | proteasome inhibition (MG132, bortezomib as a second chemotype) | PMID:20516114 (M3) |
-| P3 | SIRT2 ↔ BubR1 K668 acetylation | SIRT2 overexpression; SIRT2 depletion and selective Sirt2 inhibition as the opposite-direction control; CBP depletion as the opposing-writer arm | PMID:24825348 (M1), PMID:25672491 |
-| P4 | FBXW7 / Thr620 degradation machinery | FBXW7 depletion; the T620 phospho-resistant construct as the substrate-side test | PMID:38008853 (M2) |
+| P1 | HSP90-dependent folding | HSP90 inhibition collapses mutant BubR1 levels while wild-type barely moves; the mutant depends on chaperone capacity | PMID:20516114 |
+| P2 | proteasomal clearance | MG132 prevents the enhanced turnover HSP90 inhibition causes; the mutant is proteasome-cleared | PMID:20516114 |
 
-P1 and P2 are expected to work in the destabilising direction — that is already published, and
-reproducing it is the positive control that the assay can detect a change at all. **The experiment is
-the other direction.**
+Both are grounded **on the reference substrates themselves** (I909T, L1012P), which is what makes them
+the right place to start. Both are demonstrated only in the destabilising direction.
 
-P3 carries a specific prediction worth recording before the result: if K668 deacetylation stabilises
-BubR1 generally, SIRT2 overexpression should raise arms R1/R2 *and* arm N. If it raises only R1/R2, the
-mechanism interacts with the misfolded state, which would be a stronger and more surprising result.
+### Grounded relation, untested on this substrate
+
+| id | mechanism | what is demonstrated | where it stops |
+|---|---|---|---|
+| P3 | SIRT2 ↔ BubR1 K668 acetylation | SIRT2 overexpression and NMN raise BubR1 abundance in mouse tissue (PMID:24825348); selective Sirt2 inhibition destabilises BubR1 in human HeLa cells (PMID:25672491) | both directions established, neither on a misfolding mutant; the raising direction only in mouse |
+| P4 | FBXW7 / Thr620 phosphodegron | FBXW7 depletion increases BubR1 stabilisation at kinetochores; T620 is a phosphodegron (PMID:38008853) | human cells, but a kinetochore pool rather than steady-state abundance, and on normally folded protein |
+
+### Proposed rescue directions — hypotheses, not grounded
+
+| id | manipulation | status |
+|---|---|---|
+| P1-R | raise chaperone capacity: HSF1 activation, or HSP70/HSP40 co-expression | **no supporting evidence.** That the mutant depends on HSP90 does not establish that more chaperone raises its level. Run as a hypothesis and report as one |
+| P2-R | reduce degradative flux below baseline | **no supporting evidence**, and confounded: proteasome inhibition is broadly toxic, so S6 governs whether any S1 change is readable at all |
+| P3-R | raise SIRT2 activity on a misfolding substrate | **extrapolated** from mouse wild-type protein |
+| P4-R | deplete FBXW7 to raise steady-state (not pool) abundance | **extrapolated**, and the published effect was pool-confined |
+
+Reproducing P1 and P2 in the destabilising direction is the **positive control that the assay can detect
+a change at all**. It is not the experiment. The experiment is every `-R` row, and each is labelled a
+hypothesis in the result record regardless of outcome.
+
+### What the closed literature search adds
+
+The search for a grounded reverse direction is **closed**: 50 queries over four rounds, the last bounded
+round aimed directly at this gap with CRISPR, small-molecule, compound-screen, modifier-screen and
+proteostasis-screen vocabulary. No genetic modifier screen, proteostasis screen or perturbation study
+raises the steady-state abundance or slows the turnover of a destabilised BubR1 missense protein. The
+`-R` rows are therefore not merely unsupported in this document; they are unsupported in the retrieved
+literature, which is why this has to be run rather than read.
+
+One finding from that round changes how P1-R should be *measured*, without grounding it. Work on global
+suppressors of protein folding defects across four unrelated proteins reports that suppressors act by
+increasing **refolding rate**, and that "thermodynamic stabilisation is neither necessary nor sufficient
+for suppressor action" (PMID:36037221). If that generalises, a chaperone-capacity arm could raise the
+foldable fraction without changing thermodynamic stability — so P1-R is judged on S1 and S2, abundance
+and turnover, and not on any stability proxy. The paper is not about BubR1 and grounds nothing here.
 
 ## 3. Readouts
 
@@ -90,6 +125,8 @@ outside the dish.
 ## 4. Outcome states
 
 Precommitted. Assigned from S1–S3 with S4 resolving the pool question, and gated on S5 and S6.
+
+They apply to the **proposed rescue arms** (the `-R` rows). A grounded-direction arm reproducing destabilisation is control validity, not an outcome: it says the assay can see a change, and nothing more. Each assignment records which arm produced it and whether that arm was grounded or hypothesised, so a positive result cannot later be cited as though it had been predicted.
 
 | state | condition |
 |---|---|

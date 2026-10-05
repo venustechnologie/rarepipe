@@ -14,18 +14,26 @@ degradation, and refuses anything that is only an association.
 abundance/stability -> biological context -> source`. A mention, a pathway membership or a plausible
 mechanism does not qualify. No drug is recommended and none was searched for.
 
-**Retrieval.** 36 queries in three rounds against Europe PMC, phrased by physical function only; 460
-unique records. Snapshot frozen at `data/literature/mva-stability-v1/` (19 documents, titles and
-abstracts only) so every rejection below is checkable against the text that produced it.
+**Retrieval — closed.** 50 queries over four rounds against Europe PMC, phrased by physical function
+only; 680 unique records. Snapshot frozen at `data/literature/mva-stability-v1/` (21 documents, titles
+and abstracts only) so every rejection below is checkable against the text that produced it.
 
-**Round 3 exists because the search policy was corrected.** The earlier filter refused any query
+**Rounds 3 and 4 exist because the search policy was corrected.** The original filter refused any query
 containing `inhibition`, which made most of experimental cell biology unsearchable — a mechanism is
-established by perturbing a system and measuring what moves, and the paper this case rests on
-identifies its own mechanism with geldanamycin, cycloheximide and MG132. Search governance and
-therapeutic-output governance are now separate: perturbation vocabulary is searchable, therapeutic
-framing is still refused, and the prohibition on turning "inhibiting X raised Y" into "administer an
-inhibitor of X" is enforced over these documents instead. Round 3 returned 8 BubR1-plus-stability
-records the old filter could not reach, and one of them changed a verdict below.
+established by perturbing a system and measuring what moves, and the paper this case rests on identifies
+its own mechanism with geldanamycin, cycloheximide and MG132. `CRISPR`, `small molecule` and
+`compound screen` were opened afterwards, because a screen is how the unbiased form of "what changes
+this protein's abundance" gets asked. Search governance and therapeutic-output governance are separate:
+perturbation and method vocabulary is searchable, therapeutic framing is still refused — including in
+combination, so `CRISPR gene therapy` and `small molecule treatment` remain blocked — and the
+prohibition on turning "inhibiting X raised Y" into "administer an inhibitor of X" is enforced over
+these documents instead.
+
+Round 3 returned 8 BubR1-plus-stability records the old filter could not reach, and one changed a
+verdict below. **Round 4 was the bounded final round aimed directly at the gap**, with screen vocabulary:
+genetic modifier screens, proteostasis screens, BubR1 stability screens and perturbation studies. It
+found no record that closes it. The search is now closed and is not reopened; the next step is bench
+execution.
 
 ## 1–6. Mechanisms that cleared the bar
 
@@ -154,6 +162,8 @@ make things worse. That is the shape of the gap.
 | Sirt2 structural inhibitor development | PMID:25672491 | the *mechanism* is used above as M1's human-cell bracket; as a route it is the wrong direction (it destabilises BubR1) and the paper's own framing is inhibitor development |
 | Mad3 KEN box / Cdc20-APC interaction | PMID:18556659 | checkpoint function of the KEN boxes, not BubR1 abundance; yeast |
 | BubR1 repression in acute myeloid leukaemia | PMID:23812934 | expression-level repression and re-expression in cancer cells; not a stability mechanism |
+| TBK1 modulation of SAC components | PMID:33310066 | "depletion of TBK1 elevates SAC components" is not resolved to BubR1, and the BubR1 finding is an *association* with APC/C, not an abundance measurement |
+| global suppressors of protein folding defects | PMID:36037221 | not about BubR1, and the perturbation is a second-site mutation rather than a machinery perturbation. It changes how a chaperone arm should be *measured* — suppressors act on refolding rate, and "thermodynamic stabilisation is neither necessary nor sufficient" — and grounds nothing for this protein |
 | BubR1 post-translational modification review | PMID:33892776 | a review. Useful as a pointer to primary work; it is not itself a measurement |
 | mono-allelic BubR1 MVA mouse; MVA progeria allelic effects; BubR1 insufficiency in cardiac aging | PMID:23300461, PMID:31738183, PMID:40607964 | phenotype consequences of low BubR1. They motivate raising abundance; they do not demonstrate a mechanism that raises it |
 

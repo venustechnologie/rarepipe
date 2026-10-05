@@ -116,12 +116,20 @@ def test_perturbation_vocabulary_is_searchable_and_therapeutic_intent_is_not():
     for mechanistic in ("BUBR1 HSP90 inhibition protein level", "BUBR1 proteasome inhibition MG132",
                         "FBXW7 knockdown BubR1 stability", "SIRT2 depletion BubR1 abundance",
                         "BUBR1 degrader", "kinase inhibition BUBR1 turnover",
-                        "BUBR1 shRNA rescue overexpression"):
+                        "BUBR1 shRNA rescue overexpression",
+                        # Laboratory methods, opened for mechanistic retrieval: a screen is how the
+                        # unbiased form of "what changes this protein's abundance" gets asked.
+                        "CRISPR screen BUBR1 stability", "HSP90 small molecule BUBR1 protein level",
+                        "compound screen BubR1 abundance", "genetic modifier screen protein stability",
+                        "proteostasis screen destabilised protein"):
         assert check_search_query(mechanistic), mechanistic
     for therapeutic in ("BUBR1 drug treatment", "niacin therapy for aneuploidy",
-                        "BUBR1 therapeutic repurposing", "HSP90 small molecule screen",
-                        "BUBR1 clinical trial dosing", "gene therapy BUB1B",
-                        "BUBR1 efficacy in patients", "treating aneuploidy"):
+                        "BUBR1 therapeutic repurposing", "BUBR1 clinical trial dosing",
+                        "gene therapy BUB1B", "BUBR1 efficacy in patients", "treating aneuploidy",
+                        # A method word does not launder therapeutic intent in the same query.
+                        "CRISPR gene therapy for aneuploidy", "small molecule treatment of MVA",
+                        "compound screen for therapeutic repurposing", "small molecule drug candidate",
+                        "clinical efficacy BUBR1"):
         with pytest.raises(RetrievalRefused):
             check_search_query(therapeutic)
 

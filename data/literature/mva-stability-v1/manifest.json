@@ -53,12 +53,30 @@
       "BUB1B missense destabilised protein rescue chaperone",
       "destabilised missense protein proteostasis steady-state level rescue",
       "misfolded missense protein HSP90 inhibition degradation rescue"
+    ],
+    "round_4_bounded_final_screens_and_perturbations": [
+      "CRISPR screen BUBR1 protein stability",
+      "CRISPR screen regulators of protein abundance kinetochore",
+      "genetic modifier screen destabilised missense protein abundance",
+      "proteostasis screen missense variant protein level rescue",
+      "BUBR1 stability screen regulators",
+      "BUB1B protein abundance screen",
+      "small molecule increases protein abundance misfolded missense variant",
+      "compound screen protein stabilisation destabilised variant steady-state",
+      "HSF1 activation increases mutant protein abundance",
+      "HSP70 co-expression stabilises missense mutant",
+      "chaperone augmentation rescues destabilised protein steady-state level",
+      "deubiquitinase increases substrate protein abundance kinetochore",
+      "proteasome inhibition increases BUBR1 steady-state level",
+      "spindle assembly checkpoint protein abundance CRISPR perturbation screen"
     ]
   },
   "retrieval": {
     "page_size": 25,
-    "unique_records_seen": 460,
-    "documents_stored": 19
+    "unique_records_seen": 680,
+    "documents_stored": 21,
+    "rounds": 4,
+    "queries_total": 50
   },
   "note": "Stored documents are the cited set plus every candidate that passed the BubR1-plus-stability screen, so a rejection recorded in MVA_BUBR1_STABILITY_REALIZATION.md can be checked against the same text that produced it.",
   "documents": [
@@ -279,6 +297,24 @@
       "status": "FOUND_IN_INDEX"
     },
     {
+      "source_id": "PMID:33310066",
+      "pmcid": null,
+      "title": "Tank Binding Kinase 1 modulates spindle assembly checkpoint components to regulate mitosis in breast and lung cancer cells.",
+      "pub_year": "2021",
+      "journal": "",
+      "bytes": 1366,
+      "sha256": "2564d1ca84a8c0d132045cbcc9a7750697ace1265e6170d1c07aaf4d899f11c3",
+      "matched_queries": [
+        "BUBR1 stability screen regulators"
+      ],
+      "triage_score": 9,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:33892776",
       "pmcid": null,
       "title": "Physiological relevance of post-translational regulation of the spindle assembly checkpoint protein BubR1.",
@@ -337,6 +373,23 @@
         "spindle assembly checkpoint",
         "mitotic checkpoint",
         "protein level"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:36037221",
+      "pmcid": null,
+      "title": "Mechanistic insights into global suppressors of protein folding defects.",
+      "pub_year": "2022",
+      "journal": "",
+      "bytes": 1886,
+      "sha256": "0ec852368947992756d7a681038fcd2d947b65d41775c0b43d73763dc0a834fa",
+      "matched_queries": [
+        "HSP70 co-expression stabilises missense mutant"
+      ],
+      "triage_score": 9,
+      "triage_reasons": [
+        "rescue"
       ],
       "status": "FOUND_IN_INDEX"
     },
@@ -461,5 +514,6 @@
       "status": "FOUND_IN_INDEX"
     }
   ],
-  "search_policy_note": "Round 3 was only possible after search governance was separated from therapeutic-output governance: the earlier filter refused any query containing 'inhibition', which made these records unreachable. PMID:25672491 is the clearest consequence \u2014 selective Sirt2 inhibition destabilising BubR1 in human cells is the loss-of-function direction of the mechanism PMID:24825348 establishes by gain of function, and it supplies the human context that one lacked."
+  "search_policy_note": "Round 3 was only possible after search governance was separated from therapeutic-output governance: the earlier filter refused any query containing 'inhibition', which made these records unreachable. PMID:25672491 is the clearest consequence \u2014 selective Sirt2 inhibition destabilising BubR1 in human cells is the loss-of-function direction of the mechanism PMID:24825348 establishes by gain of function, and it supplies the human context that one lacked.",
+  "search_status": "CLOSED. Round 4 was the bounded final round against the STAB01 gap (perturbation -> increased steady-state abundance or reduced turnover of destabilised BubR1), searched with CRISPR, small-molecule, compound-screen, modifier-screen and proteostasis-screen vocabulary opened for mechanistic retrieval. No record closes the gap. The search is not reopened; the next step is bench execution (MVA_STAB01_PROTOCOL.md)."
 }
