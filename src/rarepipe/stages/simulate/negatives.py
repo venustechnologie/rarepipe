@@ -16,7 +16,7 @@ from rarepipe.stages.prospective.model import Knowledge
 from rarepipe.stages.prospective.nodes import ResponseState
 from rarepipe.stages.prospective.store import ImmutableError, content_digest
 from rarepipe.stages.simulate.chain import Support
-from rarepipe.stages.simulate.mva import EV_NIACIN_NULL, mva_chain
+from rarepipe.stages.simulate.mva import BUBR1, NIACIN, mva_chain
 
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -118,19 +118,28 @@ class NegativeStore:
         return self.query(target, origin=Origin.AUTHENTIC_INSTITUTIONAL)
 
 
-def seed_mva_null(store: NegativeStore) -> NegativeRecord:
-    """Retain the chain's source assertion, including its unverified retrieval status.
+def seed_mva_direct_route_record(store: NegativeStore) -> NegativeRecord:
+    """Record that the direct route is unmeasured — which is not the same as measured and null.
 
-    The chain does not identify the experimental readout; do not invent one from its target.
-    A reported null and missing mechanistic measurements are distinct facts.
+    This used to record a measured null, on the strength of a citation that has since been retrieved
+    and does not support it. A store of negative results is exactly the wrong place to keep a null
+    nobody measured, so the record now says what is true: no retrieved source addresses this
+    relation. See REPAIR_R1 in the evidence repair ledger for what it said before and why.
     """
     edge = next(edge for edge in mva_chain().edges
-                if edge.support is Support.CONTRADICTED and edge.evidence_ref == EV_NIACIN_NULL)
+                if edge.source == NIACIN and edge.target == BUBR1)
+    assert edge.support is Support.ASSERTED_ONLY and edge.evidence_ref is None, (
+        "this record describes an unmeasured route; if the edge regains evidence, the record has to "
+        "be recomputed rather than left standing")
     return store.append(NegativeRecord(
         target=edge.target, tried=edge.source,
-        result=MeasuredNull(measured="Experimental readout unspecified in the chain source",
-                            finding=edge.scope_note),
-        evidence_ref=EV_NIACIN_NULL, origin=Origin.PUBLIC_EVIDENCE,
+        result=NonResult(
+            state=ResponseState.NO_RELEVANT_DATA,
+            intended_measurement="a direct effect of the precursor on the protein's abundance",
+            reason=("the citation that previously carried a null result for this relation does not "
+                    "support it, and a targeted search found no source reporting one")),
+        evidence_ref="no retrieved source addresses this relation",
+        origin=Origin.PUBLIC_EVIDENCE,
         scope_note=f"{edge.scope_note}; {edge.caveat}",
         chain_measurement=Knowledge.NOT_REPORTED,
     ))

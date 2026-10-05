@@ -336,15 +336,25 @@ def assess(candidate: CapabilityCandidate, gap: CapabilityGap, hits: dict[str, S
                   RejectionReason.INDEPENDENCE_UNESTABLISHED)
 
     # Transfer gaps, as objects rather than warnings.
+    # One transfer gap per dimension that genuinely differs. The system dimension is built from the
+    # lattice's most specific descriptor rather than from whichever field the gap happens to
+    # constrain: a relation demonstrated in one tissue and required in another is a transfer gap
+    # whether or not the gap spelled "tissue" out, and skipping it because the field was blank is how
+    # a difference becomes invisible.
     gaps_found: list[TransferGap] = []
     for hit in cited_hits:
         if hit.lattice is None:
             continue
-        for dimension in ("species", "cell_type", "tissue", "disease_state", "compartment"):
-            demonstrated = hit.lattice.dimension(dimension)
-            required = {"compartment": gap.required_context.compartment,
-                        "species": "human", "cell_type": gap.required_context.system,
-                        "tissue": "", "disease_state": ""}.get(dimension, "")
+        lattice = hit.lattice
+        system_demonstrated = lattice.cell_type or lattice.tissue or lattice.experimental_system
+        if system_demonstrated and lattice.disease_state:
+            system_demonstrated = f"{system_demonstrated} ({lattice.disease_state})"
+        candidates = (
+            ("species", lattice.species, "human"),
+            ("system", system_demonstrated, gap.required_context.system),
+            ("compartment", lattice.compartment, gap.required_context.compartment),
+        )
+        for dimension, demonstrated, required in candidates:
             if not demonstrated or not required:
                 continue
             if dimension == "compartment":

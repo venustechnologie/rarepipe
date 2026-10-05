@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from rarepipe.stages.simulate.chain import CausalChain, Support
 from rarepipe.stages.simulate.mva import (
-    BUBR1, BUBR1_FN, CHECKPOINT, EV_DOMAIN_IMPAIRED, EV_NIACIN_HUMAN, EV_NIACIN_NULL,
+    BUBR1, BUBR1_FN, CHECKPOINT, EV_DOMAIN_IMPAIRED, EV_HUMAN_NIACIN_TRIAL, EV_NIACIN_HUMAN,
     EV_RESTORED_ABUNDANCE, EV_SIRT2_BUBR1, K668, NAD_BLOOD, NAD_CELL, NIACIN, SILENCING, SIRT2,
     mva_chain,
 )
@@ -153,21 +153,31 @@ def published_behaviours() -> tuple[PublishedBehaviour, ...]:
             start=NIACIN, end=NAD_BLOOD, expected_direction="increase",
             entitled_to_at_most=Support.HUMAN_EXPERIMENTAL,
         ),
+        # Retargeted from the whole niacin-to-intracellular path to the transfer edge itself. The
+        # old form asserted a ceiling on the path, which only held while this source was the only
+        # one for that relation; once a human trial measured the tissue pool the path legitimately
+        # claims more, and the ceiling belonged to the edge all along. What this source entitles is
+        # a statement about the blood-to-cell transfer, and that is now what is checked.
         PublishedBehaviour(
             case_id="NAD02_circulating_nad_is_not_intracellular_nad",
             source=EV_NIACIN_HUMAN,
             reported="the same work reported no intracellular NAD measurement",
             scope="whole blood only",
-            start=NIACIN, end=NAD_CELL, expected_direction="increase",
+            start=NAD_BLOOD, end=NAD_CELL, expected_direction="increase",
             entitled_to_at_most=Support.DIFFERENT_COMPARTMENT,
         ),
+        # The case that used to sit here validated the chain against a published null result. The
+        # citation carrying it was retrieved and does not report one, so the benchmark was testing
+        # the chain against a behaviour nobody published. It was retired rather than relaxed; see
+        # REPAIR_R1. In its place, the human trial that was in the repository and connected to
+        # nothing now has a benchmark of its own, at the tissue it was measured in.
         PublishedBehaviour(
-            case_id="NULL01_closest_niacin_experiment_was_null",
-            source=EV_NIACIN_NULL,
-            reported="the closest nicotinic-acid experiment was null and measured none of the chain",
-            scope="a single related experiment",
-            start=NIACIN, end=BUBR1, expected_direction="contradicted",
-            entitled_to_at_most=Support.CONTRADICTED,
+            case_id="HUMAN02_niacin_raises_tissue_nad_in_human_muscle",
+            source=EV_HUMAN_NIACIN_TRIAL,
+            reported="administered niacin raised muscle NAD to the level of matched controls",
+            scope="human skeletal muscle in adult-onset mitochondrial myopathy",
+            start=NIACIN, end=NAD_CELL, expected_direction="increase",
+            entitled_to_at_most=Support.HUMAN_EXPERIMENTAL,
         ),
     )
 
@@ -213,9 +223,16 @@ def _check(chain: CausalChain, case: PublishedBehaviour) -> CaseResult:
                            f"covered ({case.scope})")
 
 
-def validate(chain: CausalChain | None = None) -> ValidationReport:
+def validate(chain: CausalChain | None = None,
+             cases: tuple[PublishedBehaviour, ...] | None = None) -> ValidationReport:
+    """`cases` is injectable so the suite's own properties can be tested on a constructed case list.
+
+    Needed once the real chain stopped resting on any unverified citation: a test that the report
+    surfaces unverified sources must be able to supply one, rather than depending on the case
+    happening to have some.
+    """
     chain = chain or mva_chain()
-    cases = published_behaviours()
+    cases = cases if cases is not None else published_behaviours()
     results = tuple(_check(chain, case) for case in cases)
     representable = sum(1 for r in results if r.outcome != "NOT_REPRESENTABLE")
     reproduced = sum(1 for r in results if r.outcome == "REPRODUCED")

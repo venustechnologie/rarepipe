@@ -422,23 +422,51 @@ def test_the_committed_external_reports_are_not_stale():
             "uv run python tools/control/compile_mva_external_gaps.py")
 
 
-def test_the_citation_audit_tracks_the_chains_own_edges():
-    """The required-terms table is a transcription, so it must not drift from the chain."""
-    from rarepipe.stages.control.discovery.external.citation_audit import ATTRIBUTIONS
+def test_the_citation_audit_covers_every_cited_edge_of_the_chain():
+    """Attributions are derived from the chain, so the audit cannot fall behind its source."""
+    from rarepipe.stages.control.discovery.external.citation_audit import (
+        NODE_TERMS, attributions,
+    )
     from rarepipe.stages.simulate.mva import mva_chain
-    edges = {f"{e.source}->{e.target}": e for e in mva_chain().edges}
-    for attribution in ATTRIBUTIONS:
-        assert attribution.edge_id in edges, f"{attribution.edge_id} is no longer in the chain"
-        assert attribution.ref in (edges[attribution.edge_id].evidence_ref or ""), \
-            f"{attribution.edge_id} no longer cites {attribution.ref}"
+    chain = mva_chain()
+    cited = {f"{e.source}->{e.target}" for e in chain.edges if e.evidence_ref}
+    derived = attributions(chain)
+    assert {a.edge_id for a in derived} == cited, "every cited edge must get an attribution"
+    for attribution in derived:
+        assert attribution.input_node in NODE_TERMS, attribution.input_node
+        assert attribution.output_node in NODE_TERMS, attribution.output_node
+        assert attribution.input_terms and attribution.output_terms
 
 
-def test_the_audit_finds_the_attribution_that_cannot_hold():
+def test_the_repaired_evidence_base_passes_its_own_backward_audit():
+    """The acceptance criterion: no attribution the chain rests on is disqualified any more.
+
+    Not an assertion that the audit finds nothing — it found two, and both were repaired. This
+    asserts the repair worked, and the ledger holds what was withdrawn.
+    """
     report = run(mva_gaps.problem())
-    assert report.citation_audit
-    failing = [a for a in report.citation_audit
-               if a.verdict.value == "DOES_NOT_SUPPORT_ATTRIBUTION"]
-    assert len(failing) == 1
-    assert failing[0].ref == "PMID:42543917"
-    assert failing[0].terms_absent
-    assert "cannot be evidence for" in failing[0].consequence
+    assert report.citation_audit, "an empty audit would pass this vacuously"
+    assert [a for a in report.citation_audit if a.disqualifies] == []
+    assert [a for a in report.citation_audit if a.chain_label_is_stale] == []
+
+
+def test_an_abstract_that_mentions_neither_endpoint_is_still_disqualified():
+    """The rule that found the problem, tested on a constructed case so it survives the repair."""
+    from rarepipe.stages.control.discovery.external.citation_audit import (
+        AttributionState, audit,
+    )
+    from rarepipe.stages.simulate.chain import CausalChain, CausalEdge, Support
+    snapshot = C.load(SNAPSHOT)
+    # A chain edge attributing an unrelated document to a relation it says nothing about.
+    probe = CausalChain(
+        chain_id="probe", case_ref="PROBE",
+        nodes=("nicotinic_acid_exposure", "bubr1_abundance"),
+        edges=(CausalEdge(source="nicotinic_acid_exposure", target="bubr1_abundance", sign=1,
+                          mechanism="a direct effect this document does not address",
+                          support=Support.CONTRADICTED, evidence_ref="PMID:42543917",
+                          scope_note="attributed for this test"),))
+    texts = {d.source_id: C.text_of(SNAPSHOT, d) for d in snapshot.documents}
+    result, = audit(snapshot, texts, probe)
+    assert result.verdict is AttributionState.DOES_NOT_SUPPORT_ATTRIBUTION
+    assert result.terms_absent
+    assert "not about this relation" in result.consequence

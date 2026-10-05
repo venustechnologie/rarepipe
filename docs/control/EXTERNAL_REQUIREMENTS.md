@@ -55,8 +55,9 @@ Build authorization for that PRD is **Phase 1 only**. See
 | the snapshot's scope is stated and enforced, which bounds what can be grounded | `tests/test_external_gates.py::test_the_corpus_stores_no_full_text` |
 | the baseline stays reproducible rather than becoming a constant | `tests/test_external_gates.py::test_the_recorded_baseline_matches_a_fresh_repository_only_compilation` |
 | invariant 18: new evidence forces a staleness evaluation | `tests/test_external_gates.py::test_the_committed_external_reports_are_not_stale` |
-| the audit's transcribed terms cannot drift from the chain they came from | `tests/test_external_gates.py::test_the_citation_audit_tracks_the_chains_own_edges` |
-| the grounding rule applied backwards to the repository's own citations | `tests/test_external_gates.py::test_the_audit_finds_the_attribution_that_cannot_hold` |
+| attributions are derived from the chain, so the audit cannot fall behind its source | `tests/test_external_gates.py::test_the_citation_audit_covers_every_cited_edge_of_the_chain` |
+| the repaired evidence base passes its own backward audit | `tests/test_external_gates.py::test_the_repaired_evidence_base_passes_its_own_backward_audit` |
+| the rule that disqualified an attribution still holds, tested on a constructed case | `tests/test_external_gates.py::test_an_abstract_that_mentions_neither_endpoint_is_still_disqualified` |
 
 ## Mutation testing (PRD section 40)
 
@@ -82,6 +83,14 @@ dynamics, no clinical prediction, no therapeutic ranking, no invented probabilit
 mathematical solvers. The structured-mechanism and perturbation-evidence providers from sections 11
 and 12 are not implemented either: `CapabilitySourceProvider` is the seam they would arrive behind,
 and adding one requires no change to the validation layer.
+
+## Superseded by the evidence-repair phase
+
+Two attributions this phase's audit disqualified have since been withdrawn, and the audit's own
+shape changed with them: attributions are now derived from the chain rather than hand-listed, so the
+drift test became unnecessary. What the audit found is recorded in
+[`MVA_EVIDENCE_REPAIR_DELTA.md`](MVA_EVIDENCE_REPAIR_DELTA.md) and enforced by
+`tests/test_evidence_repair.py`; see [`REPAIR_DESIGN.md`](REPAIR_DESIGN.md).
 
 ## Not enforced here
 

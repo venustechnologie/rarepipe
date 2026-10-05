@@ -1,0 +1,82 @@
+{
+  "captured_at_commit": "4f9de0a",
+  "how": "Observed by running the pipeline at that commit, before any evidence was repaired. Recorded rather than re-derived because once the evidence changes the previous verdicts cannot be recomputed. Every digest below is cross-checked against the artifact committed at that commit by tests/test_evidence_repair.py::test_the_recorded_baseline_matches_the_committed_reports_at_its_commit.",
+  "layers": {
+    "capability_gaps": {
+      "digest": "sha256:1d1685c423a8cda584ddd1dea2743aec0f01c2a2a681af5716f60858442b7888",
+      "results": {
+        "GAP_A_CHECKPOINT_ACTIVATION_WITHOUT_BUBR1": "ONLY_DEPENDENT_CAPABILITIES_FOUND",
+        "GAP_B_CHECKPOINT_SILENCING_WITHOUT_BUBR1": "NO_GROUNDED_CAPABILITY",
+        "GAP_C_CHROMOSOME_ALIGNMENT_WITHOUT_BUBR1": "NO_GROUNDED_CAPABILITY",
+        "GAP_D_INTRACELLULAR_COFACTOR_ENTRY": "CONTEXT_ONLY_CAPABILITY"
+      }
+    },
+    "causal_chain_support": {
+      "niacin_to_intracellular_nad_verdict": "CONDITIONAL_ON_UNVERIFIED_SUBSTITUTION",
+      "niacin_to_missegregation_verdict": "ASSERTION_ONLY",
+      "niacin_to_missegregation_weakest_link": "bubr1_abundance->bubr1_residual_function"
+    },
+    "contradiction_state": {
+      "contradicted_alternatives_to_abundance": [
+        "nicotinic_acid_exposure -> bubr1_abundance"
+      ],
+      "excluded_contradicted_routes_to_abundance_count": 1
+    },
+    "control_model": {
+      "digest": "sha256:8e670337e0ed05daedfeb4db435a2bb5ef99a41fca419051b6d03d4e1bdca9ae",
+      "result": "CONTROL_INDETERMINATE"
+    },
+    "direction_and_entitlement": {
+      "direct_route_step_entitlement": "CONTRADICTED"
+    },
+    "experiment_implications": {
+      "case_ids_including": [
+        "NULL01_closest_niacin_experiment_was_null"
+      ],
+      "negative_record_state_for_direct_route": "MEASURED_NO_EFFECT",
+      "published_behaviour_cases": 6,
+      "unmeasured_parameters": 6
+    },
+    "grounded_claims": {
+      "backward_audit": {
+        "ATTRIBUTION_AMBIGUOUS": 3,
+        "DOES_NOT_SUPPORT_ATTRIBUTION": 2,
+        "PARTIALLY_SUPPORTS_ATTRIBUTION": 1,
+        "SUPPORTS_ATTRIBUTION": 8
+      },
+      "disqualified": [
+        "PMID:20516114@cell_death->division_rate",
+        "PMID:42543917@nicotinic_acid_exposure->bubr1_abundance"
+      ]
+    },
+    "hypotheses": {
+      "h04_citations": [
+        "PMID:24825348",
+        "PMID:42543917"
+      ]
+    },
+    "physical_realizations": {
+      "abundance": "CONTEXT_MISMATCH",
+      "abundance_digest": "sha256:46d272efbe04b4edea372e5b022486d3d9218a6dea56ef68f79fa5451496e4f0",
+      "abundance_per_route": {
+        "MR_ABUNDANCE_DIRECTLY": "NO_GROUNDED_REALIZATION",
+        "MR_ABUNDANCE_VIA_NICOTINIC_ACID": "CONTEXT_MISMATCH",
+        "MR_ABUNDANCE_VIA_NMN": "EVIDENCE_INSUFFICIENT"
+      },
+      "bypass": "NO_GROUNDED_REALIZATION",
+      "bypass_digest": "sha256:40631d94f7124bece2a0ba79d81947bae1d146bb00f4b0ba7a037f39fa6378af"
+    },
+    "source_inventory": {
+      "chain_edges": 15,
+      "cited_refs": 5,
+      "unverified_labels": [
+        "PMID:42543917",
+        "PMID:42628241"
+      ]
+    },
+    "synthesis_architectures": {
+      "digest": "sha256:2a1f22561dfab224c5c77fd366887c5bb725caf5d520f7d699ffa3d23675942e",
+      "result": "SYNTHETIC_ROUTE_FEASIBILITY_UNKNOWN"
+    }
+  }
+}

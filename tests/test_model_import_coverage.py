@@ -20,7 +20,9 @@ def test_the_import_would_supply_none_of_the_unknowns():
     assembly and checkpoint signalling, which is downstream and already supported.
     """
     report = check()
-    assert report["unmeasured_parameters"] == 6
+    # The property is that the import supplies none of them, not how many there are. Asserting a
+    # count would mean that connecting a new piece of evidence broke a test about coverage.
+    assert report["unmeasured_parameters"] > 0
     assert report["a_checkpoint_model_could_supply"] == 0
     for row in report["parameters"]:
         assert row["a_published_checkpoint_model_could_supply_it"] is False

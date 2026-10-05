@@ -40,6 +40,10 @@ CHECKPOINT_MODEL_SUPPLIES = (
 # Which domain each of this chain's unmeasured parameters belongs to.
 DOMAIN_OF: dict[str, str] = {
     "k_niacin_to_blood_nad": "human_pharmacokinetics",
+    # Added when the human trial already in the repository was connected to the tissue pool. Its
+    # domain is human pharmacokinetics in a tissue, which is exactly the domain a spindle-checkpoint
+    # model does not cover — so the import's coverage of the unknowns is unchanged.
+    "f_niacin_to_tissue_nad": "human_pharmacokinetics",
     "f_blood_to_intracellular": "membrane_transport_into_the_relevant_cell_type",
     "k_nad_to_sirt2": "sirtuin_enzymology",
     "k_sirt2_deacetylation": "sirtuin_enzymology",

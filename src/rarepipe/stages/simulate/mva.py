@@ -34,11 +34,13 @@ NODES = (
     CHECKPOINT, SILENCING, ALIGNMENT, MISSEG, ANEUPLOIDY, DEATH, DIVISION,
 )
 
-# Evidence references carried from the case's hypothesis set. The two marked UNVERIFIED appear
-# only in the plan seed with no retrieval record; they are labelled so a path through them cannot
-# claim measured support. See docs/network/PRD_RESPONSE_SIMULATOR.md section 6.
-EV_NIACIN_HUMAN = "PMID:42628241 (UNVERIFIED: no retrieval record)"
-EV_NIACIN_NULL = "PMID:42543917 (UNVERIFIED: no retrieval record)"
+# Evidence references carried from the case's hypothesis set. Both references that were marked
+# UNVERIFIED have since been retrieved, and the labels were repaired accordingly — see
+# `control/evidence_repair/mva_repair.py`, which records what each label was, why it changed and
+# what the retrieval found. One of the two did not survive: the document retrieved for the direct
+# niacin-to-BubR1 null is about something else entirely, so that attribution was withdrawn rather
+# than relabelled.
+EV_NIACIN_HUMAN = "PMID:42628241"
 EV_SIRT2_BUBR1 = "PMID:24825348"
 EV_HUMAN_NIACIN_TRIAL = "PMID:32386566"
 EV_RESTORED_ABUNDANCE = "PMID:20516114"
@@ -71,6 +73,27 @@ def mva_chain() -> CausalChain:
                 name="f_blood_to_intracellular", unit="dimensionless",
                 prior=(0.0, 1.0), support=Support.ASSERTED_ONLY,
                 note="unmeasured; the interval spans no transfer to complete transfer"),
+        ),
+        # The human trial that was in the repository and connected to nothing. It measured the
+        # tissue pool, which is the compartment the blood-only route above cannot speak to — so it
+        # is recorded as its own route into that pool, at the context it actually supports and no
+        # wider. The cell type remains a transfer gap, not a resolved step.
+        CausalEdge(
+            source=NIACIN, target=NAD_CELL, sign=1,
+            mechanism="administered niacin raised the tissue NAD pool in human skeletal muscle",
+            support=Support.HUMAN_EXPERIMENTAL, evidence_ref=EV_HUMAN_NIACIN_TRIAL,
+            scope_note="muscle NAD of adult-onset mitochondrial myopathy patients reached the level "
+                       "of matched controls; human skeletal muscle, not the cell type this case "
+                       "requires",
+            caveat="demonstrated in human skeletal muscle under that study's conditions; whether "
+                   "the same rise occurs in the relevant patient-derived cells is unmeasured, and "
+                   "nothing here says niacin should be given to anyone",
+            parameter=Parameter(
+                name="f_niacin_to_tissue_nad", unit="fold-change versus matched controls",
+                prior=(1.0, 8.0), support=Support.HUMAN_EXPERIMENTAL,
+                evidence_ref=EV_HUMAN_NIACIN_TRIAL,
+                note="blood rose up to 8-fold and muscle reached control level in that cohort; the "
+                     "interval is the study's own range, not an estimate for this case"),
         ),
         CausalEdge(
             source=NAD_CELL, target=SIRT2, sign=1,
@@ -164,21 +187,30 @@ def mva_chain() -> CausalChain:
             caveat="H06: apparent improvement can be explained by selective death rather than "
                    "rescue, which is why death and division are read with their denominators",
         ),
+        # The backward audit disqualified this attribution too: the cited document's stored text
+        # mentions neither cell death nor division rate. Retiring the label is the conservative
+        # move — the edge survives as an assertion rather than being deleted — and a scientist may
+        # prefer a different remedy, such as retrieving the full article. See REPAIR_R4.
         CausalEdge(
             source=DEATH, target=DIVISION, sign=-1,
             mechanism="cell loss reduces the observed division rate",
-            support=Support.MODEL_EXPERIMENTAL, evidence_ref=EV_RESTORED_ABUNDANCE,
-            scope_note="population-level consequence",
+            support=Support.ASSERTED_ONLY,
+            scope_note="population-level consequence; no retrieved source addresses it",
         ),
-        # The null result, kept because it is inconvenient.
+        # The shortest route, which used to be recorded as refuted. The citation carrying that
+        # refutation was retrieved and is about white adipocytes adapting to cooler temperatures:
+        # it mentions neither nicotinic acid nor this protein, so it cannot refute anything here.
+        # The attribution was withdrawn and no substitute was invented — a targeted search found no
+        # paper reporting such a null result. What remains is an assertion with no evidence either
+        # way, which is a weaker claim than "refuted" and a weaker claim than "unexamined".
         CausalEdge(
             source=NIACIN, target=BUBR1, sign=1,
-            mechanism="direct niacin-to-BubR1 effect, as the closest related experiment tested it",
-            support=Support.CONTRADICTED, evidence_ref=EV_NIACIN_NULL,
-            scope_note="the closest related nicotinic-acid experiment was null and reported no "
-                       "measurement of the chain",
-            caveat="retained deliberately: a null result on the shortest route is evidence about "
-                   "the hypothesis, not noise to drop",
+            mechanism="direct niacin-to-BubR1 effect, as the case's hypothesis set proposed it",
+            support=Support.ASSERTED_ONLY,
+            scope_note="no retrieved source addresses this relation in either direction",
+            caveat="the refutation this edge used to carry rested on a citation that does not "
+                   "support it; see REPAIR_R1 in the evidence repair ledger for what it was and "
+                   "why it was withdrawn",
         ),
     )
     return CausalChain(chain_id="MVA_001_niacin_bubr1_v1", case_ref="MVA_001",

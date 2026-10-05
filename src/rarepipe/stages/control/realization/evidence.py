@@ -71,6 +71,7 @@ _CONTEXT: dict[str, dict] = {
         "measured_in_system": "healthy adults",
         "transcribed_from": "nicotinic_acid_exposure->nad_whole_blood",
         "must_appear": ("whole-blood", "healthy adults"),
+        # Retrieval confirmed this attribution verbatim, so the chain's UNVERIFIED label was lifted.
     },
     "PMID:24825348": {
         "measured_with": "nicotinamide mononucleotide",
@@ -93,12 +94,12 @@ _CONTEXT: dict[str, dict] = {
         "transcribed_from": "bubr1_residual_function->checkpoint_silencing",
         "must_appear": ("domain mutation", "abstract"),
     },
-    "PMID:42543917": {
+    "PMID:32386566": {
         "measured_with": "nicotinic acid",
-        "measured_in_compartment": "",
-        "measured_in_system": "the closest related experiment",
-        "transcribed_from": "nicotinic_acid_exposure->bubr1_abundance",
-        "must_appear": ("null",),
+        "measured_in_compartment": "intracellular (tissue homogenate)",
+        "measured_in_system": "human skeletal muscle",
+        "transcribed_from": "nicotinic_acid_exposure->nad_intracellular",
+        "must_appear": ("muscle NAD", "matched controls"),
     },
 }
 

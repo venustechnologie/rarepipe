@@ -5,9 +5,10 @@ from rarepipe.stages.network.model import AdditionalResponseState, Lineage, Orig
 from rarepipe.stages.prospective.model import Knowledge
 from rarepipe.stages.prospective.nodes import ResponseState
 from rarepipe.stages.prospective.store import ImmutableError, content_digest
-from rarepipe.stages.simulate.mva import BUBR1, EV_NIACIN_NULL
+from rarepipe.stages.simulate.mva import BUBR1
 from rarepipe.stages.simulate.negatives import (
-    InformativeNegative, MeasuredNull, NegativeRecord, NegativeStore, NonResult, seed_mva_null,
+    InformativeNegative, MeasuredNull, NegativeRecord, NegativeStore, NonResult,
+    seed_mva_direct_route_record,
 )
 
 
@@ -81,14 +82,15 @@ def test_informative_negative_requires_controls_and_power(field):
 
 def test_seed_preserves_unverified_null_and_missing_chain_measurements():
     store = NegativeStore()
-    seeded = seed_mva_null(store)
-    assert seed_mva_null(store) == seeded
+    seeded = seed_mva_direct_route_record(store)
+    assert seed_mva_direct_route_record(store) == seeded
     retrieved, = store.query(BUBR1)
-    assert retrieved.evidence_ref == EV_NIACIN_NULL
-    assert "UNVERIFIED" in retrieved.evidence_ref
-    assert retrieved.result.state == ResponseState.MEASURED_NO_EFFECT
+    # A store of negative results must not hold a null nobody measured. The invariant is that the
+    # recorded state matches what the evidence supports, not that it stays what it once was.
+    assert retrieved.result.state == ResponseState.NO_RELEVANT_DATA
+    assert "does not support it" in retrieved.result.reason
     assert retrieved.chain_measurement == Knowledge.NOT_REPORTED
-    assert "no measurement of the chain" in retrieved.scope_note
+    assert "no retrieved source addresses this relation" in retrieved.scope_note
     assert retrieved.origin == Origin.PUBLIC_EVIDENCE
     assert NegativeRecord.model_validate_json(retrieved.model_dump_json()) == retrieved
 

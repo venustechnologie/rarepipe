@@ -294,7 +294,7 @@ def actuators() -> tuple[ActuatorCandidate, ...]:
             description="raise intracellular NAD so SIRT2 deacetylates BubR1 at K668 and stabilises "
                         "it — the case's existing nicotinic-acid hypothesis",
             evidence=nad_evidence,
-            evidence_refs=("PMID:24825348", "PMID:42628241 (UNVERIFIED)", "PMID:42543917 (UNVERIFIED)"),
+            evidence_refs=("PMID:24825348", "PMID:42628241", "PMID:32386566"),
             feasibility=Feasibility.UNASSESSED,
             attribution_observables=("nad_intracellular", "sirt2_activity", "k668_acetylation",
                                      "bubr1_abundance")),

@@ -272,8 +272,11 @@ def test_gate11_the_abundance_route_discriminates_rather_than_refusing_everythin
     """The contrast is the finding: the two chains break at different steps."""
     report = run(mva_realization.abundance_problem())
     by_id = {a.realization_id: a for a in report.functions[0].realizations}
-    assert by_id["MR_ABUNDANCE_DIRECTLY"].status is RealizationResult.NO_GROUNDED_REALIZATION
-    assert by_id["MR_ABUNDANCE_DIRECTLY"].steps[0].entitlement is Entitlement.CONTRADICTED
+    # This route used to be refuted. The citation carrying the refutation was retrieved and does not
+    # support it, so what remains is an unsupported assertion — a weaker claim than "refuted", and
+    # the reason the status moved. See REPAIR_R1.
+    assert by_id["MR_ABUNDANCE_DIRECTLY"].status is RealizationResult.EVIDENCE_INSUFFICIENT
+    assert by_id["MR_ABUNDANCE_DIRECTLY"].steps[0].entitlement is Entitlement.UNSUPPORTED
 
     acid = by_id["MR_ABUNDANCE_VIA_NICOTINIC_ACID"]
     nmn = by_id["MR_ABUNDANCE_VIA_NMN"]
@@ -298,7 +301,10 @@ def test_gate11_nothing_in_the_mva_registry_cites_a_claim_the_repository_lacks()
     for edge_id in cited:
         edge = problem.inventory.edge(edge_id)       # raises Unentitled if invented
         assert edge.support in set(Support), f"{edge_id} carries a support level nothing maps"
-        assert edge.ref, f"{edge_id} resolves but carries no citation"
+        # An edge may legitimately carry no citation once an attribution has been withdrawn; what it
+        # may not do is claim support it has no source for. That is the invariant.
+        if edge.support is not Support.ASSERTED_ONLY:
+            assert edge.ref, f"{edge_id} claims {edge.support.value} with no citation"
 
 
 # ---------------------------------------------------------------- Gate 12: determinism

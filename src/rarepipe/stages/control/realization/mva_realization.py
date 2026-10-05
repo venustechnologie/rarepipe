@@ -77,13 +77,15 @@ def registry() -> PhysicalPrimitiveRegistry:
             delivery_requirements="oral; the cited study used healthy adults",
             known_dependencies=("conversion to the intracellular pool, which is unmeasured here",),
             known_safety_effects=("not represented in this state model",),
-            evidence="two chain edges, one supporting the circulating effect and one null on the "
-                     "direct effect; both citations lack a retrieval record",
+            evidence="one chain edge supporting the circulating effect, now retrieved and verified. "
+                     "The edge that recorded a null on the direct effect lost its citation: the "
+                     "document does not support it (REPAIR_R1)",
             validity_domain="whole-blood NAD in healthy adults",
-            uncertainty="whether any of it reaches the compartment the mechanism needs",
+            uncertainty="whether any of it reaches the relevant cells; a human trial measures the "
+                        "tissue pool in skeletal muscle, which is a different system",
             feasibility_status="unassessed for this case",
             provenance=_p(EpistemicType.LITERATURE_EVIDENCE, "the case's causal chain",
-                          refs=("PMID:42628241", "PMID:42543917"))),
+                          refs=("PMID:42628241",))),
 
         PhysicalPrimitive(
             primitive_id="PP_NMN", primitive_class=PrimitiveClass.SMALL_MOLECULE,
@@ -305,7 +307,8 @@ def abundance_realizations() -> tuple[MechanisticRealization, ...]:
         MechanisticRealization(
             realization_id="MR_ABUNDANCE_DIRECTLY", agent=NICOTINIC_ACID, **common,
             mechanism=("raise the altered protein's level directly with the precursor, skipping "
-                       "the intervening steps, as the closest related experiment tested it"),
+                       "the intervening steps. No retrieved source addresses this relation in "
+                       "either direction"),
             steps=(
                 Step(step_id="S1", uses_primitive="PP_NICOTINIC_ACID",
                      capability_id="CAP_RAISE_ABUNDANCE_DIRECTLY",
@@ -313,8 +316,9 @@ def abundance_realizations() -> tuple[MechanisticRealization, ...]:
             ),
             provenance=_r(EpistemicType.BUILDING_BLOCK_CAPABILITY,
                           "the shortest version of the case's route",
-                          "included so the compiler has to reckon with the null result rather than "
-                          "route around it", refs=("PMID:42543917",))),
+                          "retained after REPAIR_R1 withdrew the refutation it used to carry: the "
+                          "route is now unsupported rather than refuted, which is a weaker claim "
+                          "and a different one")),
     )
 
 

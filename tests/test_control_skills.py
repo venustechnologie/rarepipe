@@ -139,3 +139,20 @@ def test_every_external_gate_is_cited():
     cited = set(re.findall(rf"`{re.escape(path)}::(\w+)`", text))
     missing = sorted(defined - cited)
     assert not missing, f"{path} defines tests the requirements map never cites: {missing}"
+
+
+def test_the_repair_requirements_map_cites_tests_that_exist():
+    text = (ROOT / "docs/control/REPAIR_REQUIREMENTS.md").read_text()
+    cited = re.findall(r"`(tests/[\w/]+\.py)::(\w+)`", text)
+    assert len(cited) >= 20
+    for path, name in cited:
+        assert f"def {name}(" in (ROOT / path).read_text(), f"{path}::{name} does not exist"
+
+
+def test_every_repair_test_is_cited():
+    text = (ROOT / "docs/control/REPAIR_REQUIREMENTS.md").read_text()
+    path = "tests/test_evidence_repair.py"
+    defined = set(re.findall(r"^def (test_\w+)\(", (ROOT / path).read_text(), re.M))
+    cited = set(re.findall(rf"`{re.escape(path)}::(\w+)`", text))
+    missing = sorted(defined - cited)
+    assert not missing, f"{path} defines tests the requirements map never cites: {missing}"

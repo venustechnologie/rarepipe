@@ -108,9 +108,13 @@ def hypotheses() -> list[Hypothesis]:
                    statement="An upstream change occurs but does not improve the SIRT2 to BubR1 connection",
                    evidence=[ev(ref="PMID:24825348", statement_type=StatementType.LITERATURE_CLAIM,
                                 scope_note="NMN, not nicotinic acid, in aged mice"),
-                             ev(ref="PMID:42543917", statement_type=StatementType.LITERATURE_CLAIM,
-                                scope_note="closest related nicotinic-acid experiment was null; it reported no "
-                                           "measurement of the chain")],
+                             # The second citation this hypothesis used was withdrawn: the document
+                             # retrieved for it is about white adipocytes in the cold and cannot
+                             # support a null nicotinic-acid result. See REPAIR_R1.
+                             ev(ref="PMID:32386566", statement_type=StatementType.LITERATURE_CLAIM,
+                                scope_note="niacin raised muscle NAD to control level in human "
+                                           "myopathy patients; the upstream change is measurable in "
+                                           "a human tissue, which is what this hypothesis turns on")],
                    distinguished_by="mechanistic measurements alongside abundance"),
         Hypothesis(id="H05", level="alternative_mechanism",
                    statement="Cellular improvement involves a mechanism outside the proposed chain",

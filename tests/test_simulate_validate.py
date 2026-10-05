@@ -13,6 +13,9 @@ from rarepipe.stages.simulate.mva import (
 from rarepipe.stages.simulate.validate import published_behaviours, validate
 
 
+NAD_CELL_NODE = "nad_intracellular"
+
+
 def _replace(chain: CausalChain, key: str, **changes) -> CausalChain:
     edges = []
     for edge in chain.edges:
@@ -54,14 +57,20 @@ def test_a_flipped_direction_is_caught():
     assert nad.chain_direction == "decrease"
 
 
-def test_dropping_the_null_result_is_caught():
-    """If the chain stops marking the direct route contradicted, the suite must notice."""
-    chain = _replace(mva_chain(), f"{NIACIN}->{BUBR1}",
-                     support=Support.MODEL_EXPERIMENTAL, scope_note="relabelled for this test")
+def test_a_chain_claiming_more_than_its_source_is_caught():
+    """The invariant the retired null case used to carry.
+
+    That case validated the chain against a published null, and the citation carrying the null does
+    not report one, so the benchmark was testing a behaviour nobody published. The property it was
+    protecting — a chain may not claim more than its source entitles — is tested here on a case
+    whose source does exist.
+    """
+    chain = _replace(mva_chain(), f"{NAD_BLOOD}->{NAD_CELL_NODE}",
+                     support=Support.HUMAN_EXPERIMENTAL, scope_note="relabelled for this test")
     report = validate(chain)
-    null = next(r for r in report.results
-                if r.case_id == "NULL01_closest_niacin_experiment_was_null")
-    assert null.outcome == "OVER_CLAIMS_ITS_SOURCE"
+    case = next(r for r in report.results
+                if r.case_id == "NAD02_circulating_nad_is_not_intracellular_nad")
+    assert case.outcome == "OVER_CLAIMS_ITS_SOURCE"
 
 
 def test_a_case_outside_the_chain_is_not_counted_as_a_pass_or_a_failure():
@@ -73,9 +82,28 @@ def test_a_case_outside_the_chain_is_not_counted_as_a_pass_or_a_failure():
     assert report.reproduced == 0
 
 
-def test_the_headline_count_does_not_hide_unverified_sources():
-    """Three of six cases rest on references with no retrieval record."""
+def test_the_real_chain_no_longer_rests_on_any_unverified_source():
+    """Every citation has been retrieved, so the chain's own unverified labels were repaired."""
     report = validate()
+    assert report.unverified_sources == ()
+    assert report.reproduced_on_verified_sources == report.reproduced
+
+
+def test_the_headline_count_does_not_hide_unverified_sources():
+    """The invariant, on a supplied case whose source is unverified. The count is not the property.
+
+    Asserting that the real chain *has* unverified sources would mean that verifying them broke a
+    test about surfacing them.
+    """
+    from rarepipe.stages.simulate.validate import PublishedBehaviour
+    cases = (*published_behaviours(), PublishedBehaviour(
+        case_id="PROBE_unverified",
+        source="PMID:00000003 (UNVERIFIED: no retrieval record)",
+        reported="nicotinic acid raised whole-blood NAD",
+        scope="a source with no retrieval record",
+        start=NIACIN, end=NAD_BLOOD, expected_direction="increase",
+        entitled_to_at_most=Support.HUMAN_EXPERIMENTAL))
+    report = validate(cases=cases)
     assert report.unverified_sources
     assert report.reproduced_on_verified_sources < report.reproduced
     rendered = report.render()

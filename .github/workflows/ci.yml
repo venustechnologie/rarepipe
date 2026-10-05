@@ -65,6 +65,13 @@ jobs:
           uv run python tools/control/compile_mva_external_gaps.py
           git diff --exit-code -- docs/control/MVA_CAPABILITY_GAPS_EXTERNAL.md docs/control/MVA_CAPABILITY_DISCOVERY_TRACE.md
 
+      # Every layer recomputed from the repaired evidence. If any of them moves, these two reports
+      # must move with it, which is what makes the propagation checkable rather than claimed.
+      - name: Evidence repair deltas are not stale
+        run: |
+          uv run python tools/control/compile_evidence_repair.py
+          git diff --exit-code -- docs/control/MVA_EVIDENCE_REPAIR_DELTA.md docs/control/MVA_FULL_RECOMPILE_DELTA.md
+
       # Reports unreachable decision branches. Non-zero while EXP03 cannot supply sirt2_activity
       # and k668_acetylation to B06 and B11, which is a known open finding rather than a
       # regression, so it is recorded without failing the build. Remove `|| true` once EXP03 is

@@ -110,8 +110,7 @@ def test_an_unvalued_parameter_is_never_collapsed_to_a_midpoint():
     chain = mva_chain()
     result = run(chain, target=MISSEG, master_seed=20261004, draws=500)
 
-    # 6 unmeasured parameters in mva_chain
-    assert len(result.parameters) == 6
+    assert result.parameters, "a chain with no unmeasured parameter would pass this vacuously"
     for p in result.parameters:
         assert p.is_measured is False
         assert p.measured_value is None
@@ -265,14 +264,14 @@ def test_contradicted_path_refuses_to_report_favourable():
                 sign=1,
                 mechanism="direct test that yielded null",
                 support=Support.CONTRADICTED,
-                evidence_ref="PMID:42543917",
+                evidence_ref="PMID:00000002",
                 scope_note="refuted direct effect",
                 parameter=Parameter(
                     name="k_contra",
                     unit="fold",
                     prior=(1.0, 2.0),
                     support=Support.CONTRADICTED,
-                    evidence_ref="PMID:42543917",
+                    evidence_ref="PMID:00000002",
                 ),
             ),
         ),
