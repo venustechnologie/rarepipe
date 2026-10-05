@@ -2088,6 +2088,15 @@ about the world. The first is never upgraded into the second.
 - PMID:20516114 — stable kinetochore-microtubule attachment relies on the central part of human BubR1 (484-715), which is where the PP2A-recruitment motif of this protein sits.
 - EXP01 already carries kinetochore PP2A-B56 recruitment (E01_PP2A) as an OPTIONAL mechanistic readout. If this hypothesis holds, the optional readout is the primary discriminator.
 
+**Structural facts, verified against retrieved full text.** This replaced a flagged
+guess, and the answer came back more specific than the guess was.
+
+- *kard span* — Residues 665-682. "The KARD, spanning residues 665 to 682, is a highly conserved domain" (PMID:33892776).
+- *b56 binding segment* — Residues 668-675. "The KARD encompasses the B56 binding site, identified as a LxxIxE motif contained within residues 668-675 (K L SP I I E D)" (PMID:33892776).
+- *k668 position* — K668 is structurally present at the B56 interface: "four sites in particular, K668, L669, I672 and E674, were identified to physically interact" (PMID:33892776). It is not one of the three critical positions — the LxxIxE core is leucine at position 1, isoleucine at 4, glutamate at 6 (PMID:40684918), which on this sequence are L669, I672 and E674. K668 precedes position 1.
+- *k668 acetylation scope* — The SIRT2/K668 evidence establishes stability and degradation control, not PP2A-B56 recruitment: "K250 and lysine 668 (K668)... regulate BubR1 protein stability in opposite manners" (PMID:33892776), and PMID:24825348 measures abundance.
+- *unverified remainder* — That a K668 alanine substitution has only a modest effect on B56 binding is recorded as supplied and NOT grounded: the retrieval guard refuses a residue-plus- substitution query as case-specific protein-change shorthand, failing closed as it should. It is not load-bearing — interface-but-not-critical is established by the quotes above.
+
 **Retrodiction, from data not used to build the city's variables.** The partition this variable implies — phosphatase-scaffolding readouts coupled, checkpoint ACTIVATION separable because it runs through the TPR-KNL1 interaction rather than through phosphatase delivery — matches all four separation-of-function alleles in the case's own source, none of which was used to define the city's control variables. 731X retains 1-715 and the recruitment region: restores alignment. 483X lacks 484-1050 and therefore the region: fails alignment. Y155C is TPR and retains the region: restores alignment, loses checkpoint activation. R550Q is central and intact: restores both. Four alleles, four predictions, four matches.
 
 **New predictions** — none of these was used to construct the hypothesis.
@@ -2095,17 +2104,35 @@ about the world. The first is never upgraded into the second.
 - Co-movement: perturbing PP2A-B56 recruitment at fixed BubR1 abundance should move alignment, attachment turnover, checkpoint silencing and cohesion together, while checkpoint ACTIVATION remains separable. The city predicts no such coupling; it treats them as four variables.
 - Kinetochore PP2A-B56 should be reduced in this case's allele in proportion to the integrity of the recruitment region, independently of total protein abundance — which is a different axis from the abundance premise CHAR01 tests.
 - A route that lowers missegregation by restoring phosphatase delivery should improve PCS as well, because centromeric cohesin protection is PP2A-dependent. That predicts COUPLING01's answer rather than waiting for it.
-- Unverified and the first thing to check: K668, the SIRT2 deacetylation site the whole abundance story runs through, may lie in or beside the same recruitment motif. If so, the SIRT2 axis would act on phosphatase delivery as well as on abundance, connecting two districts the city treats as unrelated.
 
 **Evidence against, and incompatibilities.**
 
 - The dissociations could instead reflect two independent BubR1 functions rather than one variable plus one separable arm. The hypothesis is not distinguished from that by the retrodiction alone, which is why the co-movement prediction is the test.
-- The KARD/PP2A-recruitment coordinates used in the K668 adjacency claim are background knowledge and are NOT verified against any document retrieved in this project. That specific sub-prediction is flagged unverified and must be checked against a stored source before it is taken seriously.
 - Astrin-PP1 and PP2A-B56 are different phosphatases. Treating them as one capacity is a simplification the co-movement experiment would expose.
+- K668 being at the interface does not make the acetylation functional there. The residue is outside the three positions that carry binding, so the structural fact constrains the bridge hypothesis below rather than supporting it.
 
 **Smallest discriminating experiment.** In a BubR1-limiting human cell line, perturb PP2A-B56 kinetochore recruitment alone — by the B56-binding motif rather than by BubR1 — and measure, in the same cells: kinetochore PP2A-B56, chromosome alignment, k-fibre turnover, time to anaphase, premature chromatid separation and the nocodazole response. The hypothesis predicts the first five move together and the sixth does not. The city predicts no particular relationship among any of them.
 
-**Status.** `NOT_TRAVERSABLE`. Promotion requires: The co-movement result above, plus verification of the recruitment-motif coordinates against a retrieved document.
+**Status.** `NOT_TRAVERSABLE`. Promotion requires: The co-movement result above. The recruitment-motif coordinates are now verified, so that leg is closed.
+
+#### Bridge hypothesis `BR1_K668_ACETYLATION_TO_PHOSPHATASE_DELIVERY` — `NOT_ESTABLISHED`
+
+Kept separate from the parent on purpose: it would connect two districts, so it must
+not be able to borrow the parent's support.
+
+**Claim.** K668 acetylation state alters kinetochore PP2A-B56 recruitment, independently of BubR1 abundance — which would connect abundance control (F1, through SIRT2) to phosphatase-delivery control (LV1) through one residue.
+
+**Established.** K668 is at the B56 interface. K668 acetylation regulates protein stability. Both separately, from retrieved sources.
+
+**Not established.** Any relation between the acetylation state and recruitment. No retrieved source connects them, and the structural fact argues mildly against it: K668 lies outside the three positions that carry B56 binding.
+
+**Discriminating question.** Does K668 acetylation state alter kinetochore PP2A-B56 recruitment independently of BubR1 abundance?
+
+**Experiment.** Compare acetylation-mimetic and non-acetylatable K668 constructs at MATCHED abundance, and measure kinetochore PP2A-B56 per kinetochore. Matched abundance is the whole design: without it the known stability effect confounds the recruitment readout.
+
+**Falsification is asymmetric.** A negative result kills this bridge ONLY. LV1 rests on the four neighbourhoods sharing a phosphatase substrate and on the four-allele retrodiction, neither of which involves K668. A positive result creates a candidate cross-district mechanism connecting abundance control to phosphatase delivery — which is why it is worth asking even though the structural fact leans against it.
+
+*F1 and LV1 stay separate. This bridge is not in `edges`, not in `control_variables`, and contributes nothing to reachability.*
 
 ### `LV2_PROTEOSTASIS_CAPACITY` — BIOLOGICAL_LATENT_VARIABLE
 

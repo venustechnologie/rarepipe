@@ -1093,3 +1093,60 @@ def test_the_sweep_reports_its_negative_results():
         assert len(n["neighbourhood_set"]) >= 3
         assert len(n["finding"]) > 80, "a negative result needs a reason, not a shrug"
     assert "Negative results" in M.render(d)
+
+
+def test_the_kard_coordinates_are_grounded_not_recalled():
+    """LV1's structural leg was flagged unverified; it is now quoted from retrieved full text.
+
+    The answer came back sharper than the guess. K668 is not merely "near" the motif — it sits at the
+    B56 interface and outside the three positions that carry binding, which constrains the bridge
+    hypothesis rather than supporting it.
+    """
+    import json
+
+    M, d = _route_map()
+    lv1 = next(h for h in d["latent_variable_hypotheses"]
+               if h["id"] == "LV1_KINETOCHORE_PHOSPHATASE_CAPACITY")
+    facts = lv1["structural_fact_verified"]
+    for key in ("kard_span", "b56_binding_segment", "k668_position", "k668_acetylation_scope"):
+        assert key in facts, key
+        assert "PMID:" in facts[key], f"{key} cites no source"
+    assert "665" in facts["kard_span"] and "682" in facts["kard_span"]
+    assert "668" in facts["b56_binding_segment"] and "675" in facts["b56_binding_segment"]
+    assert "unverified_remainder" in facts, (
+        "the one claim that could not be grounded must stay recorded as such")
+
+    manifest = json.loads(
+        (ROOT / "data/literature/mva-bypass-v1/manifest.json").read_text())
+    ver = manifest["kard_coordinate_verification"]
+    assert ver["verified_verbatim"] and ver["not_grounded"], (
+        "the snapshot must record both what was verified and what could not be")
+    cited = {c for v in ver["verified_verbatim"].values()
+             for c in __import__("re").findall(r"PMID:\d+", v)}
+    declared = {e["source_id"] for e in manifest["documents"]}
+    assert cited <= declared, f"verification quotes a source not in the snapshot: {cited - declared}"
+
+
+def test_a_bridge_hypothesis_cannot_borrow_its_parents_support():
+    """A bridge would connect two districts, so it must stand or fall on its own.
+
+    LV1 rests on four neighbourhoods sharing a phosphatase substrate and on a four-allele
+    retrodiction, neither of which involves K668. The bridge must therefore be separately typed,
+    separately falsifiable, and unable to merge the families it would connect.
+    """
+    M, d = _route_map()
+    ids = {n["id"] for n in d["nodes"]}
+    bridges = [(h, h["bridge_hypothesis"]) for h in d["latent_variable_hypotheses"]
+               if h.get("bridge_hypothesis")]
+    assert bridges, "the K668 bridge must be recorded"
+    for parent, br in bridges:
+        assert br["status"] == "NOT_ESTABLISHED", br["id"]
+        assert br["id"] not in ids and br["id"] not in d["control_variables"]
+        assert br["what_is_not_established"], br["id"]
+        assert br["discriminating_question"].endswith("?"), br["id"]
+        assert "ONLY" in br["falsification_is_asymmetric"], (
+            "the asymmetry must be explicit: a negative kills the bridge, not the parent")
+        # the parent must not list the bridge among its own support
+        blob = " ".join(parent["existing_evidence"]) + parent["why_one_variable_could_generate_all"]
+        assert "K668" not in blob, (
+            f"{parent['id']} leans on the bridge's residue for its own support")

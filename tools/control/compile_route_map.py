@@ -231,6 +231,16 @@ def validate(d: dict) -> list[str]:
                       "smallest_discriminating_experiment", "promotion_requires"):
             if not h.get(field):
                 problems.append(f"{h['id']}: missing {field}")
+        br = h.get("bridge_hypothesis")
+        if br:
+            if br.get("status") != "NOT_ESTABLISHED":
+                problems.append(f"{h['id']}: a bridge hypothesis must be NOT_ESTABLISHED")
+            if br["id"] in node_ids or br["id"] in (d.get("control_variables") or {}):
+                problems.append(f"{br['id']} is part of the city")
+            for field in ("what_is_established", "what_is_not_established", "discriminating_question",
+                          "discriminating_experiment", "falsification_is_asymmetric"):
+                if not br.get(field):
+                    problems.append(f"{br['id']}: missing {field}")
         hoods = h.get("neighbourhoods_explained") or []
         if isinstance(hoods, list):
             unknown = [x for x in hoods if x.startswith("CV_") and x not in (d.get("control_variables") or {})]
@@ -1433,6 +1443,13 @@ def render(d: dict) -> str:
         for e in h["existing_evidence"]:
             A(f"- {' '.join(e.split())}")
         A("")
+        if h.get("structural_fact_verified"):
+            A("**Structural facts, verified against retrieved full text.** This replaced a flagged")
+            A("guess, and the answer came back more specific than the guess was.")
+            A("")
+            for k, v in h["structural_fact_verified"].items():
+                A(f"- *{k.replace('_', ' ')}* — {' '.join(str(v).split())}")
+            A("")
         if h.get("retrodiction_not_used_to_build_it"):
             A("**Retrodiction, from data not used to build the city's variables.** "
               + " ".join(h["retrodiction_not_used_to_build_it"].split()))
@@ -1453,6 +1470,27 @@ def render(d: dict) -> str:
         A(f"**Status.** `{h['status']}`. Promotion requires: "
           + " ".join(h["promotion_requires"].split()))
         A("")
+        br = h.get("bridge_hypothesis")
+        if br:
+            A(f"#### Bridge hypothesis `{br['id']}` — `{br['status']}`")
+            A("")
+            A("Kept separate from the parent on purpose: it would connect two districts, so it must")
+            A("not be able to borrow the parent's support.")
+            A("")
+            A(f"**Claim.** {' '.join(br['claim'].split())}")
+            A("")
+            A(f"**Established.** {' '.join(br['what_is_established'].split())}")
+            A("")
+            A(f"**Not established.** {' '.join(br['what_is_not_established'].split())}")
+            A("")
+            A(f"**Discriminating question.** {' '.join(br['discriminating_question'].split())}")
+            A("")
+            A(f"**Experiment.** {' '.join(br['discriminating_experiment'].split())}")
+            A("")
+            A(f"**Falsification is asymmetric.** {' '.join(br['falsification_is_asymmetric'].split())}")
+            A("")
+            A(f"*{' '.join(br['does_not_merge'].split())}*")
+            A("")
     A("### Negative results")
     A("")
     A("Neighbourhood sets for which no plausible common variable can currently be identified. Reported")

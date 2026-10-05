@@ -72,6 +72,19 @@
       "status": "FOUND_IN_INDEX"
     },
     {
+      "source_id": "PMID:23079597",
+      "title": "Integration of kinase and phosphatase activities by BUBR1 ensures formation of stable kinetochore-microtubule attachments.",
+      "pub_year": "2012",
+      "journal": "",
+      "bytes": 1258,
+      "sha256": "92707ceb1ef914b8bed3a0b3585b912c75e9fac6b4a0d1326089409c5825c1ba",
+      "matched_queries": [
+        "BubR1 KARD integration of kinase and phosphatase activities kinetochore"
+      ],
+      "triage_score": 12,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:28072388",
       "title": "A sequential multi-target Mps1 phosphorylation cascade promotes spindle checkpoint signaling.",
       "pub_year": "2017",
@@ -112,6 +125,20 @@
       "status": "FOUND_IN_INDEX"
     },
     {
+      "source_id": "PMID:33125045",
+      "title": "Kinetochore phosphatases suppress autonomous Polo-like kinase 1 activity to control the mitotic checkpoint.",
+      "pub_year": "2020",
+      "journal": "",
+      "bytes": 1249,
+      "sha256": "41a77c26974af6a451a8572edb512fe108033f52e15d4cedddb2bc725f8db188",
+      "matched_queries": [
+        "BubR1 KARD domain Plk1 phosphorylation PP2A B56 recruitment",
+        "BubR1 KARD motif PP2A B56 recruitment kinetochore"
+      ],
+      "triage_score": 14,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:33847264",
       "title": "Cell competition removes segmental aneuploid cells from &lt;i&gt;Drosophila&lt;/i&gt; imaginal disc-derived tissues based on ribosomal protein gene dose.",
       "pub_year": "2021",
@@ -122,6 +149,23 @@
         "cell competition removes aneuploid cells in tissue"
       ],
       "triage_score": 3,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:33892776",
+      "title": "Physiological relevance of post-translational regulation of the spindle assembly checkpoint protein BubR1.",
+      "pub_year": "2021",
+      "journal": "",
+      "bytes": 1288,
+      "sha256": "c860ab8bd625c041883c74af4b158886b2aa5e9fc85892e19c63ab105b24e771",
+      "matched_queries": [
+        "BubR1 B56 PP2A direct binding kinetochore attachment",
+        "BubR1 KARD domain Plk1 phosphorylation PP2A B56 recruitment",
+        "BubR1 KARD motif PP2A B56 recruitment kinetochore",
+        "BubR1 lysine 668 acetylation function",
+        "PP2A B56 kinetochore substrate dephosphorylation attachment stability"
+      ],
+      "triage_score": 19,
       "status": "FOUND_IN_INDEX"
     },
     {
@@ -163,6 +207,21 @@
         "spindle assembly checkpoint deficiency tumour predisposition aneuploidy"
       ],
       "triage_score": 16,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:37712330",
+      "title": "A bifunctional kinase-phosphatase module balances mitotic checkpoint strength and kinetochore-microtubule attachment stability.",
+      "pub_year": "2023",
+      "journal": "",
+      "bytes": 1580,
+      "sha256": "ae44d67e7d74a95b753c0f1500a048c4423edbac3c32958fa32ac32cb2056d10",
+      "matched_queries": [
+        "BubR1 KARD domain Plk1 phosphorylation PP2A B56 recruitment",
+        "BubR1 KARD integration of kinase and phosphatase activities kinetochore",
+        "BubR1 KARD motif PP2A B56 recruitment kinetochore"
+      ],
+      "triage_score": 14,
       "status": "FOUND_IN_INDEX"
     },
     {
@@ -231,6 +290,36 @@
         "selective elimination of aneuploid cells measured"
       ],
       "triage_score": 2,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:40684918",
+      "title": "Phosphatase regulation in cell division: With emphasis on PP2A-B56.",
+      "pub_year": "2025",
+      "journal": "",
+      "bytes": 1441,
+      "sha256": "f7704d34b9a8513b99119bc3ce0bb8525ef489c57762e78d1baa5d38a8005b35",
+      "matched_queries": [
+        "BubR1 B56 PP2A direct binding kinetochore attachment",
+        "LxxIxE motif PP2A B56 binding specificity structure",
+        "PP2A B56 kinetochore substrate dephosphorylation attachment stability",
+        "PP2A B56 substrate recruitment motif crystal structure",
+        "SGO1 PP2A protection centromeric cohesin phosphorylation"
+      ],
+      "triage_score": 9,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:40884189",
+      "title": "When the Clock Is Ticking: The Role of Mitotic Duration in Cell Fate Determination.",
+      "pub_year": "2025",
+      "journal": "",
+      "bytes": 1631,
+      "sha256": "5b2cd640ee2b305f95df3d52c9389178adb3b7e324b6f5c29d59b1c3f762eceb",
+      "matched_queries": [
+        "prolonged mitosis cell death slippage daughter fate"
+      ],
+      "triage_score": 8,
       "status": "FOUND_IN_INDEX"
     },
     {
@@ -320,6 +409,19 @@
       "status": "FOUND_IN_INDEX"
     },
     {
+      "source_id": "PMID:42596742",
+      "title": "Identification of the Down Syndrome Critical Region 3 Gene as a Mammalian Cell Size Regulator.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 1029,
+      "sha256": "1462d83ce3699aa980cd560011f43eacab4909b5070415829c69f3a70f1d90c9",
+      "matched_queries": [
+        "cytoplasmic dilution enlarged cells proteome scaling"
+      ],
+      "triage_score": 11,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
       "source_id": "PMID:42647139",
       "title": "Spindle Assembly Checkpoint Competency Determines Sensitivity to KIF18A Inhibition in Small Cell Lung Cancer.",
       "pub_year": "2026",
@@ -391,5 +493,19 @@
     "depth_2": "dependency adjudication of each surviving candidate",
     "depth_3": "opened by the frontier audit, not by a plan: actuators for BubR1 abundance beyond the four interrogated (CHIP/STUB1, autophagy, HSP70/DNAJ), a mechanistic handle for arrest competence (MPS1 cascade) together with the toxicity of chronic activation, the causal-independence and surrogate questions behind the tumour-risk gate, and selective elimination of aneuploid cells \u2014 which became the F4 family",
     "rule_6_note": "External search is recursive: each depth was reached because a branch hit a missing capability, not because a search phase was scheduled."
+  },
+  "kard_coordinate_verification": {
+    "purpose": "LV1's structural leg was flagged unverified. Full text was retrieved for the two reviews that carry the coordinates and the claims are now quoted rather than recalled.",
+    "verified_verbatim": {
+      "KARD_span": "\"The KARD, spanning residues 665 to 682, is a highly conserved domain\" \u2014 PMID:33892776",
+      "B56_segment": "\"The KARD encompasses the B56 binding site, identified as a LxxIxE motif contained within residues 668-675 (K L SP I I E D)\" \u2014 PMID:33892776",
+      "K668_at_interface": "\"Among the residues in this motif, four sites in particular, K668, L669, I672 and E674, were identified to physically interact\" \u2014 PMID:33892776",
+      "critical_positions": "\"Three key positions within this motif-positions 1, 4, and 6-were found to be critical for binding... leucine (L) at position 1, isoleucine (I) at position 4, and glutamate (E) at position 6\" \u2014 PMID:40684918. On the 668-675 sequence those are L669, I672 and E674; K668 precedes position 1.",
+      "K668_acetylation_is_about_stability": "\"Two significant sites of acetylation have been identified on BubR1, lysine 250 (K250) and lysine 668 (K668)... they regulate BubR1 protein stability in opposite manners\" \u2014 PMID:33892776"
+    },
+    "not_grounded": {
+      "K668A_binding_magnitude": "The claim that a K668 alanine substitution has only a modest effect on B56 binding could not be grounded. The retrieval guard refused the query outright \u2014 it reads a residue-plus-substitution string as case-specific protein-change shorthand and fails closed, which is the correct behaviour and cannot tell a published residue from this child's. The claim is recorded as supplied and unverified. It is not load-bearing: K668 being at the interface but outside the three critical positions is established by the two quotes above, and that is all LV1 needs."
+    },
+    "full_text_policy_note": "Full text was read for verification and is not stored here; this snapshot remains titles and abstracts only."
   }
 }
