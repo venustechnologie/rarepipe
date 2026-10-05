@@ -4,9 +4,11 @@
 map_version: "1.0"
 case_ref: MVA_001
 
-# The target is a biological state, never "normal BUB1B".
+# The cell-level state is a biological state, never "normal BUB1B" — and it is not the disease.
+# Reaching it in model says nothing about the child's clinical course, so reasoning continues past it
+# to the next biological scale rather than stopping at a cell.
 target:
-  id: TARGET
+  id: CELLULAR_TARGET
   conjunction: [T_ALIGN, T_ACT, T_SIL, T_MIS, T_VIA, T_DIV, T_DEATH]
   components:
     T_ALIGN:  correct chromosome alignment
@@ -20,6 +22,11 @@ target:
 label_vocabulary: [GROUNDED, CONTEXT_TRANSFER_REQUIRED, EXPERIMENTAL_UNKNOWN,
                    PHYSICAL_ACTUATOR_MISSING, CONCEPTUALLY_SUFFICIENT_ONLY, UNSAFE]
 resolves_by_vocabulary: [MEASUREMENT, COMPONENT_DISCOVERY]
+ultimate_target:
+  id: ORGANISM_TARGET
+  note: "Modification of this child's clinical course. Not reachable by any route in this map today, and
+    bounded by governance as well as biology: no intervention in this child is authorised, there is no
+    recontact, and much of the phenotype is developmental and already established."
 terminal_vocabulary: [TARGET_REACHED_IN_MODEL, UNSAFE, NO_KNOWN_CONTINUATION,
                       NOT_IN_LOCAL_CASE_CORPUS, NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE,
                       NO_KNOWN_PHYSICAL_REALIZATION, CONTEXT_TRANSFER_REQUIRED, BOUNDED_FRONTIER]
@@ -179,7 +186,7 @@ nodes:
     kind: branch
     resolves_by: MEASUREMENT
     label: "Does KIF18A support chromosome alignment when BubR1 is limiting, or does its congression role run through CENP-E and therefore through BubR1?"
-    why_unresolved: "KIF18A's congression role was defined in cooperation with CENP-E, and CENP-E's congression mechanism is BubR1-dependent. No experiment places KIF18A in a BubR1-limited background. Absence of a direct BubR1 link is not independence."
+    why_unresolved: "Full-text adjudication: KIF18A's own paper mentions BubR1 only as a localisation marker, so no experiment places it in a BubR1-limited background. PMID:41120314 additionally shows congression after CENP-E reactivation succeeds without KIF18A activity, so KIF18A is not an alternative driver of the congression-initiation step BubR1 is required for; its remaining relevance is alignment at the metaphase plate. Absence of a direct BubR1 link is not independence."
     outcomes:
       independent_of_bubr1: S_ALIGN_SUPPLIED
       requires_bubr1:       T_KIF18A_DEPENDENT
@@ -189,7 +196,7 @@ nodes:
     kind: branch
     resolves_by: MEASUREMENT
     label: "Does modifying poleward flux lower missegregation in a BubR1-limited background, and is the effect independent of residual BubR1?"
-    why_unresolved: "The flux work reports modification of segregation errors without reference to BubR1, and no retrieved record tests it against BubR1 status. Silence is not independence."
+    why_unresolved: "Full-text adjudication: BubR1 appears zero times in 454 sentences, so dependency is wholly unaddressed and silence is not independence. What the full text does add is a positive mechanistic argument — by targeting poleward flux, chromosome alignment is affected independently of kinetochore attachment status, which is the axis BubR1 acts on — plus three mechanistically independent perturbations (low-dose taxol, HAUS8 or NuMA codepletion) that rescued misalignment, lagging chromosomes and micronuclei in human RPE-1 and in OVKATE cells, and a stated predictor of when it works (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven, which is the transfer this case needs."
     outcomes:
       independent_of_bubr1: S_ALIGN_SUPPLIED
       requires_bubr1:       T_FLUX_DEPENDENT
@@ -202,7 +209,7 @@ nodes:
     kind: branch
     resolves_by: MEASUREMENT
     label: "Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit without requiring BubR1, and without degrading checkpoint activation?"
-    why_unresolved: "TRIP13 acts catalytically on Mad2 and APC15 on Cdc20, neither of which is BubR1 — but the substrate complex contains BubR1, and no experiment runs this in a BubR1-limited background. The same paper shows TRIP13 is also required to maintain open-state Mad2 for checkpoint activation, so augmenting it for silencing cannot be assumed to leave activation intact."
+    why_unresolved: "Full-text adjudication confirms the trade-off in one system and sharpens it. The two disassembly pathways do not target BubR1 directly (Mad2 for TRIP13/p31comet, Cdc20 for APC15), so dependency is indirect — but the substrate complex contains BubR1, the arrest TRIP13 depletion causes was itself dependent on Mad2 and BubR1 (Fig. 3b), and every experiment ran at BubR1-present. The dual role is demonstrated, not inferred: losing TRIP13 in interphase causes checkpoint activation failure through loss of soluble O-Mad2 (half-time 1.4 h), while losing it just before mitosis causes a dramatic delay in exit. The authors frame TRIP13 as a counter-balance in a delicate equilibrium and note that both loss and overexpression matter, so augmenting it for silencing cannot be assumed to leave activation intact."
     outcomes:
       independent_and_specific: S_SIL_SUPPLIED
       requires_bubr1:           T_TRIP13_DEPENDENT
@@ -219,7 +226,65 @@ nodes:
       no_component:             T_ACT_NO_ACTUATOR
 
   # ---------- terminals ----------
-  - {id: TARGET, kind: terminal, terminal: TARGET_REACHED_IN_MODEL, label: "Target biological state reached in model"}
+  - {id: CELLULAR_TARGET, kind: state, label: "Cell-level target reached in model: alignment, activation, silencing, low missegregation, viability, division and no added death, all in the tested system"}
+  # ---------- beyond the cell: the scales this map previously stopped short of ----------
+  - {id: S_TISSUE_FRACTION_FALLS, kind: state, label: "The aneuploid cell fraction falls in a tissue relevant to this child's phenotype"}
+  - {id: S_CLINICAL_MODIFIED, kind: state, label: "A measurable feature of the clinical course is modified"}
+  # That a prospective component exists is a precondition for modifying the course, not the
+  # modification itself. Keeping them separate is what stops the map claiming a clinical effect from
+  # the mere possibility of one.
+  - {id: S_PROSPECTIVE_EXISTS, kind: state, label: "Part of the phenotype is still ahead of the child and therefore addressable in principle"}
+  - {id: S_ORG_SAFE, kind: state, label: "No organism-level harm from the manipulation"}
+  - {id: ORGANISM_TARGET, kind: all_of, of: [S_CLINICAL_MODIFIED, S_ORG_SAFE, S_PROSPECTIVE_EXISTS], label: "Organism-level target: clinical course modified without organism-level harm"}
+  - {id: T_ORGANISM_REACHED, kind: terminal, terminal: TARGET_REACHED_IN_MODEL, label: "Organism-level target reached in model"}
+  - {id: T_NO_TISSUE_EFFECT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Per-cell fidelity improved without the tissue aneuploid fraction falling: the cell-level gain does not aggregate"}
+  - {id: T_TISSUE_UNTESTABLE, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "No tissue-level readout is available for this child: a governance boundary, since no sampling is authorised and there is no recontact"}
+  - {id: T_IRREVERSIBLE, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The established developmental component of the phenotype is not reversible by improving mitotic fidelity now. It bounds what any route in this map can address, whatever the cell-level result"}
+  - {id: T_NO_CLINICAL_EFFECT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Tissue aneuploidy falls without a measurable change in clinical course"}
+  - {id: T_CLINICAL_UNTESTABLE, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "Not assessable: no intervention in this child is authorised, so clinical-course modification cannot be observed here"}
+
+  - id: XSCALE01
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Does improving per-division fidelity lower the aneuploid cell fraction in a relevant tissue?"
+    why_unresolved: "Every readout in this map is per-division in cultured cells. A tissue's aneuploid fraction is a population property set by division fidelity, selection and clearance together, and nothing here measures the aggregate."
+    outcomes:
+      fraction_falls: S_TISSUE_FRACTION_FALLS
+      no_aggregate:   T_NO_TISSUE_EFFECT
+      untestable:     T_TISSUE_UNTESTABLE
+
+  - id: IRREV01
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Is the already-established component of the phenotype reversible by improving mitotic fidelity from now on?"
+    why_unresolved: "Mosaic variegated aneuploidy is constitutional: much of the burden is developmental and already laid down. Improving fidelity prospectively does not undo an aneuploid cell that already exists, and nothing establishes which part of the phenotype is prospective."
+    outcomes:
+      prospective_component_exists: S_PROSPECTIVE_EXISTS
+      established_and_fixed:        T_IRREVERSIBLE
+      unestablished:                T_IRREV_FRONTIER
+  - {id: T_IRREV_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Which part of the phenotype is prospective is unestablished; the question is specified and unasked"}
+
+  - id: XSCALE02
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Does a lower tissue aneuploid fraction modify a measurable feature of the clinical course?"
+    why_unresolved: "The link from aneuploid burden to clinical feature is not quantified for this disorder, and the phenotype is multi-system."
+    outcomes:
+      course_modified: S_CLINICAL_MODIFIED
+      no_change:       T_NO_CLINICAL_EFFECT
+      unassessable:    T_CLINICAL_UNTESTABLE
+
+  - id: SAFE_ORG
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Does the manipulation avoid organism-level harm?"
+    why_unresolved: "No candidate in this map has an organism-level safety record, and several act on machinery (chaperones, the proteasome, mitotic motors) with broad effects outside mitosis."
+    outcomes:
+      no_harm:      S_ORG_SAFE
+      harm:         T_UNSAFE_ORG
+      unassessable: T_ORG_SAFETY_FRONTIER
+  - {id: T_UNSAFE_ORG, kind: terminal, terminal: UNSAFE, label: "Organism-level harm: closed on safety grounds"}
+  - {id: T_ORG_SAFETY_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Organism-level safety unassessable for an unnamed component"}
   - {id: T_EXPR_INVALID, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Expression validity unresolved: the construct and condition are the suspect, not the protein"}
   - {id: T_EXP01_CEILING, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Matched abundance not achieved: function at matched abundance stays unresolved and the route re-enters at STAB01"}
   - {id: T_EXP01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Confounded or invalid: the failed validity gate is named and the condition repeated"}
@@ -273,7 +338,13 @@ edges:
   # CENP-E is closed by evidence rather than left unresolved: it has a BubR1-independent route to the
   # outer corona, and the mechanism by which it initiates congression is explicitly BubR1-dependent.
   # Localisation is not function — the same distinction Y155C forces.
-  - {from: C_CENPE, to: T_CENPE_DEPENDENT, label: GROUNDED, note: "CENP-E reduces Aurora B-mediated phosphorylation in a BubR1-dependent manner; the BubR1-independent pathway targets it to the corona without being shown to deliver alignment", evidence: ["PMID:41120314", "PMID:38354735"]}
+  # Adjudicated at figure level, because a branch-closing claim is load-bearing. Fig. 6f: CENP-E
+  # reactivation in BubR1-depleted cells did not trigger congression of polar chromosomes. Fig. 5c:
+  # Aurora B inhibition in cells lacking both CENP-E activity and BubR1 blocked congression
+  # completely, so BubR1's requirement is independent of its CENP-E-recruitment role and cannot be
+  # compensated by inhibiting Aurora kinases. PMID:38354735's BubR1-independent pathway is measured
+  # purely as CENP-E intensity relative to CENP-C — localisation, with no functional readout.
+  - {from: C_CENPE, to: T_CENPE_DEPENDENT, label: GROUNDED, note: "Fig. 6f and Fig. 5c of PMID:41120314; the BubR1-independent route of PMID:38354735 is localisation only", evidence: ["PMID:41120314", "PMID:38354735"]}
   - {from: C_KIF18A, to: DEP_KIF18A, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_FLUX, to: DEP_FLUX, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_TRIP13, to: DEP_TRIP13, label: EXPERIMENTAL_UNKNOWN}
@@ -293,7 +364,7 @@ edges:
   # functional state has observed them in the same experiment rather than assuming them.
   - {from: S_FUNCTION_OK, to: S_POP_SAFE_F1, label: GROUNDED, note: "Observed by EXP01's required safety readouts, which gate its own outcome assignment"}
   - {from: S_ALIGN_SUPPLIED, to: SAFE01, label: EXPERIMENTAL_UNKNOWN, note: "A bypass component has no safety record at all, so population safety is a branch rather than an inherited property"}
-  - {from: F1_COMPLETE, to: TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Restoring abundance of a functional protein in the relevant cell is sufficient in model. Population endpoints (viability, division, death) must still be observed, never assumed"}
+  - {from: F1_COMPLETE, to: CELLULAR_TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Restoring abundance of a functional protein in the relevant cell is sufficient in model. Population endpoints (viability, division, death) must still be observed, never assumed"}
   - {from: B_TURNOVER_ONLY, to: STAB01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "Re-enters STAB01 on the folding-capacity arm (P1-R) rather than the degradative arm. A deliberate loop: the same branch node asked of a different arm"}
   # negative EXP01 branches route into the bypass family
   - {from: B_ALIGN_DEFECT, to: C_KIF18A, label: GROUNDED, note: "Alignment must be supplied independently. The requirement is grounded (central region 484-715); the component is not"}
@@ -321,12 +392,22 @@ edges:
   # chaperone or degradation perturbation is exactly the kind that is broadly cytotoxic.
   - {from: S_POP_SAFE_F1, to: SAFE02, label: EXPERIMENTAL_UNKNOWN, note: "EXP01 safety does not transfer to the stabilisation actuator"}
   - {from: S_POP_SAFE_F1B, to: F1_COMPLETE, label: GROUNDED, note: "AND-node member"}
+  # Reaching the cell-level state is not the disease being addressed. Three separate questions follow,
+  # and the third bounds the other two whatever they return.
+  - {from: CELLULAR_TARGET, to: XSCALE01, label: EXPERIMENTAL_UNKNOWN, note: "Per-division fidelity to tissue aneuploid fraction"}
+  - {from: CELLULAR_TARGET, to: IRREV01, label: EXPERIMENTAL_UNKNOWN, note: "How much of the phenotype is still ahead of the child"}
+  - {from: CELLULAR_TARGET, to: SAFE_ORG, label: EXPERIMENTAL_UNKNOWN, note: "Organism-level safety of whatever actuator got here"}
+  - {from: S_TISSUE_FRACTION_FALLS, to: XSCALE02, label: EXPERIMENTAL_UNKNOWN}
+  - {from: S_CLINICAL_MODIFIED, to: ORGANISM_TARGET, label: GROUNDED, note: "AND-node member"}
+  - {from: S_PROSPECTIVE_EXISTS, to: ORGANISM_TARGET, label: GROUNDED, note: "AND-node member: without a prospective component there is nothing for a route to change"}
+  - {from: S_ORG_SAFE, to: ORGANISM_TARGET, label: GROUNDED, note: "AND-node member"}
+  - {from: ORGANISM_TARGET, to: T_ORGANISM_REACHED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reached in model only; no route in this map gets here today and none is authorised in this child"}
   # Assembling components that each supply a function is not evidence that the assembled system
   # yields the biological state. The functions interact, and TRIP13 is the proof of concept for the
   # worry: the same protein supports checkpoint activation and drives mitotic exit, so augmenting it
   # for silencing cannot be assumed to leave activation intact.
   - {from: F2_COMPLETE, to: COMPOSITE_VALID, label: EXPERIMENTAL_UNKNOWN, note: "The assembled system must be shown to produce the state, not credited for its parts"}
-  - {from: S_COMPOSITE_VALIDATED, to: TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Validated as a system in the tested context; transfer to a relevant cell type remains separate"}
+  - {from: S_COMPOSITE_VALIDATED, to: CELLULAR_TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Validated as a system in the tested context; transfer to a relevant cell type remains separate"}
   # backward regression from the target, merged where it meets the forward graph
   - {from: T_NO_ACTUATOR, to: C_KIF18A, label: GROUNDED, family_transition: true, note: "Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family"}
   - {from: T_EXP01_CEILING, to: STAB01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true, note: "Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?"}
@@ -339,4 +420,7 @@ grounded_facts:
   - {id: G_ACT_REGION, statement: "The N-terminal TPR domain is required for checkpoint signalling via KNL1/Blinkin", evidence: ["PMID:20516114"]}
   - {id: G_MECHANISM, statement: "For the reference substrates, low abundance arises from HSP90-dependent misfolding and proteasomal clearance at normal transcript level", evidence: ["PMID:20516114"], consequence: "Grounds P1/P2 in the destabilising direction only"}
   - {id: G_SIRT2, statement: "SIRT2 activity and BubR1 abundance are coupled through K668 acetylation: raising SIRT2 raises abundance in mouse tissue, inhibiting Sirt2 destabilises BubR1 in human cells", evidence: ["PMID:24825348", "PMID:25672491"], consequence: "A grounded relation, untested on a misfolding substrate; it is the best-grounded candidate mechanism for STAB01 and grounds no rescue direction"}
+  - {id: G_BUBR1_REQUIRED_FOR_CONGRESSION, statement: "BubR1 is required for the initiation of chromosome congression independently of its role in recruiting CENP-E, and its absence cannot be compensated by inhibiting Aurora kinases", evidence: ["PMID:41120314"], consequence: "Raises the bar for any alignment bypass: the function to be supplied is one BubR1 is directly required for, not merely one it assists"}
+  - {id: G_NO_LIMITING_EXPERIMENT, statement: "Across all five full texts adjudicated, every experiment ran at BubR1-present or BubR1-absent (siRNA or degron depletion). None ran at BubR1-limiting", evidence: ["PMID:41120314", "PMID:38354735", "PMID:41218610", "PMID:39541344", "PMID:30341343"], consequence: "This case is BubR1-limiting, not BubR1-null. Every dependency verdict in the literature is therefore about a different regime, and that is why each dependency branch keeps an `unestablished` outcome rather than resolving on the published work"}
+  - {id: G_LOCALISATION_NOT_FUNCTION, statement: "A BubR1-independent route can target a component to the kinetochore without being shown to deliver the component's function", evidence: ["PMID:38354735", "PMID:41120314"], consequence: "The same distinction Y155C forces inside this case: normal localisation with a dead function. A bypass candidate must be adjudicated on its function, never on its localisation"}
   - {id: G_KEN_SELF_DEFEATING, statement: "The BubR1 KEN degron is also required for checkpoint function", evidence: ["PMID:17406666", "PMID:20516114"], consequence: "Degron disruption is excluded as a stabilisation route on function grounds, not evidence grounds"}

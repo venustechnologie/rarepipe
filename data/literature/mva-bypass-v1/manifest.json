@@ -188,5 +188,43 @@
       "triage_score": 13,
       "status": "FOUND_IN_INDEX"
     }
-  ]
+  ],
+  "full_text_adjudication": {
+    "note": "Full text and supplementary were retrieved for the five load-bearing papers under the licensed route and adjudicated at experiment and figure level. The texts are not stored here \u2014 this snapshot stays titles and abstracts only \u2014 so what is recorded is the verdict and the figure it rests on.",
+    "papers": {
+      "PMID:41120314": {
+        "pmcid": "PMC12540835",
+        "verdict": "CLOSES the CENP-E alignment route",
+        "basis": "Fig. 6f: CENP-E reactivation in BubR1-depleted cells did not trigger congression. Fig. 5c: Aurora B inhibition with both CENP-E activity and BubR1 absent blocked congression completely, so BubR1 is required independently of CENP-E recruitment and cannot be compensated by Aurora inhibition. Also shows KIF18A is dispensable for CENP-E-mediated congression initiation.",
+        "bubr1_state_tested": "absent (siRNA depletion)"
+      },
+      "PMID:38354735": {
+        "pmcid": "PMC7617963",
+        "verdict": "does NOT support functional independence",
+        "basis": "Every BubR1 experiment is a localisation measurement \u2014 CENP-E intensity relative to CENP-C after BubR1, Dynein or ZW10 depletion. No alignment or congression readout in the BubR1-independent arm.",
+        "bubr1_state_tested": "absent (siRNA depletion)"
+      },
+      "PMID:41218610": {
+        "pmcid": "PMC12834474",
+        "verdict": "dependency UNESTABLISHED",
+        "basis": "BubR1 appears five times, all as a localisation marker in CENP-C mutant cells. No experiment places KIF18A in a BubR1-limited background.",
+        "bubr1_state_tested": "present only"
+      },
+      "PMID:39541344": {
+        "pmcid": "PMC11588092",
+        "verdict": "dependency UNESTABLISHED, strongest candidate",
+        "basis": "BubR1 appears zero times in 454 sentences. Adds a positive mechanistic argument \u2014 targeting poleward flux affects alignment independently of kinetochore attachment status \u2014 plus three mechanistically independent rescues (low-dose taxol, HAUS8 or NuMA codepletion) of misalignment, lagging chromosomes and micronuclei in human RPE-1 and OVKATE cells, and a stated predictor (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven.",
+        "bubr1_state_tested": "not tested at all"
+      },
+      "PMID:30341343": {
+        "pmcid": "PMC6195577",
+        "verdict": "dependency INDIRECT; trade-off CONFIRMED",
+        "basis": "The disassembly pathways do not target BubR1 directly (Mad2 for TRIP13/p31comet, Cdc20 for APC15), but the substrate complex contains BubR1 and the arrest TRIP13 depletion causes was itself Mad2- and BubR1-dependent (Fig. 3b). The dual role is demonstrated in one system: interphase TRIP13 loss causes activation failure through loss of soluble O-Mad2 (half-time 1.4 h), while loss just before mitosis causes a dramatic exit delay. The authors frame it as a delicate counter-balance in which both loss and overexpression matter.",
+        "bubr1_state_tested": "present only"
+      }
+    },
+    "unifying_finding": "Every experiment across all five ran at BubR1-present or BubR1-absent. None ran at BubR1-limiting, which is this case's actual state, so every published dependency verdict concerns a different regime. That is why each dependency branch keeps an `unestablished` outcome rather than resolving on the published work.",
+    "discovery_reopened": false,
+    "reason": "Adjudication left two branches populated with named candidates, so broad discovery stays closed per instruction."
+  }
 }

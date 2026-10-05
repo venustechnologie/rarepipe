@@ -329,8 +329,7 @@ def test_the_frontier_keeps_sets_that_make_a_conjunction_cheap():
     """
     M, d = _route_map()
     f = M.frontier(d)
-    target = M.cost(d)["TARGET"]
-    assert target is not None
+    assert M.cost(d)[M.goal(d)] is not None
     for nid, sets in f.items():
         for a in sets:
             for b in sets:
@@ -405,3 +404,38 @@ def test_abundance_route_safety_belongs_to_the_stabilisation_manipulation():
     assert "S_POP_SAFE_F1B" in f1["of"], "F1 must require safety under the stabilisation manipulation"
     assert "S_POP_SAFE_F1" not in f1["of"], "F1 must not inherit EXP01's safety observation"
     assert M.cost(d)["S_POP_SAFE_F1B"] is not None
+
+
+def test_cell_level_reachability_is_not_disease_resolution():
+    """The cell-level state must not be a terminal, and the organism scale must be further away.
+
+    Stopping at a corrected cell would let the map imply the disease was addressed. Mosaic variegated
+    aneuploidy is constitutional: much of the burden is developmental and already laid down, so
+    reaching the cell state is a waypoint and the irreversibility question bounds everything above it.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    cell, organism = M.goal(d), M.ultimate(d)
+    assert cell == "CELLULAR_TARGET" and organism, "the scales must be named in the map, not in the tool"
+    assert nodes[cell]["kind"] != "terminal", "the cell-level state must continue, not terminate"
+    assert [e for e in d["edges"] if e["from"] == cell], f"{cell} has no outgoing transition"
+    c = M.cost(d)
+    cell_cost, org_cost = c.get(cell), c.get(organism)
+    assert cell_cost is not None
+    assert org_cost is None or len(org_cost) > len(cell_cost), (
+        "the organism scale cannot be as close as the cell scale")
+    assert "IRREV01" in nodes[organism]["of"] or "S_PROSPECTIVE_EXISTS" in nodes[organism]["of"], (
+        "the organism target must require that a prospective component exists")
+
+
+def test_a_prospective_component_is_not_a_modified_clinical_course():
+    """Two separate states, because conflating them claims an effect from the possibility of one."""
+    M, d = _route_map()
+    irrev = next(n for n in d["nodes"] if n["id"] == "IRREV01")
+    assert irrev["outcomes"]["prospective_component_exists"] == "S_PROSPECTIVE_EXISTS"
+    nodes = {n["id"]: n for n in d["nodes"]}
+    into_clinical = {e["from"] for e in d["edges"] if e["to"] == "S_CLINICAL_MODIFIED"}
+    branch_sources = {b["id"] for b in d["nodes"] if b["kind"] == "branch"
+                      for t in (b.get("outcomes") or {}).values() if t == "S_CLINICAL_MODIFIED"}
+    assert "XSCALE02" in branch_sources, "a modified clinical course must come from the scale question"
+    assert "IRREV01" not in branch_sources | into_clinical

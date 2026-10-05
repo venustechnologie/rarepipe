@@ -65,6 +65,10 @@ them would invent work that does not exist.
 | `DEP_FLUX` | runnable measurement | `independent_of_bubr1` | 4: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` | 3 |
 | `DEP_TRIP13` | runnable measurement | `independent_and_specific` | 4: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `SAFE01` | 3 |
 | `BYPASS_ACT` | component discovery | `grounded_component_found` | 4: `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `XSCALE01` | runnable measurement | `fraction_falls` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `IRREV01` | runnable measurement | `prospective_component_exists` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `XSCALE02` | runnable measurement | `course_modified` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `SAFE_ORG` | runnable measurement | `no_harm` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
 
 ### Highest-leverage opportunities
 
@@ -207,7 +211,7 @@ Does the assembled composite system actually lower chromosome missegregation whi
 
 Does KIF18A support chromosome alignment when BubR1 is limiting, or does its congression role run through CENP-E and therefore through BubR1?
 
-*Why unresolved:* KIF18A's congression role was defined in cooperation with CENP-E, and CENP-E's congression mechanism is BubR1-dependent. No experiment places KIF18A in a BubR1-limited background. Absence of a direct BubR1 link is not independence.
+*Why unresolved:* Full-text adjudication: KIF18A's own paper mentions BubR1 only as a localisation marker, so no experiment places it in a BubR1-limited background. PMID:41120314 additionally shows congression after CENP-E reactivation succeeds without KIF18A activity, so KIF18A is not an alternative driver of the congression-initiation step BubR1 is required for; its remaining relevance is alignment at the metaphase plate. Absence of a direct BubR1 link is not independence.
 
 | outcome | leads to | route state from there |
 |---|---|---|
@@ -219,7 +223,7 @@ Does KIF18A support chromosome alignment when BubR1 is limiting, or does its con
 
 Does modifying poleward flux lower missegregation in a BubR1-limited background, and is the effect independent of residual BubR1?
 
-*Why unresolved:* The flux work reports modification of segregation errors without reference to BubR1, and no retrieved record tests it against BubR1 status. Silence is not independence.
+*Why unresolved:* Full-text adjudication: BubR1 appears zero times in 454 sentences, so dependency is wholly unaddressed and silence is not independence. What the full text does add is a positive mechanistic argument — by targeting poleward flux, chromosome alignment is affected independently of kinetochore attachment status, which is the axis BubR1 acts on — plus three mechanistically independent perturbations (low-dose taxol, HAUS8 or NuMA codepletion) that rescued misalignment, lagging chromosomes and micronuclei in human RPE-1 and in OVKATE cells, and a stated predictor of when it works (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven, which is the transfer this case needs.
 
 | outcome | leads to | route state from there |
 |---|---|---|
@@ -231,7 +235,7 @@ Does modifying poleward flux lower missegregation in a BubR1-limited background,
 
 Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit without requiring BubR1, and without degrading checkpoint activation?
 
-*Why unresolved:* TRIP13 acts catalytically on Mad2 and APC15 on Cdc20, neither of which is BubR1 — but the substrate complex contains BubR1, and no experiment runs this in a BubR1-limited background. The same paper shows TRIP13 is also required to maintain open-state Mad2 for checkpoint activation, so augmenting it for silencing cannot be assumed to leave activation intact.
+*Why unresolved:* Full-text adjudication confirms the trade-off in one system and sharpens it. The two disassembly pathways do not target BubR1 directly (Mad2 for TRIP13/p31comet, Cdc20 for APC15), so dependency is indirect — but the substrate complex contains BubR1, the arrest TRIP13 depletion causes was itself dependent on Mad2 and BubR1 (Fig. 3b), and every experiment ran at BubR1-present. The dual role is demonstrated, not inferred: losing TRIP13 in interphase causes checkpoint activation failure through loss of soluble O-Mad2 (half-time 1.4 h), while losing it just before mitosis causes a dramatic delay in exit. The authors frame TRIP13 as a counter-balance in a delicate equilibrium and note that both loss and overexpression matter, so augmenting it for silencing cannot be assumed to leave activation intact.
 
 | outcome | leads to | route state from there |
 |---|---|---|
@@ -251,15 +255,63 @@ Is there a physically realisable way to supply checkpoint activation independent
 | `grounded_component_found` | `S_ACT_SUPPLIED` (state) | 4 still unresolved: `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 | `no_component` | `T_ACT_NO_ACTUATOR` (`NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
+### `XSCALE01`
+
+Does improving per-division fidelity lower the aneuploid cell fraction in a relevant tissue?
+
+*Why unresolved:* Every readout in this map is per-division in cultured cells. A tissue's aneuploid fraction is a population property set by division fidelity, selection and clearance together, and nothing here measures the aggregate.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `fraction_falls` | `S_TISSUE_FRACTION_FALLS` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `no_aggregate` | `T_NO_TISSUE_EFFECT` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `untestable` | `T_TISSUE_UNTESTABLE` (`CONTEXT_TRANSFER_REQUIRED`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `IRREV01`
+
+Is the already-established component of the phenotype reversible by improving mitotic fidelity from now on?
+
+*Why unresolved:* Mosaic variegated aneuploidy is constitutional: much of the burden is developmental and already laid down. Improving fidelity prospectively does not undo an aneuploid cell that already exists, and nothing establishes which part of the phenotype is prospective.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `prospective_component_exists` | `S_PROSPECTIVE_EXISTS` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `established_and_fixed` | `T_IRREVERSIBLE` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `unestablished` | `T_IRREV_FRONTIER` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `XSCALE02`
+
+Does a lower tissue aneuploid fraction modify a measurable feature of the clinical course?
+
+*Why unresolved:* The link from aneuploid burden to clinical feature is not quantified for this disorder, and the phenotype is multi-system.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `course_modified` | `S_CLINICAL_MODIFIED` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `no_change` | `T_NO_CLINICAL_EFFECT` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `unassessable` | `T_CLINICAL_UNTESTABLE` (`CONTEXT_TRANSFER_REQUIRED`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `SAFE_ORG`
+
+Does the manipulation avoid organism-level harm?
+
+*Why unresolved:* No candidate in this map has an organism-level safety record, and several act on machinery (chaperones, the proteasome, mitotic motors) with broad effects outside mitosis.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `no_harm` | `S_ORG_SAFE` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `harm` | `T_UNSAFE_ORG` (`UNSAFE`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `unassessable` | `T_ORG_SAFETY_FRONTIER` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
 ## Transitions by grounding label
 
 | label | count | meaning for the route |
 |---|---|---|
-| `GROUNDED` | 22 | traversed directly; no branch created |
+| `GROUNDED` | 25 | traversed directly; no branch created |
 | `CONTEXT_TRANSFER_REQUIRED` | 2 | the relation holds somewhere else and the transfer is unestablished |
-| `EXPERIMENTAL_UNKNOWN` | 16 | a branch node; outcomes enumerated above |
+| `EXPERIMENTAL_UNKNOWN` | 20 | a branch node; outcomes enumerated above |
 | `PHYSICAL_ACTUATOR_MISSING` | 4 | the requirement is grounded and no component is known to supply it |
-| `CONCEPTUALLY_SUFFICIENT_ONLY` | 3 | sufficient in model; not a physical claim |
+| `CONCEPTUALLY_SUFFICIENT_ONLY` | 4 | sufficient in model; not a physical claim |
 | `UNSAFE` | 0 | closed on safety grounds |
 
 **`PHYSICAL_ACTUATOR_MISSING` transitions:**
@@ -289,6 +341,12 @@ boundary recorded, rather than being split into alternative worlds because it ha
   - *consequence:* Grounds P1/P2 in the destabilising direction only
 - **`G_SIRT2`** — SIRT2 activity and BubR1 abundance are coupled through K668 acetylation: raising SIRT2 raises abundance in mouse tissue, inhibiting Sirt2 destabilises BubR1 in human cells [PMID:24825348, PMID:25672491]
   - *consequence:* A grounded relation, untested on a misfolding substrate; it is the best-grounded candidate mechanism for STAB01 and grounds no rescue direction
+- **`G_BUBR1_REQUIRED_FOR_CONGRESSION`** — BubR1 is required for the initiation of chromosome congression independently of its role in recruiting CENP-E, and its absence cannot be compensated by inhibiting Aurora kinases [PMID:41120314]
+  - *consequence:* Raises the bar for any alignment bypass: the function to be supplied is one BubR1 is directly required for, not merely one it assists
+- **`G_NO_LIMITING_EXPERIMENT`** — Across all five full texts adjudicated, every experiment ran at BubR1-present or BubR1-absent (siRNA or degron depletion). None ran at BubR1-limiting [PMID:41120314, PMID:38354735, PMID:41218610, PMID:39541344, PMID:30341343]
+  - *consequence:* This case is BubR1-limiting, not BubR1-null. Every dependency verdict in the literature is therefore about a different regime, and that is why each dependency branch keeps an `unestablished` outcome rather than resolving on the published work
+- **`G_LOCALISATION_NOT_FUNCTION`** — A BubR1-independent route can target a component to the kinetochore without being shown to deliver the component's function [PMID:38354735, PMID:41120314]
+  - *consequence:* The same distinction Y155C forces inside this case: normal localisation with a dead function. A bypass candidate must be adjudicated on its function, never on its localisation
 - **`G_KEN_SELF_DEFEATING`** — The BubR1 KEN degron is also required for checkpoint function [PMID:17406666, PMID:20516114]
   - *consequence:* Degron disruption is excluded as a stabilisation route on function grounds, not evidence grounds
 
@@ -353,7 +411,25 @@ graph TD
   C_TRIP13["C_TRIP13"]
   DEP_TRIP13{{"DEP_TRIP13"}}
   BYPASS_ACT{{"BYPASS_ACT"}}
-  TARGET(("TARGET<br/>TARGET_REACHED_IN_MODEL"))
+  CELLULAR_TARGET["CELLULAR_TARGET"]
+  S_TISSUE_FRACTION_FALLS["S_TISSUE_FRACTION_FALLS"]
+  S_CLINICAL_MODIFIED["S_CLINICAL_MODIFIED"]
+  S_PROSPECTIVE_EXISTS["S_PROSPECTIVE_EXISTS"]
+  S_ORG_SAFE["S_ORG_SAFE"]
+  ORGANISM_TARGET[/"ORGANISM_TARGET"/]
+  T_ORGANISM_REACHED(("T_ORGANISM_REACHED<br/>TARGET_REACHED_IN_MODEL"))
+  T_NO_TISSUE_EFFECT(("T_NO_TISSUE_EFFECT<br/>NO_KNOWN_CONTINUATION"))
+  T_TISSUE_UNTESTABLE(("T_TISSUE_UNTESTABLE<br/>CONTEXT_TRANSFER_REQUIRED"))
+  T_IRREVERSIBLE(("T_IRREVERSIBLE<br/>NO_KNOWN_CONTINUATION"))
+  T_NO_CLINICAL_EFFECT(("T_NO_CLINICAL_EFFECT<br/>NO_KNOWN_CONTINUATION"))
+  T_CLINICAL_UNTESTABLE(("T_CLINICAL_UNTESTABLE<br/>CONTEXT_TRANSFER_REQUIRED"))
+  XSCALE01{{"XSCALE01"}}
+  IRREV01{{"IRREV01"}}
+  T_IRREV_FRONTIER(("T_IRREV_FRONTIER<br/>BOUNDED_FRONTIER"))
+  XSCALE02{{"XSCALE02"}}
+  SAFE_ORG{{"SAFE_ORG"}}
+  T_UNSAFE_ORG(("T_UNSAFE_ORG<br/>UNSAFE"))
+  T_ORG_SAFETY_FRONTIER(("T_ORG_SAFETY_FRONTIER<br/>BOUNDED_FRONTIER"))
   T_EXPR_INVALID(("T_EXPR_INVALID<br/>BOUNDED_FRONTIER"))
   T_EXP01_CEILING(("T_EXP01_CEILING<br/>BOUNDED_FRONTIER"))
   T_EXP01_REPEAT(("T_EXP01_REPEAT<br/>BOUNDED_FRONTIER"))
@@ -435,6 +511,18 @@ graph TD
   DEP_TRIP13 -->|unestablished| T_TRIP13_FRONTIER
   BYPASS_ACT -->|grounded_component_found| S_ACT_SUPPLIED
   BYPASS_ACT -->|no_component| T_ACT_NO_ACTUATOR
+  XSCALE01 -->|fraction_falls| S_TISSUE_FRACTION_FALLS
+  XSCALE01 -->|no_aggregate| T_NO_TISSUE_EFFECT
+  XSCALE01 -->|untestable| T_TISSUE_UNTESTABLE
+  IRREV01 -->|prospective_component_exists| S_PROSPECTIVE_EXISTS
+  IRREV01 -->|established_and_fixed| T_IRREVERSIBLE
+  IRREV01 -->|unestablished| T_IRREV_FRONTIER
+  XSCALE02 -->|course_modified| S_CLINICAL_MODIFIED
+  XSCALE02 -->|no_change| T_NO_CLINICAL_EFFECT
+  XSCALE02 -->|unassessable| T_CLINICAL_UNTESTABLE
+  SAFE_ORG -->|no_harm| S_ORG_SAFE
+  SAFE_ORG -->|harm| T_UNSAFE_ORG
+  SAFE_ORG -->|unassessable| T_ORG_SAFETY_FRONTIER
   S0_CASE -->|GROUNDED| S_MISSEGREGATION
   S0_CASE -->|GROUNDED| S_CLASS_PREMISE
   S_CLASS_PREMISE -->|EXPERIMENTAL_UNKNOWN| CHAR01
@@ -459,7 +547,7 @@ graph TD
   S_XFER_OK -->|GROUNDED| F1_COMPLETE
   S_FUNCTION_OK -->|GROUNDED| S_POP_SAFE_F1
   S_ALIGN_SUPPLIED -->|EXPERIMENTAL_UNKNOWN| SAFE01
-  F1_COMPLETE -->|CONCEPTUALLY_SUFFICIENT_ONLY| TARGET
+  F1_COMPLETE -->|CONCEPTUALLY_SUFFICIENT_ONLY| CELLULAR_TARGET
   B_TURNOVER_ONLY -.->|EXPERIMENTAL_UNKNOWN| STAB01
   B_ALIGN_DEFECT -->|GROUNDED| C_KIF18A
   B_SIL_DEFECT -->|GROUNDED| C_TRIP13
@@ -478,8 +566,16 @@ graph TD
   S_POP_SAFE_F2 -->|GROUNDED| F2_COMPLETE
   S_POP_SAFE_F1 -->|EXPERIMENTAL_UNKNOWN| SAFE02
   S_POP_SAFE_F1B -->|GROUNDED| F1_COMPLETE
+  CELLULAR_TARGET -->|EXPERIMENTAL_UNKNOWN| XSCALE01
+  CELLULAR_TARGET -->|EXPERIMENTAL_UNKNOWN| IRREV01
+  CELLULAR_TARGET -->|EXPERIMENTAL_UNKNOWN| SAFE_ORG
+  S_TISSUE_FRACTION_FALLS -->|EXPERIMENTAL_UNKNOWN| XSCALE02
+  S_CLINICAL_MODIFIED -->|GROUNDED| ORGANISM_TARGET
+  S_PROSPECTIVE_EXISTS -->|GROUNDED| ORGANISM_TARGET
+  S_ORG_SAFE -->|GROUNDED| ORGANISM_TARGET
+  ORGANISM_TARGET -->|CONCEPTUALLY_SUFFICIENT_ONLY| T_ORGANISM_REACHED
   F2_COMPLETE -->|EXPERIMENTAL_UNKNOWN| COMPOSITE_VALID
-  S_COMPOSITE_VALIDATED -->|CONCEPTUALLY_SUFFICIENT_ONLY| TARGET
+  S_COMPOSITE_VALIDATED -->|CONCEPTUALLY_SUFFICIENT_ONLY| CELLULAR_TARGET
   T_NO_ACTUATOR -.->|GROUNDED| C_KIF18A
   T_EXP01_CEILING -.->|PHYSICAL_ACTUATOR_MISSING| STAB01
   S_XFER_OK --> F1_COMPLETE
@@ -488,6 +584,9 @@ graph TD
   S_ACT_SUPPLIED --> F2_COMPLETE
   S_SIL_SUPPLIED --> F2_COMPLETE
   S_POP_SAFE_F2 --> F2_COMPLETE
+  S_CLINICAL_MODIFIED --> ORGANISM_TARGET
+  S_ORG_SAFE --> ORGANISM_TARGET
+  S_PROSPECTIVE_EXISTS --> ORGANISM_TARGET
 ```
 
 Diamonds are unresolved branches, circles terminals, trapezoids AND nodes. Dotted edges are
@@ -570,6 +669,28 @@ named candidates:
 
 Absence of a known BubR1 link was never recorded as independence. Every surviving candidate's
 dependency branch has an `unestablished` outcome, and that is where they all sit today.
+
+## Beyond the cell
+
+Reaching the cell-level state is not the disease being addressed, so the map continues past it.
+Three questions follow, and the third bounds the other two whatever they return.
+
+| scale question | branch | state |
+|---|---|---|
+| Does improving per-division fidelity lower the aneuploid cell fraction in a relevant tissue? | `XSCALE01` | 5 branch(es) upstream |
+| Is the already-established component of the phenotype reversible by improving mitotic fidelity from now on? | `IRREV01` | 5 branch(es) upstream |
+| Does the manipulation avoid organism-level harm? | `SAFE_ORG` | 5 branch(es) upstream |
+| Does a lower tissue aneuploid fraction modify a measurable feature of the clinical course? | `XSCALE02` | 6 branch(es) upstream |
+
+`ORGANISM_TARGET`: 9 unresolved branch(es).
+
+Modification of this child's clinical course. Not reachable by any route in this map today, and bounded by governance as well as biology: no intervention in this child is authorised, there is no recontact, and much of the phenotype is developmental and already established.
+
+`IRREV01` is the one that should temper everything above it. Mosaic variegated aneuploidy is
+constitutional: much of the burden is developmental and already laid down, and improving
+fidelity prospectively does not undo an aneuploid cell that already exists. Which part of the
+phenotype is still ahead of this child is unestablished, and it bounds what any route here can
+address. Cell-level reachability is not disease resolution, and this map does not claim it.
 
 ## What this map does not claim
 

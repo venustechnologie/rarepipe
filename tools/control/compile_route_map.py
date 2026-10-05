@@ -26,6 +26,19 @@ def load() -> dict:
     return yaml.safe_load(MAP.read_text())
 
 
+def goal(d: dict) -> str:
+    """The cell-level goal, read from the map rather than hard-coded.
+
+    It was `TARGET` until reasoning was continued past the cell, and a literal in the tool would have
+    quietly made the rename a lie.
+    """
+    return d["target"]["id"]
+
+
+def ultimate(d: dict) -> str | None:
+    return (d.get("ultimate_target") or {}).get("id")
+
+
 def validate(d: dict) -> list[str]:
     """Integrity, not plausibility. A map that lies about its own shape proves nothing."""
     problems: list[str] = []
@@ -198,16 +211,16 @@ def required(d: dict) -> dict[str, frozenset[str] | None]:
     return cost(d)
 
 
-def dominators_for(d: dict, goal: str) -> set[str]:
+def dominators_for(d: dict, target: str) -> set[str]:
     """Branch nodes every route to `goal` must pass through, tested by deletion.
 
     Family-scoped, because with two families a globally unavoidable branch is rare while the branch
     that gates one whole family is the decision-relevant fact.
     """
-    if cost(d).get(goal) is None:
+    if cost(d).get(target) is None:
         return set()
     return {b["id"] for b in d["nodes"] if b["kind"] == "branch"
-            and cost(d, drop=b["id"]).get(goal) is None}
+            and cost(d, drop=b["id"]).get(target) is None}
 
 
 def dominators(d: dict) -> set[str]:
@@ -216,10 +229,7 @@ def dominators(d: dict) -> set[str]:
     Tested by deletion — remove the branch and ask whether the target can still be established. That
     is the honest test and it needs no probability.
     """
-    if cost(d).get("TARGET") is None:
-        return set()
-    return {b["id"] for b in d["nodes"] if b["kind"] == "branch"
-            and cost(d, drop=b["id"]).get("TARGET") is None}
+    return dominators_for(d, goal(d))
 
 
 def gaps(d: dict) -> dict[str, list[dict]]:
@@ -232,7 +242,8 @@ def gaps(d: dict) -> dict[str, list[dict]]:
 
 def render(d: dict) -> str:
     nodes = {n["id"]: n for n in d["nodes"]}
-    base = cost(d).get("TARGET")
+    G, U = goal(d), ultimate(d)
+    base = cost(d).get(G)
     doms = dominators(d)
     cache: dict[tuple, frozenset[str] | None] = {}
 
@@ -243,7 +254,7 @@ def render(d: dict) -> str:
         """
         key = (nid, tuple(sorted((decided or {}).items())))
         if key not in cache:
-            cache[key] = cost(d, known={nid}, decided=decided).get("TARGET")
+            cache[key] = cost(d, known={nid}, decided=decided).get(G)
         return cache[key]
     by_label = gaps(d)
     branches = [n for n in d["nodes"] if n["kind"] == "branch"]
@@ -558,6 +569,32 @@ def render(d: dict) -> str:
     A("Absence of a known BubR1 link was never recorded as independence. Every surviving candidate's")
     A("dependency branch has an `unestablished` outcome, and that is where they all sit today.")
     A("")
+    A("## Beyond the cell")
+    A("")
+    A("Reaching the cell-level state is not the disease being addressed, so the map continues past it.")
+    A("Three questions follow, and the third bounds the other two whatever they return.")
+    A("")
+    A("| scale question | branch | state |")
+    A("|---|---|---|")
+    for bid in ("XSCALE01", "IRREV01", "SAFE_ORG", "XSCALE02"):
+        if bid in nodes:
+            r = cost(d).get(bid)
+            where = "unreachable today" if r is None else f"{len(r)} branch(es) upstream"
+            A(f"| {nodes[bid]['label']} | `{bid}` | {where} |")
+    A("")
+    if U:
+        ur = cost(d).get(U)
+        A(f"`{U}`: " + ("**not reachable by any route in this map today.**" if ur is None
+                        else f"{len(ur)} unresolved branch(es)."))
+        A("")
+        A((d.get("ultimate_target") or {}).get("note", ""))
+        A("")
+    A("`IRREV01` is the one that should temper everything above it. Mosaic variegated aneuploidy is")
+    A("constitutional: much of the burden is developmental and already laid down, and improving")
+    A("fidelity prospectively does not undo an aneuploid cell that already exists. Which part of the")
+    A("phenotype is still ahead of this child is unestablished, and it bounds what any route here can")
+    A("address. Cell-level reachability is not disease resolution, and this map does not claim it.")
+    A("")
     A("## What this map does not claim")
     A("")
     A("No probability is attached to any branch, because none is grounded. A route that \"conditionally")
@@ -590,13 +627,15 @@ def main() -> int:
         return 0
     OUT.write_text(text)
     c, doms = cost(d), dominators(d)
+    G, U = goal(d), ultimate(d)
     print("ROUTE_MAP_VALID")
     print(f"  nodes {len(d['nodes'])}, edges {len(d['edges'])}, "
           f"branches {sum(1 for n in d['nodes'] if n['kind'] == 'branch')}")
     print(f"  unavoidable branches: {', '.join(sorted(doms)) or 'none'}")
-    r = c.get("TARGET")
-    print("  to establish TARGET: " + ("not reachable on any route" if r is None
-          else f"{len(r)} unresolved branch(es) minimum -> {', '.join(sorted(r))}"))
+    for name in [x for x in (G, U) if x]:
+        r = c.get(name)
+        print(f"  to establish {name}: " + ("not reachable on any route" if r is None
+              else f"{len(r)} unresolved branch(es) minimum -> {', '.join(sorted(r))}"))
     print(f"  wrote {OUT.relative_to(ROOT)}")
     return 0
 
