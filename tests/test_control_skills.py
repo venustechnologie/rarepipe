@@ -804,3 +804,118 @@ def test_every_cross_family_combination_exists_and_is_reachable():
         node = next((n for n in d["nodes"] if n["id"] == combo), None)
         assert node and node["kind"] == "branch", f"{combo} missing"
         assert c.get(combo) is not None, f"{combo} is unreachable"
+
+
+def test_an_observation_cannot_create_an_improved_biological_state():
+    """Looking at the system is not changing it.
+
+    ENDPOINT01 used to resolve "PCS and missegregation are the same quantity" straight into a state
+    where missegregation was lowered. That is an observation manufacturing an intervention. Every
+    branch now declares whether it intervenes or observes, and an observation's outcomes may only
+    reach KNOWLEDGE states or terminals.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    obs = [n for n in d["nodes"] if n.get("branch_role") == "OBSERVATION"]
+    assert obs, "no observation branches declared"
+    for n in obs:
+        assert n.get("observation_note") or n["id"] in ("CHAR01", "LIMFN01", "POOL01", "EXPRVAL01",
+                                                        "IRREV01", "ACT_SAFETY01", "XSCALE03")
+        for name, target in n["outcomes"].items():
+            t = nodes[target]
+            if t["kind"] == "state":
+                assert t.get("state_class") == "KNOWLEDGE", (
+                    f"{n['id']} is an OBSERVATION and {name!r} reaches {target}, a "
+                    f"{t.get('state_class','SYSTEM')} state")
+    for n in d["nodes"]:
+        if n["kind"] == "branch":
+            assert n.get("branch_role") in set(d["branch_role_vocabulary"]), n["id"]
+
+
+def test_a_mechanistic_intermediate_cannot_imply_the_terminal_endpoint():
+    """Improving alignment is not lowering missegregation until missegregation is measured.
+
+    The flux work makes the point from the other side: lagging chromosomes arising from alignment
+    defects often integrate into the main nucleus, so the chain is leaky. Any edge from an intermediate
+    to the terminal endpoint must name the measurement that establishes the step.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    inter = {n["id"] for n in d["nodes"] if n.get("state_class") == "MECHANISTIC_INTERMEDIATE"}
+    term = {n["id"] for n in d["nodes"] if n.get("state_class") == "TERMINAL_ENDPOINT"}
+    assert inter and term, "the classes must both be populated or the invariant is vacuous"
+    for e in d["edges"]:
+        if e["from"] in inter and e["to"] in term:
+            assert e.get("establishing_measurement"), f"edge {e['from']}->{e['to']}"
+    measure = next(n for n in d["nodes"] if n["id"] == "MIS_MEASURE01")
+    assert measure.get("establishes"), "the measuring branch must say what it establishes"
+    assert not M.validate(d)
+
+
+def test_efficacy_does_not_establish_independence():
+    """A route is BubR1-independent only if dependency was tested, not if it worked."""
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    asserting = {n["id"] for n in d["nodes"] if n.get("dependency_established")}
+    assert asserting, "no state asserts established dependency"
+    for n in d["nodes"]:
+        if n["kind"] != "branch":
+            continue
+        for name, target in (n.get("outcomes") or {}).items():
+            if target not in asserting:
+                continue
+            assert n.get("dependency_tested"), f"{n['id']} reaches a dependency claim untested"
+            assert n.get("dependency_basis"), f"{n['id']} declares dependency_tested with no basis"
+            # Per outcome, not per branch. A branch-level flag let an efficacy-named result ride in:
+            # DEP_COHESION tests dependency, but "pcs_and_missegregation_fall" is an efficacy finding
+            # and must not land on the independence state just because its branch runs a gradient.
+            assert name in (n.get("dependency_outcomes") or []), (
+                f"{n['id']} outcome {name!r} asserts established dependency without being declared a "
+                "dependency outcome")
+    untested = next(n for n in d["nodes"] if n["id"] == "S_MIS_LOWERED_DEPENDENCY_UNTESTED")
+    assert not untested.get("dependency_established")
+
+
+def test_every_declared_frontier_says_what_it_closes():
+    """The second frontier audit. Of fifteen, exactly one closed a control variable.
+
+    An actuator-, configuration- or context-scoped null was being read as though the biology were
+    finished. Each now declares its scope, and anything narrower than the control variable has a
+    continuation rather than being a leaf.
+    """
+    M, d = _route_map()
+    scopes = set(d["closure_scope_vocabulary"])
+    continues = {e["from"] for e in d["edges"]}
+    dsf = [n for n in d["nodes"] if n["kind"] == "terminal"
+           and n["terminal"] == "DECLARED_SCIENTIFIC_FRONTIER"]
+    assert dsf
+    for n in dsf:
+        assert n.get("closes") in scopes, f"{n['id']} does not say what it closes"
+        if n["closes"] in ("ACTUATOR", "CONFIGURATION"):
+            assert n["id"] in continues, (
+                f"{n['id']} closes only a {n['closes'].lower()} and has no continuation, so a null on "
+                "one lever reads as a closed control variable")
+        if n["closes"] == "ACTUATOR":
+            assert n.get("closes_for") in d["control_variables"], f"{n['id']} names no variable"
+
+
+def test_the_canonical_artifact_leads_with_the_city_not_the_shortest_route():
+    """Document order is a claim about what the artifact is for.
+
+    City, frontiers, control variables, families, contingent experiments, motif hypotheses — and the
+    route-optimisation views in an appendix, because "where to act" is a downstream question.
+    """
+    M, d = _route_map()
+    text = M.render(d)
+    order = [l for l in text.splitlines() if l.startswith("# ")]
+    titles = [l[2:] for l in order]
+    for earlier, later in (("The city", "Frontiers"), ("Frontiers", "Control variables and actuators"),
+                           ("Control variables and actuators", "Strategy families"),
+                           ("Strategy families", "Contingent experiments"),
+                           ("Contingent experiments", "Analysis pass")):
+        assert titles.index(earlier) < titles.index(later), f"{earlier} must precede {later}"
+    assert titles.index("Appendix: optional views") == len(titles) - 1
+    appendix = text.split("# Appendix: optional views")[1]
+    for moved in ("Where the route map says to look first", "Priorities, reported separately",
+                  "Reachability"):
+        assert moved in appendix, f"{moved!r} must live in the appendix, not the canonical artifact"

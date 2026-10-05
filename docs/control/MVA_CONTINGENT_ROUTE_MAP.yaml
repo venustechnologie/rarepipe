@@ -158,6 +158,16 @@ campaigns:
       different bypass component needs its own observation."
 campaign_note: "SAFE01 appears in two campaigns because it is component-specific: whichever campaign
   introduces a component establishes safety for that component and no other."
+# A branch either INTERVENES on the system or OBSERVES it. An observation can change what we know and
+# how we read the target; it cannot create a physically improved biological state. Enforced.
+branch_role_vocabulary: [INTERVENTION, OBSERVATION]
+# State classes exist so the second invariant is decidable: a mechanistic intermediate may not imply a
+# terminal endpoint without an edge that names the measurement establishing the step.
+state_class_vocabulary: [SYSTEM, KNOWLEDGE, MECHANISTIC_INTERMEDIATE, TERMINAL_ENDPOINT]
+# Second frontier audit. A declared frontier must say what it closes. Of the fifteen that existed,
+# exactly one closed a control variable; the rest closed an actuator, a configuration or a context, and
+# were being read as though they closed the biology.
+closure_scope_vocabulary: [ACTUATOR, CONFIGURATION, CONTEXT, CONTROL_VARIABLE, NO_NEXT_STEP]
 requires_vocabulary: [CELL_MODEL, TISSUE_MODEL, ORGANISM_MODEL, GOVERNANCE_ABSENT]
 label_vocabulary: [GROUNDED, CONTEXT_TRANSFER_REQUIRED, EXPERIMENTAL_UNKNOWN,
                    PHYSICAL_ACTUATOR_MISSING, CONCEPTUALLY_SUFFICIENT_ONLY, UNSAFE]
@@ -254,9 +264,9 @@ families:
 nodes:
   # ---------- forward from the current case state ----------
   - {id: S0_CASE, kind: state, label: "Current case state: compound heterozygous BUB1B, truncating allele plus kinase-domain missense allele; mosaic variegated aneuploidy"}
-  - {id: S_CLASS_PREMISE, kind: state, label: "Class-level premise: kinase-domain missense reduces BubR1 abundance via misfolding and elevated turnover. MC_0005 PARTIALLY_SUPPORTED on 0 establishing / 11 indirect records"}
-  - {id: S_ABUNDANCE_LOW, kind: state, label: "This allele's protein is present at reduced steady-state abundance"}
-  - {id: S_ABUNDANCE_NORMAL, kind: state, label: "This allele's protein is present at normal abundance, so any defect is not an abundance defect"}
+  - {id: S_CLASS_PREMISE, kind: state, state_class: KNOWLEDGE, label: "Class-level premise: kinase-domain missense reduces BubR1 abundance via misfolding and elevated turnover. MC_0005 PARTIALLY_SUPPORTED on 0 establishing / 11 indirect records"}
+  - {id: S_ABUNDANCE_LOW, kind: state, state_class: KNOWLEDGE, label: "This allele's protein is present at reduced steady-state abundance"}
+  - {id: S_ABUNDANCE_NORMAL, kind: state, state_class: KNOWLEDGE, label: "This allele's protein is present at normal abundance, so any defect is not an abundance defect"}
   - {id: S_MISSEGREGATION, kind: state, label: "Chromosome missegregation and aneuploidy (the disease state)"}
   # ---------- the abundance family (F1): restore the child's own protein ----------
   - {id: S_MATCHED_ACHIEVABLE, kind: state, label: "The exact allele can be held at wild-type-comparable abundance in a human cell"}
@@ -267,9 +277,9 @@ nodes:
   - {id: F1_COMPLETE, kind: all_of, of: [S_XFER_OK, S_POP_SAFE_F1B], label: "Abundance route complete: the child's own protein, raised by a physical perturbation, functional, in a relevant cell, without population harm"}
   - {id: S_XFER_OK, kind: state, label: "The effect transfers to a cell type relevant to this child"}
   # ---------- the bypass family (F2): supply the function independently ----------
-  - {id: S_ALIGN_SUPPLIED, kind: state, label: "Chromosome alignment supplied independently of the child's BubR1"}
-  - {id: S_SIL_SUPPLIED, kind: state, label: "Checkpoint silencing supplied independently of the child's BubR1"}
-  - {id: S_ACT_SUPPLIED, kind: state, label: "Checkpoint activation supplied independently of the child's BubR1"}
+  - {id: S_ALIGN_SUPPLIED, kind: state, state_class: MECHANISTIC_INTERMEDIATE, label: "Chromosome alignment supplied independently of the child's BubR1"}
+  - {id: S_SIL_SUPPLIED, kind: state, state_class: MECHANISTIC_INTERMEDIATE, label: "Checkpoint silencing supplied independently of the child's BubR1"}
+  - {id: S_ACT_SUPPLIED, kind: state, state_class: MECHANISTIC_INTERMEDIATE, label: "Checkpoint activation supplied independently of the child's BubR1"}
   - {id: F2_COMPLETE, kind: all_of, of: [S_ALIGN_SUPPLIED, S_ACT_SUPPLIED, S_SIL_SUPPLIED, S_POP_SAFE_F2], label: "Composite bypass complete: every lost function supplied without the child's BubR1, without population harm"}
   # Population safety is manipulation-specific and must not be shared between families: EXP01's
   # viability, death and division readouts are observations about ectopic expression of the altered
@@ -282,6 +292,7 @@ nodes:
   # ---------- branch nodes: unresolved, enumerated, never terminal ----------
   - id: CHAR01
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does this exact allele destabilise the protein at all? Cycloheximide chase, HSP90 inhibition and MG132 on an exact-allele construct beside wild-type and the reference substrates. No patient material required."
@@ -291,11 +302,12 @@ nodes:
       not_destabilised:            S_ABUNDANCE_NORMAL
       destabilised_other_mechanism: S_ABUNDANCE_LOW_OTHER
       not_expressible:             S_NOT_EXPRESSIBLE
-  - {id: S_NOT_EXPRESSIBLE, kind: state, label: "The exact allele did not reach wild-type-comparable abundance in the tested construct and condition — a property of this construct and promoter, not yet a property of the protein"}
-  - {id: S_ABUNDANCE_LOW_OTHER, kind: state, label: "Reduced abundance by a route that is not HSP90-dependent misfolding, so P1/P2 grounding does not apply"}
+  - {id: S_NOT_EXPRESSIBLE, kind: state, state_class: KNOWLEDGE, label: "The exact allele did not reach wild-type-comparable abundance in the tested construct and condition — a property of this construct and promoter, not yet a property of the protein"}
+  - {id: S_ABUNDANCE_LOW_OTHER, kind: state, state_class: KNOWLEDGE, label: "Reduced abundance by a route that is not HSP90-dependent misfolding, so P1/P2 grounding does not apply"}
 
   - id: EXP01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "At matched abundance, are alignment, silencing and segregation normal for the exact altered protein?"
@@ -315,6 +327,7 @@ nodes:
 
   - id: STAB01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Can the steady-state abundance of a misfolding kinase-domain BubR1 missense protein be raised in a human cell by perturbing folding or degradation machinery?"
@@ -329,6 +342,7 @@ nodes:
 
   - id: STAB02
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does the working perturbation raise the exact case allele's abundance toward wild-type?"
@@ -340,6 +354,7 @@ nodes:
 
   - id: FUNCVAL01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Is the protein stabilised by that perturbation functional, or merely present?"
@@ -351,6 +366,7 @@ nodes:
 
   - id: XFER01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: GOVERNANCE_ABSENT
     label: "Does the effect hold in a cell type relevant to this child?"
@@ -362,6 +378,7 @@ nodes:
 
   - id: SAFE01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does the bypass component preserve viability, division rate and cell death?"
@@ -373,6 +390,7 @@ nodes:
 
   - id: SAFE02
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does the physical stabilisation manipulation itself preserve viability, division rate and cell death?"
@@ -384,6 +402,7 @@ nodes:
 
   - id: EXPRVAL01
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Is the failure to reach wild-type-comparable abundance a property of the construct and condition rather than the protein?"
@@ -395,6 +414,7 @@ nodes:
 
   - id: COMPOSITE_VALID
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does the assembled composite system actually lower chromosome missegregation while holding the functional state and population safety?"
@@ -412,6 +432,7 @@ nodes:
 
   - id: DEP_KIF18A
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does KIF18A support chromosome alignment when BubR1 is limiting, or does its congression role run through CENP-E and therefore through BubR1?"
@@ -423,6 +444,10 @@ nodes:
 
   - id: DEP_FLUX
     kind: branch
+    dependency_outcomes: ['independent_of_bubr1', 'benefit_requires_residual_bubr1']
+    dependency_tested: true
+    dependency_basis: "the graded BubR1 gradient specified in FLUX01_EXECUTION_PACKET.md; the claim is licensed by the gradient, not by one well"
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does modifying poleward flux lower missegregation in a BubR1-limiting background, and is the benefit independent of residual BubR1 or does it exploit it?"
@@ -440,6 +465,7 @@ nodes:
 
   - id: DEP_TRIP13
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit without requiring BubR1, and without degrading checkpoint activation?"
@@ -452,6 +478,7 @@ nodes:
 
   - id: BYPASS_ACT
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: COMPONENT_DISCOVERY
     requires: CELL_MODEL
     label: "Is there a physically realisable way to supply checkpoint activation independently?"
@@ -464,14 +491,15 @@ nodes:
   # Two definitions, both computed. The canonical state is the full BubR1 trajectory; the functional
   # target is the terminal state we actually want, open to any physically valid route.
   - {id: CANONICAL_CELLULAR_STATE, kind: state, label: "Canonical cell state: alignment, activation, silencing, low missegregation, viability, division and no added death — the trajectory a normal cell takes"}
-  - {id: S_MIS_LOWERED, kind: state, label: "Chromosome missegregation is low, by whatever route produced it"}
+  - {id: S_MIS_LOWERED, kind: state, state_class: TERMINAL_ENDPOINT, label: "Chromosome missegregation is low, by whatever route produced it"}
   - {id: S_POP_SAFE_ANY, kind: state, label: "The manipulation that got here has its own population safety established"}
-  - {id: S_CHECKPOINT_RISK_RESOLVED, kind: state, label: "The tumour-predisposition consequence of checkpoint competence is resolved for this case"}
+  - {id: S_CHECKPOINT_RISK_RESOLVED, kind: state, state_class: KNOWLEDGE, label: "The tumour-predisposition consequence of checkpoint competence is resolved for this case"}
   - {id: FUNCTIONAL_CELLULAR_TARGET, kind: all_of, of: [S_MIS_LOWERED, S_POP_SAFE_ANY], label: "Functional cell-level target: low missegregation with the population preserved and the checkpoint-risk question resolved, by any physically valid route"}
-  - {id: S_MIS_LOWERED_INDEPENDENT, kind: state, label: "Missegregation is lowered in a BubR1-limiting state by a route that does not require the protein: the convergence state every independent candidate arrives at"}
+  - {id: S_MIS_LOWERED_INDEPENDENT, kind: state, state_class: TERMINAL_ENDPOINT, dependency_established: true, label: "Missegregation is lowered in a BubR1-limiting state by a route that does not require the protein: the convergence state every independent candidate arrives at"}
 
   - id: ACT_SAFETY01
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: ORGANISM_MODEL
     label: "Is checkpoint competence required for this case on tumour-predisposition grounds, independently of per-division missegregation?"
@@ -490,7 +518,7 @@ nodes:
       unestablished: T_ACT_RISK_FRONTIER
   # A result that makes checkpoint competence necessary creates a new requirement; it does not end
   # the reasoning. Two families can supply it, and both stay open.
-  - {id: S_ACT_COMPETENCE_REQUIRED, kind: state, label: "Checkpoint competence is required on predisposition grounds: the functional target gains a conjunct and the activation question becomes a real gate, to be supplied by either family"}
+  - {id: S_ACT_COMPETENCE_REQUIRED, kind: state, state_class: KNOWLEDGE, label: "Checkpoint competence is required on predisposition grounds: the functional target gains a conjunct and the activation question becomes a real gate, to be supplied by either family"}
   - {id: T_ACT_RISK_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Whether checkpoint competence is needed on predisposition grounds is unestablished; the question is specified and unasked"}
   # ---------- beyond the cell: the scales this map previously stopped short of ----------
   - {id: S_TISSUE_FRACTION_FALLS, kind: state, label: "The aneuploid cell fraction falls in a tissue relevant to this child's phenotype"}
@@ -498,18 +526,19 @@ nodes:
   # That a prospective component exists is a precondition for modifying the course, not the
   # modification itself. Keeping them separate is what stops the map claiming a clinical effect from
   # the mere possibility of one.
-  - {id: S_PROSPECTIVE_EXISTS, kind: state, label: "Part of the phenotype is still ahead of the child and therefore addressable in principle"}
+  - {id: S_PROSPECTIVE_EXISTS, kind: state, state_class: KNOWLEDGE, label: "Part of the phenotype is still ahead of the child and therefore addressable in principle"}
   - {id: S_ORG_SAFE, kind: state, label: "No organism-level harm from the manipulation"}
   - {id: ORGANISM_TARGET, kind: all_of, of: [S_CLINICAL_MODIFIED, S_ORG_SAFE, S_PROSPECTIVE_EXISTS, S_CHECKPOINT_RISK_RESOLVED], label: "Organism-level target: clinical course modified without organism-level harm"}
   - {id: T_ORGANISM_REACHED, kind: terminal, terminal: ORGANISM_TARGET_REACHED_IN_MODEL, label: "Organism-level target reached in model"}
-  - {id: S_AGGREGATION_FAILS, kind: state, label: "Per-division fidelity improved and the tissue aneuploid fraction did not fall"}
+  - {id: S_AGGREGATION_FAILS, kind: state, state_class: KNOWLEDGE, label: "Per-division fidelity improved and the tissue aneuploid fraction did not fall"}
   - {id: T_TISSUE_UNTESTABLE, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "No tissue-level readout is available for this child: a governance boundary, since no sampling is authorised and there is no recontact"}
-  - {id: S_ESTABLISHED_BURDEN, kind: state, label: "The developmental component already laid down is not addressable by improving future divisions"}
-  - {id: S_CLINICAL_LINK_UNRESOLVED, kind: state, label: "Tissue aneuploidy fell without a measurable change in the clinical feature that was chosen"}
+  - {id: S_ESTABLISHED_BURDEN, kind: state, state_class: KNOWLEDGE, label: "The developmental component already laid down is not addressable by improving future divisions"}
+  - {id: S_CLINICAL_LINK_UNRESOLVED, kind: state, state_class: KNOWLEDGE, label: "Tissue aneuploidy fell without a measurable change in the clinical feature that was chosen"}
   - {id: T_CLINICAL_UNTESTABLE, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Not assessable: no intervention in this child is authorised, so clinical-course modification cannot be observed here"}
 
   - id: XSCALE01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: TISSUE_MODEL
     label: "Does improving per-division fidelity lower the aneuploid cell fraction in a relevant tissue?"
@@ -521,6 +550,7 @@ nodes:
 
   - id: IRREV01
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: ORGANISM_MODEL
     label: "Is the already-established component of the phenotype reversible by improving mitotic fidelity from now on?"
@@ -533,6 +563,7 @@ nodes:
 
   - id: XSCALE02
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: ORGANISM_MODEL
     label: "Does a lower tissue aneuploid fraction modify a measurable feature of the clinical course?"
@@ -544,6 +575,7 @@ nodes:
 
   - id: SAFE_ORG
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: ORGANISM_MODEL
     label: "Does the manipulation avoid organism-level harm?"
@@ -560,38 +592,38 @@ nodes:
   - {id: T_STAB01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Perturbation did not engage, or the population was compromised: repeat under a valid condition"}
   - {id: T_STAB02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
   - {id: T_FUNCVAL_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: S_POOL_ONLY, kind: state, label: "The abundance change is confined to the kinetochore pool"}
-  - {id: S_P1P4_EXHAUSTED, kind: state, label: "Not controllable through the four interrogated mechanisms (HSP90, proteasomal, SIRT2, FBXW7). Four actuators, not the control variable"}
-  - {id: S_CASE_REFRACTORY, kind: state, label: "The reference class stabilises and this allele does not under the tested actuator"}
-  - {id: S_PRESENT_NON_NATIVE, kind: state, label: "Abundance was raised and function was not restored: the protein is present without being native"}
+  - {id: S_POOL_ONLY, kind: state, state_class: KNOWLEDGE, label: "The abundance change is confined to the kinetochore pool"}
+  - {id: S_P1P4_EXHAUSTED, kind: state, state_class: KNOWLEDGE, label: "Not controllable through the four interrogated mechanisms (HSP90, proteasomal, SIRT2, FBXW7). Four actuators, not the control variable"}
+  - {id: S_CASE_REFRACTORY, kind: state, state_class: KNOWLEDGE, label: "The reference class stabilises and this allele does not under the tested actuator"}
+  - {id: S_PRESENT_NON_NATIVE, kind: state, state_class: KNOWLEDGE, label: "Abundance was raised and function was not restored: the protein is present without being native"}
   - {id: T_NO_TRANSFER, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "Effect does not hold in a relevant cell type"}
   - {id: T_XFER_BLOCKED, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Cannot be tested: no patient-derived material is available and acquisition is not authorised. A governance boundary, not a biological one"}
-  - {id: S_PROTEIN_CEILING, kind: state, label: "The protein itself cannot be held at wild-type-comparable abundance by expression alone — a real ceiling, established rather than assumed"}
+  - {id: S_PROTEIN_CEILING, kind: state, state_class: KNOWLEDGE, label: "The protein itself cannot be held at wild-type-comparable abundance by expression alone — a real ceiling, established rather than assumed"}
   - {id: T_UNSAFE_F1, kind: terminal, terminal: UNSAFE, label: "The stabilisation manipulation harms the population: closed on safety grounds whatever it does to abundance"}
   - {id: T_SAFE02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Safety readouts invalid under the stabilisation manipulation: repeat"}
-  - {id: S_COMPOSITE_CONFLICTED, kind: state, label: "Components supply their functions individually and conflict as an assembled system in the tested configuration"}
-  - {id: S_COMPOSITE_INEFFECTIVE, kind: state, label: "The assembled system did not lower missegregation, so the functions supplied were not the limiting ones"}
+  - {id: S_COMPOSITE_CONFLICTED, kind: state, state_class: KNOWLEDGE, label: "Components supply their functions individually and conflict as an assembled system in the tested configuration"}
+  - {id: S_COMPOSITE_INEFFECTIVE, kind: state, state_class: KNOWLEDGE, label: "The assembled system did not lower missegregation, so the functions supplied were not the limiting ones"}
   - {id: T_COMPOSITE_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Composite validation invalid: repeat"}
   - {id: T_UNSAFE, kind: terminal, terminal: UNSAFE, label: "The component supplies the function and harms the population: closed on safety grounds, and no benefit verdict overrides it"}
   - {id: T_SAFE01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Safety readouts invalid: repeat under a valid condition"}
-  - {id: S_CENPE_BUBR1_DEPENDENT, kind: state, label: "CENP-E's congression function requires BubR1, so it cannot replace it — which makes it a candidate for exploiting it instead"}
-  - {id: S_KIF18A_BUBR1_DEPENDENT, kind: state, label: "KIF18A's alignment role requires BubR1"}
+  - {id: S_CENPE_BUBR1_DEPENDENT, kind: state, state_class: KNOWLEDGE, label: "CENP-E's congression function requires BubR1, so it cannot replace it — which makes it a candidate for exploiting it instead"}
+  - {id: S_KIF18A_BUBR1_DEPENDENT, kind: state, state_class: KNOWLEDGE, label: "KIF18A's alignment role requires BubR1"}
   - {id: T_KIF18A_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "KIF18A dependency unestablished: the experiment is specified and unrun"}
   # Engaged and ineffective is a different result from dependent or untested, and it continues:
   # flux is not the lever in this state, which leaves the other alignment candidate and F1.
   # The third strategy, between repairing the protein and routing around it: exploit the residual
   # function that is there and change a different physical process. The functional target never
   # required BubR1-independence, so this reaches it exactly as a bypass would.
-  - {id: S_MIS_LOWERED_COMPENSATORY, kind: state, label: "Missegregation is lowered with the population preserved, and the benefit depends on residual BubR1: the F3 convergence state — residual function exploited, another physical process altered"}
-  - {id: S_FLUX_NOT_THE_LEVER, kind: state, label: "The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state"}
-  - {id: S_FLUX_NEEDS_MORE_BUBR1, kind: state, label: "The flux benefit is present in replete cells and absent at the limiting end: it needs more BubR1 than this case has"}
+  - {id: S_MIS_LOWERED_COMPENSATORY, kind: state, state_class: TERMINAL_ENDPOINT, dependency_established: true, label: "Missegregation is lowered with the population preserved, and the benefit depends on residual BubR1: the F3 convergence state — residual function exploited, another physical process altered"}
+  - {id: S_FLUX_NOT_THE_LEVER, kind: state, state_class: KNOWLEDGE, label: "The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state"}
+  - {id: S_FLUX_NEEDS_MORE_BUBR1, kind: state, state_class: KNOWLEDGE, label: "The flux benefit is present in replete cells and absent at the limiting end: it needs more BubR1 than this case has"}
   - {id: T_FLUX_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Flux dependency unestablished: the experiment is specified and unrun"}
-  - {id: S_TRIP13_BUBR1_DEPENDENT, kind: state, label: "TRIP13-driven exit requires BubR1"}
-  - {id: S_TRIP13_CONFLICTED, kind: state, label: "Augmenting TRIP13 restored exit at the cost of checkpoint activation"}
+  - {id: S_TRIP13_BUBR1_DEPENDENT, kind: state, state_class: KNOWLEDGE, label: "TRIP13-driven exit requires BubR1"}
+  - {id: S_TRIP13_CONFLICTED, kind: state, state_class: KNOWLEDGE, label: "Augmenting TRIP13 restored exit at the cost of checkpoint activation"}
   - {id: T_TRIP13_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "TRIP13 dependency and specificity unestablished: the experiment is specified and unrun"}
   - {id: T_ALIGN_NO_ACTUATOR, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "Every named alignment candidate failed dependency adjudication and no further candidate survived two search depths. Reached only when all of them are closed"}
   - {id: T_SIL_NO_ACTUATOR, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "Every named silencing candidate failed dependency adjudication and no further candidate survived two search depths. Reached only when all of them are closed"}
-  - {id: S_ACT_NO_COMPONENT_YET, kind: state, label: "No component survived function-first discovery for checkpoint activation at the first depth; a named mechanistic handle exists at the second"}
+  - {id: S_ACT_NO_COMPONENT_YET, kind: state, state_class: KNOWLEDGE, label: "No component survived function-first discovery for checkpoint activation at the first depth; a named mechanistic handle exists at the second"}
 
   # ================= continuations opened by the Rule 5 audit =================
   # Each of these existed as a NO_KNOWN_CONTINUATION leaf. None was biologically impossible, unsafe or
@@ -599,6 +631,7 @@ nodes:
 
   - id: STAB03
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does an actuator outside the four already interrogated raise this substrate's steady-state abundance — CHIP/STUB1 triage, autophagic-lysosomal clearance, or HSP70/DNAJ co-chaperone capacity?"
@@ -612,30 +645,36 @@ nodes:
 
   - id: CENPE_F3
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does raising CENP-E activity improve alignment at the residual BubR1 this case has, exploiting the dependency rather than being blocked by it?"
     why_unresolved: "CENP-E needs BubR1 for its congression function, which closes it as a replacement and opens it as an F3 candidate: if the residual protein is enough to support a boosted CENP-E, the dependency is a lever instead of an obstacle. No experiment has tried it at limiting BubR1."
     outcomes:
-      improves_at_residual_bubr1: S_MIS_LOWERED_COMPENSATORY
+      improves_alignment_at_residual_bubr1: S_ALIGN_IMPROVED_COMPENSATORY
       needs_more_bubr1:           S_FLUX_NEEDS_MORE_BUBR1
       no_improvement:             T_CENPE_F3_NULL
       insufficient:               T_CENPE_F3_REPEAT
 
   - id: KIF18A_F3
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does modulating KIF18A improve alignment at residual BubR1?"
     why_unresolved: "Same shape as CENP-E, and KIF18A is the better-handled of the two. Its congression role runs through CENP-E and therefore through BubR1, which makes it compensatory rather than independent, and the flux work already uses KIF18A depletion as the state it rescues."
     outcomes:
-      improves_at_residual_bubr1: S_MIS_LOWERED_COMPENSATORY
+      improves_alignment_at_residual_bubr1: S_ALIGN_IMPROVED_COMPENSATORY
       worsens_alignment:          S_FLUX_NOT_THE_LEVER
       no_improvement:             T_KIF18A_F3_NULL
       insufficient:               T_KIF18A_F3_REPEAT
 
   - id: COMBO01
     kind: branch
+    dependency_outcomes: ['combination_sufficient']
+    dependency_tested: true
+    dependency_basis: "by construction — this route includes partial protein restoration or an exploited residual function, so it is BubR1-dependent by design rather than by measurement"
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does a partial abundance gain plus flux modification reach the functional state where neither does alone?"
@@ -648,6 +687,7 @@ nodes:
 
   - id: TRIP13_02
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does temporally restricted TRIP13 augmentation restore exit without degrading activation?"
@@ -660,6 +700,7 @@ nodes:
 
   - id: TRIP13_F3
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does TRIP13/APC15 augmentation improve silencing at residual BubR1, exploiting the BubR1-containing substrate rather than replacing it?"
@@ -671,6 +712,7 @@ nodes:
 
   - id: POOL01
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Is the kinetochore pool of BubR1 the functionally limiting one, so that a pool-confined gain is sufficient?"
@@ -683,6 +725,7 @@ nodes:
 
   - id: FOLD01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Can the raised-but-non-functional protein be brought to a native, functional state by assisting folding rather than by adding more of it?"
@@ -695,6 +738,7 @@ nodes:
 
   - id: LIMFN01
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Which function is actually limiting missegregation in this state?"
@@ -703,11 +747,12 @@ nodes:
       a_supplied_function_was_limiting: S_RETEST_COMPOSITE
       another_quantity_is_limiting:     S_NEW_CONTROL_VARIABLE
       insufficient:                     T_LIMFN01_REPEAT
-  - {id: S_RETEST_COMPOSITE, kind: state, label: "One of the supplied functions was limiting after all: the composite is revalidated with that function's contribution isolated"}
-  - {id: S_NEW_CONTROL_VARIABLE, kind: state, label: "A control variable outside this map limits missegregation in this state: it must be named and searched before any route can address it"}
+  - {id: S_RETEST_COMPOSITE, kind: state, state_class: KNOWLEDGE, label: "One of the supplied functions was limiting after all: the composite is revalidated with that function's contribution isolated"}
+  - {id: S_NEW_CONTROL_VARIABLE, kind: state, state_class: KNOWLEDGE, label: "A control variable outside this map limits missegregation in this state: it must be named and searched before any route can address it"}
 
   - id: COMPOSITE02
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does a different configuration of the same components — different stoichiometry, or temporal separation — resolve the conflict?"
@@ -719,6 +764,7 @@ nodes:
 
   - id: ACT02
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Can arrest competence be supplied through the MPS1 phosphorylation cascade, transiently rather than chronically?"
@@ -731,9 +777,10 @@ nodes:
       insufficient:             T_ACT02_REPEAT
 
   # ---------- F4: remove the cells rather than prevent the error ----------
-  - {id: CV_CLEARANCE_ENTRY, kind: state, label: "F4 entry: the aneuploid cell fraction is itself a control variable, and the only one that can touch aneuploidy already established"}
+  - {id: CV_CLEARANCE_ENTRY, kind: state, state_class: KNOWLEDGE, label: "F4 entry: the aneuploid cell fraction is itself a control variable, and the only one that can touch aneuploidy already established"}
   - id: CLEAR01
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: TISSUE_MODEL
     label: "Can the aneuploid cell fraction be lowered by promoting selective elimination of aneuploid cells?"
@@ -747,6 +794,7 @@ nodes:
 
   - id: CLIN02
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: ORGANISM_MODEL
     label: "Which clinical feature, in which tissue, on what timescale, is linked to aneuploid burden?"
@@ -758,6 +806,7 @@ nodes:
 
   - id: XSCALE03
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: TISSUE_MODEL
     label: "Is selection or clearance, rather than per-division fidelity, what sets the tissue aneuploid fraction here?"
@@ -770,19 +819,19 @@ nodes:
   # new genuine terminals from the expansion
   - {id: T_CV_ABUNDANCE_EXHAUSTED, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "Every identified actuator of BubR1 abundance failed on this substrate across two search depths"}
   - {id: T_STAB03_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Actuator engagement not validated: repeat"}
-  - {id: T_CENPE_F3_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Boosting CENP-E does not help at residual BubR1 and no further CENP-E-directed experiment is identifiable"}
+  - {id: T_CENPE_F3_NULL, kind: terminal, closes: ACTUATOR, closes_for: CV_CHROMOSOME_ALIGNMENT, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Boosting CENP-E does not help at residual BubR1 and no further CENP-E-directed experiment is identifiable"}
   - {id: T_CENPE_F3_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_KIF18A_F3_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "KIF18A modulation does not help at residual BubR1"}
+  - {id: T_KIF18A_F3_NULL, kind: terminal, closes: ACTUATOR, closes_for: CV_CHROMOSOME_ALIGNMENT, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "KIF18A modulation does not help at residual BubR1"}
   - {id: T_KIF18A_F3_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_COMBO_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial abundance plus flux modification is still insufficient, and no further combination of the mapped control variables is identifiable"}
+  - {id: T_COMBO_INSUFFICIENT, kind: terminal, closes: CONFIGURATION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial abundance plus flux modification is still insufficient, and no further combination of the mapped control variables is identifiable"}
   - {id: T_UNSAFE_COMBO, kind: terminal, terminal: UNSAFE, label: "The combination harms the population where neither component did"}
   - {id: T_COMBO_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
   - {id: T_TRIP13_INTRINSIC, kind: terminal, terminal: PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE, label: "The activation and silencing roles cannot be separated even temporally: one protein cannot be augmented for one without costing the other"}
   - {id: T_TRIP13_02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_TRIP13_F3_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "TRIP13 augmentation does not help at residual BubR1"}
+  - {id: T_TRIP13_F3_NULL, kind: terminal, closes: ACTUATOR, closes_for: CV_CHECKPOINT_SILENCING, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "TRIP13 augmentation does not help at residual BubR1"}
   - {id: T_TRIP13_F3_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: S_POOL_SUFFICES, kind: state, label: "The kinetochore pool is the functionally limiting one, so a pool-confined abundance gain is enough and whole-cell restoration is not required"}
-  - {id: T_POOL_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "The kinetochore pool is not sufficient and whole-cell abundance is required, which returns the route to CV_BUBR1_ABUNDANCE with its actuators already enumerated"}
+  - {id: S_POOL_SUFFICES, kind: state, state_class: KNOWLEDGE, label: "The kinetochore pool is the functionally limiting one, so a pool-confined abundance gain is enough and whole-cell restoration is not required"}
+  - {id: T_POOL_INSUFFICIENT, kind: terminal, closes: ACTUATOR, closes_for: CV_BUBR1_ABUNDANCE, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "The kinetochore pool is not sufficient and whole-cell abundance is required, which returns the route to CV_BUBR1_ABUNDANCE with its actuators already enumerated"}
   - {id: T_POOL01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
   - {id: T_FOLD_INTRINSIC, kind: terminal, terminal: PHYSICALLY_INCOMPATIBLE_WITH_EVIDENCE, label: "The protein cannot be made native by assisting folding: abundance and nativeness are not separable for this substrate"}
   - {id: T_FOLD01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
@@ -793,11 +842,11 @@ nodes:
   - {id: T_ACT_EXHAUSTED, kind: terminal, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "No way to supply arrest competence survived three search depths and a mechanistic-handle test"}
   - {id: T_ACT02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
   - {id: T_CLEAR_DEPLETES, kind: terminal, terminal: UNSAFE, label: "Selective elimination lowers the aneuploid fraction by depleting the population: the confounder B08 and B18 exist to catch, arriving as the mechanism rather than as an artefact"}
-  - {id: T_CLEAR_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No selective elimination of aneuploid cells is inducible in this context"}
+  - {id: T_CLEAR_NULL, kind: terminal, closes: CONTEXT, closes_for: CV_ANEUPLOID_CELL_FRACTION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No selective elimination of aneuploid cells is inducible in this context"}
   - {id: T_CLEAR01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_CLINICAL_LINK_ABSENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No clinical feature is linked to aneuploid burden on any assessable measure"}
+  - {id: T_CLINICAL_LINK_ABSENT, kind: terminal, closes: CONTEXT, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "No clinical feature is linked to aneuploid burden on any assessable measure"}
   - {id: T_CLIN02_BLOCKED, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Not assessable: no intervention or longitudinal observation in this child is authorised"}
-  - {id: T_AGGREGATION_UNEXPLAINED, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Fidelity dominates and the tissue fraction still does not fall: the discrepancy has no identified next experiment"}
+  - {id: T_AGGREGATION_UNEXPLAINED, kind: terminal, closes: NO_NEXT_STEP, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Fidelity dominates and the tissue fraction still does not fall: the discrepancy has no identified next experiment"}
   - {id: T_XSCALE03_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
 
   # ================= new control variables, each with its own candidate and adjudication =================
@@ -807,6 +856,10 @@ nodes:
 
   - id: DEP_CELL_SIZE
     kind: branch
+    dependency_outcomes: ['independent_of_bubr1', 'benefit_requires_residual_bubr1']
+    dependency_tested: true
+    dependency_basis: "the same graded-gradient design, which is why this branch cannot be answered from the published work"
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does reducing cell volume at mitotic entry lower missegregation in a BubR1-limiting state, and is the effect independent of residual BubR1?"
@@ -820,6 +873,10 @@ nodes:
 
   - id: DEP_ATTACH_TURNOVER
     kind: branch
+    dependency_outcomes: ['independent_of_bubr1', 'benefit_requires_residual_bubr1']
+    dependency_tested: true
+    dependency_basis: "the same graded-gradient design"
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does tuning attachment turnover lower missegregation at limiting BubR1?"
@@ -833,36 +890,84 @@ nodes:
 
   - id: DEP_COHESION
     kind: branch
+    dependency_outcomes: ['benefit_requires_residual_bubr1']
+    dependency_tested: true
+    dependency_basis: "the same graded-gradient design, applied to PCS and missegregation together"
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does strengthening centromeric cohesion reduce premature chromatid separation and missegregation at limiting BubR1?"
     why_unresolved: "No route in this map addressed cohesion, although PCS is the hallmark scored in these patients. Whether BubR1 insufficiency produces PCS through cohesion loss or through checkpoint failure is itself unresolved, and the two imply different routes."
     evidence: ["PMID:40437074", "PMID:30464155"]
     outcomes:
-      pcs_and_missegregation_fall:        S_MIS_LOWERED_INDEPENDENT
+      pcs_and_missegregation_fall:        S_MIS_LOWERED_DEPENDENCY_UNTESTED
       benefit_requires_residual_bubr1:    S_MIS_LOWERED_COMPENSATORY
       pcs_falls_missegregation_unchanged: S_PCS_DECOUPLED
       no_effect:                          T_COHESION_NULL
       unestablished:                      T_COHESION_FRONTIER
+  # Alignment improved is not missegregation lowered. The flux work measures both and they are not the
+  # same number: lagging chromosomes arising from alignment defects often integrate into the main
+  # nucleus, so the step from intermediate to endpoint has to be measured rather than assumed.
+  - {id: S_ALIGN_IMPROVED_COMPENSATORY, kind: state, state_class: MECHANISTIC_INTERMEDIATE, label: "Chromosome alignment is improved at residual BubR1 by a compensatory route. Missegregation has not been measured"}
   - {id: S_COMPOSITE_COMPENSATORY, kind: state, label: "One function supplied and another compensated: a mixed composite that reaches the terminal endpoint without reproducing any single canonical route"}
-  - {id: S_PCS_DECOUPLED, kind: state, label: "Premature chromatid separation falls and missegregation does not: the hallmark scored in patients and the endpoint this map targets are different quantities, and which one the phenotype tracks becomes the question"}
+  # Efficacy shown, dependency not tested. A route arrives here whenever it lowered missegregation
+  # without the graded-BubR1 design that could say whether it needed the protein.
+  - {id: S_MIS_LOWERED_DEPENDENCY_UNTESTED, kind: state, state_class: SYSTEM, label: "Missegregation is lowered and the route's dependence on residual BubR1 was not tested: positive efficacy is neutral with respect to independence"}
+  - {id: S_PCS_DECOUPLED, kind: state, state_class: KNOWLEDGE, label: "Premature chromatid separation falls and missegregation does not: the hallmark scored in patients and the endpoint this map targets are different quantities, and which one the phenotype tracks becomes the question"}
 
-  - id: ENDPOINT01
+  - id: COUPLING01
     kind: branch
+    branch_role: OBSERVATION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
-    label: "Which quantity does the clinical phenotype track — premature chromatid separation, or chromosome missegregation per division?"
-    why_unresolved: "The map chose missegregation as the terminal cellular endpoint. The cytogenetics that diagnose these patients score PCS. If they dissociate, a route optimised for one may not move the other, and the target audit never examined this because both were assumed to be the same defect seen from two angles."
+    label: "Do premature chromatid separation and per-division missegregation move together in a BubR1-limiting state?"
+    why_unresolved: "The map chose missegregation as its terminal cellular endpoint; the cytogenetics that diagnose these patients score PCS. Whether they are one quantity seen two ways was assumed, never measured."
+    observation_note: "This is an observation. It changes which endpoint the city should track and nothing about the cell's state, so none of its outcomes may land on an improved biological state."
     outcomes:
-      same_quantity:          S_MIS_LOWERED_INDEPENDENT
-      pcs_is_the_tracker:     S_ENDPOINT_IS_PCS
-      missegregation_tracks:  S_MIS_LOWERED_INDEPENDENT
-      unestablished:          T_ENDPOINT_FRONTIER
-  - {id: S_ENDPOINT_IS_PCS, kind: state, label: "The phenotype tracks premature chromatid separation: the cellular target needs a cohesion endpoint that the current conjunction does not contain"}
+      coupled:        S_ENDPOINTS_COUPLED
+      decoupled:      S_PCS_DECOUPLED
+      unestablished:  T_COUPLING_FRONTIER
+  - {id: S_ENDPOINTS_COUPLED, kind: state, state_class: KNOWLEDGE, label: "PCS and missegregation move together in this system: a route that moves one is evidence about the other, and the current endpoint choice is safe"}
+
+  - id: CLINLINK01
+    kind: branch
+    branch_role: OBSERVATION
+    resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
+    label: "Which cellular endpoint tracks the clinical phenotype — PCS, missegregation, or neither alone?"
+    why_unresolved: "A cell model cannot answer this. Coupling in a dish says the two readouts agree there; it says nothing about which one the child's phenotype follows, and that needs organism-level or longitudinal data this project does not have."
+    observation_note: "Observation, and at a scale no cell experiment reaches. Separated from COUPLING01 because conflating them would let a dish settle a clinical question."
+    outcomes:
+      pcs_tracks_phenotype:            S_ENDPOINT_IS_PCS
+      missegregation_tracks_phenotype: S_ENDPOINT_IS_MIS
+      neither_alone:                   S_ENDPOINT_COMPOSITE
+      unestablished:                   T_CLINLINK_FRONTIER
+  - {id: S_ENDPOINT_IS_PCS, kind: state, state_class: KNOWLEDGE, label: "The phenotype tracks premature chromatid separation: the cellular target needs a cohesion endpoint the current conjunction does not contain"}
+  - {id: S_ENDPOINT_IS_MIS, kind: state, state_class: KNOWLEDGE, label: "The phenotype tracks per-division missegregation: the city's existing endpoint choice is vindicated"}
+  - {id: S_ENDPOINT_COMPOSITE, kind: state, state_class: KNOWLEDGE, label: "Neither cellular endpoint alone tracks the phenotype: the cellular target needs a composite the current conjunction does not contain"}
+
+  - id: MIS_MEASURE01
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does the improved alignment translate into fewer missegregation events per assessable division?"
+    why_unresolved: "The transition from a canonical intermediate to the terminal endpoint is a measurement, not an entailment. The flux work found the chain leaky in the other direction — lagging chromosomes from alignment defects often integrate into the main nucleus — so the step cannot be inferred."
+    evidence: ["PMID:39541344"]
+    establishes: "missegregation per assessable division, with its denominator"
+    outcomes:
+      missegregation_falls:        S_MIS_LOWERED_DEPENDENCY_UNTESTED
+      alignment_only:              S_INTERMEDIATE_DECOUPLED
+      unestablished:               T_MIS_MEASURE_FRONTIER
+  - {id: S_INTERMEDIATE_DECOUPLED, kind: state, state_class: KNOWLEDGE, label: "Alignment improved and missegregation did not: for this state the canonical intermediate is not the limiting quantity, which is what LIMFN01 asks next"}
 
   # ================= cross-family combinations =================
   - id: COMBO_F1_F2
     kind: branch
+    dependency_outcomes: ['combination_sufficient']
+    dependency_tested: true
+    dependency_basis: "by construction — this route includes partial protein restoration or an exploited residual function, so it is BubR1-dependent by design rather than by measurement"
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does a partial abundance gain plus an independently supplied function reach the state where neither does alone?"
@@ -874,6 +979,7 @@ nodes:
       unestablished:          T_F1F2_FRONTIER
   - id: COMBO_F2_F3
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does supplying one function while compensating another through a different physical process reach the state?"
@@ -885,6 +991,7 @@ nodes:
       unestablished:          T_F2F3_FRONTIER
   - id: COMBO_F3_F4
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: TISSUE_MODEL
     label: "Does lowering the error rate while promoting clearance of cells that already carry errors move the tissue fraction where neither does alone?"
@@ -896,6 +1003,7 @@ nodes:
       unestablished:            T_F3F4_FRONTIER
   - id: COMBO_F1_F4
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: TISSUE_MODEL
     label: "Does partial protein restoration plus clearance of already-aneuploid cells move the tissue fraction?"
@@ -909,6 +1017,7 @@ nodes:
   # ================= context boundaries, by lattice dimension =================
   - id: XFER_LINEAGE
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
     label: "Does the effect hold in a lineage relevant to this child's phenotype, rather than in a cancer line?"
@@ -917,9 +1026,10 @@ nodes:
       holds_in_relevant_lineage: S_XFER_OK
       lineage_specific_failure:  S_LINEAGE_DEPENDENT
       unestablished:             T_XFER_LINEAGE_FRONTIER
-  - {id: S_LINEAGE_DEPENDENT, kind: state, label: "The effect is lineage-dependent: it works in some relevant lineages and not others, which makes tissue selectivity a design variable rather than a confound"}
+  - {id: S_LINEAGE_DEPENDENT, kind: state, state_class: KNOWLEDGE, label: "The effect is lineage-dependent: it works in some relevant lineages and not others, which makes tissue selectivity a design variable rather than a confound"}
   - id: XFER_DEVSTATE
     kind: branch
+    branch_role: INTERVENTION
     resolves_by: MEASUREMENT
     requires: TISSUE_MODEL
     label: "Does the effect hold in a developmental state resembling when the burden is laid down?"
@@ -928,25 +1038,181 @@ nodes:
       holds_developmentally: S_XFER_OK
       adult_only:            S_DEV_WINDOW_MISSED
       unestablished:         T_XFER_DEV_FRONTIER
-  - {id: S_DEV_WINDOW_MISSED, kind: state, label: "The effect holds only in adult-like states: the developmental window in which the burden accrues is not addressable by this route, which bounds it to the prospective component"}
+  - {id: S_DEV_WINDOW_MISSED, kind: state, state_class: KNOWLEDGE, label: "The effect holds only in adult-like states: the developmental window in which the burden accrues is not addressable by this route, which bounds it to the prospective component"}
 
-  - {id: T_CELL_SIZE_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Cell volume does not move missegregation in this state"}
+  - {id: T_MIS_MEASURE_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Whether the intermediate translates to the endpoint is unestablished; the measurement is specified and unrun"}
+  - {id: T_DEPTEST_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "The gradient was not achieved or not measured: dependency stays untested"}
+  - {id: T_CELL_SIZE_NULL, kind: terminal, closes: ACTUATOR, closes_for: CV_CELL_SIZE, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Cell volume does not move missegregation in this state"}
+  - {id: T_NEXT_ACTUATOR_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Engagement of the next actuator not validated: repeat"}
+  - {id: T_NEXT_CONFIG_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Configuration not achieved as specified: repeat"}
   - {id: T_CELL_SIZE_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_TURNOVER_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Attachment turnover does not move missegregation in this state"}
+  - {id: T_TURNOVER_NULL, kind: terminal, closes: ACTUATOR, closes_for: CV_ATTACHMENT_TURNOVER, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Attachment turnover does not move missegregation in this state"}
   - {id: T_TURNOVER_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_COHESION_NULL, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Cohesion protection moves neither PCS nor missegregation here"}
+  - {id: T_COHESION_NULL, kind: terminal, closes: ACTUATOR, closes_for: CV_COHESION_PROTECTION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Cohesion protection moves neither PCS nor missegregation here"}
   - {id: T_COHESION_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_ENDPOINT_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Which quantity the phenotype tracks is unestablished; the comparison is specified and unrun"}
-  - {id: T_F1F2_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial repair plus a supplied function is still insufficient"}
+  - {id: T_COUPLING_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Whether PCS and missegregation are coupled is unestablished; the comparison is specified and unrun"}
+  - {id: T_CLINLINK_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Which endpoint tracks the phenotype is unestablished, and no authorised observation can currently settle it"}
+  - {id: T_F1F2_INSUFFICIENT, kind: terminal, closes: CONFIGURATION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial repair plus a supplied function is still insufficient"}
   - {id: T_F1F2_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_F2F3_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Supply plus compensation is still insufficient"}
+  - {id: T_F2F3_INSUFFICIENT, kind: terminal, closes: CONFIGURATION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Supply plus compensation is still insufficient"}
   - {id: T_F2F3_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_F3F4_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Error reduction plus clearance does not move the tissue fraction"}
+  - {id: T_F3F4_INSUFFICIENT, kind: terminal, closes: CONFIGURATION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Error reduction plus clearance does not move the tissue fraction"}
   - {id: T_F3F4_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_F1F4_INSUFFICIENT, kind: terminal, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial repair plus clearance does not move the tissue fraction"}
+  - {id: T_F1F4_INSUFFICIENT, kind: terminal, closes: CONFIGURATION, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Partial repair plus clearance does not move the tissue fraction"}
   - {id: T_F1F4_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
   - {id: T_XFER_LINEAGE_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat in a relevant lineage"}
   - {id: T_XFER_DEV_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat in a developmental model"}
+
+  - id: DEPTEST01
+    kind: branch
+    dependency_outcomes: ['independent_across_gradient', 'scales_with_residual_bubr1']
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does the demonstrated benefit survive across a graded BubR1 gradient, and is it therefore independent of residual protein or compensatory?"
+    why_unresolved: "Shared by every route that showed efficacy without testing dependency. A single limiting condition cannot answer it; the claim is licensed by the gradient, which is why this is one reusable node rather than a clause inside each candidate's branch."
+    dependency_tested: true
+    dependency_basis: "this branch IS the gradient design — a graded BubR1 series with the perturbation held constant, which is the only thing that licenses an independence claim"
+    outcomes:
+      independent_across_gradient: S_MIS_LOWERED_INDEPENDENT
+      scales_with_residual_bubr1:  S_MIS_LOWERED_COMPENSATORY
+      absent_at_limiting_end:      S_FLUX_NEEDS_MORE_BUBR1
+      unestablished:               T_DEPTEST_FRONTIER
+
+  - id: NEXT_ACTUATOR01
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does another actuator of the same control variable move it, where the one tested did not?"
+    why_unresolved: "One shared node rather than one per variable, because the question has the same shape every time: a null on an actuator closes that actuator. Every control variable in this map has more than one identified actuator, and none has had them all tried."
+    outcomes:
+      another_actuator_works:        S_MIS_LOWERED_VIA_ALTERNATE
+      all_actuators_exhausted:       S_CV_CLOSED_ON_EVIDENCE
+      unestablished:                 T_NEXT_ACTUATOR_FRONTIER
+  - {id: S_MIS_LOWERED_VIA_ALTERNATE, kind: state, state_class: SYSTEM, label: "Missegregation is lowered by an alternative actuator or configuration after the first one failed; dependency is still untested"}
+  - {id: S_CV_CLOSED_ON_EVIDENCE, kind: state, state_class: KNOWLEDGE, label: "Every identified actuator of this control variable has been tried with engagement validated and none moved it: the variable, not an actuator, is now closed on evidence"}
+
+  - id: NEXT_CONFIG01
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does another configuration of the same combination — different ratio, order or timing — reach the state where the one tested did not?"
+    why_unresolved: "A combination verdict closes the configuration that was run. Stoichiometry, order and temporal separation are all unexplored, and TRIP13's temporally separable roles are the existence proof that configuration matters."
+    outcomes:
+      another_configuration_works: S_MIS_LOWERED_VIA_ALTERNATE
+      configuration_space_exhausted: S_COMBINATION_CLOSED
+      unestablished:                 T_NEXT_CONFIG_FRONTIER
+  - {id: S_COMBINATION_CLOSED, kind: state, state_class: KNOWLEDGE, label: "The reachable configuration space of this combination is exhausted: the combination, not one configuration, is closed"}
+
+
+  # ================= neighbourhood: CHAR01 = not_destabilised =================
+  # One road ran through this district. If the protein is present at normal level and the cell still
+  # misbehaves, the defect is not abundance — and nothing downstream of the abundance premise applies.
+  - id: FUNCDEF01
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "With abundance normal, which function is defective — checkpoint activation, silencing, alignment, or none of them?"
+    why_unresolved: "The abundance premise was the map's organising assumption, so the world where it is false had one road through it. A normally expressed allele with a cellular phenotype is the Y155C regime, where the defect is in a specific function and the domain predicts which."
+    evidence: ["PMID:20516114"]
+    outcomes:
+      activation_only:    S_DEFECT_IS_ACTIVATION
+      silencing_only:     S_DEFECT_IS_SILENCING
+      alignment_only:     S_DEFECT_IS_ALIGNMENT
+      more_than_one:      S_DEFECT_IS_COMPOSITE
+      no_defect_found:    S_NO_CELLULAR_DEFECT
+      unestablished:      T_FUNCDEF_FRONTIER
+  - {id: S_DEFECT_IS_ACTIVATION, kind: state, state_class: KNOWLEDGE, label: "Abundance normal, checkpoint activation defective: a separation-of-function allele of the Y155C kind, and the route needs activation supplied or compensated rather than protein stabilised"}
+  - {id: S_DEFECT_IS_SILENCING, kind: state, state_class: KNOWLEDGE, label: "Abundance normal, silencing defective: the route needs the silencing variable, and TRIP13/APC15 is its named actuator"}
+  - {id: S_DEFECT_IS_ALIGNMENT, kind: state, state_class: KNOWLEDGE, label: "Abundance normal, alignment defective: the central-region function is impaired in a protein that is present, which is the 483X pattern"}
+  - {id: S_DEFECT_IS_COMPOSITE, kind: state, state_class: KNOWLEDGE, label: "Abundance normal, more than one function defective in a present protein: composite replacement or compensation, with no stabilisation route to fall back on"}
+  - {id: S_NO_CELLULAR_DEFECT, kind: state, state_class: KNOWLEDGE, label: "Abundance normal and no cellular defect in this construct: either the construct does not reproduce the allele's behaviour, or the phenotype arises from something this assay does not see"}
+
+  - id: CONSTRUCT01
+    kind: branch
+    branch_role: OBSERVATION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does the construct reproduce the allele's behaviour at all, or is the null a property of the model?"
+    why_unresolved: "A normally expressed allele with no measurable defect is the one result that indicts the assay rather than the biology. Tag placement, isoform choice and the absence of the second allele are all candidate explanations, and none has been excluded."
+    observation_note: "Observation about the model, not about the cell. Its outcomes are knowledge only."
+    outcomes:
+      construct_is_faithful:     S_PHENOTYPE_ELSEWHERE
+      construct_is_the_problem:  S_CONSTRUCT_ARTEFACT
+      unestablished:             T_CONSTRUCT_FRONTIER
+  - {id: S_PHENOTYPE_ELSEWHERE, kind: state, state_class: KNOWLEDGE, label: "The construct is faithful and shows no defect: the phenotype arises outside what a single-allele replacement assay measures — the compound-heterozygous combination, a non-mitotic role, or a tissue context"}
+  - {id: S_CONSTRUCT_ARTEFACT, kind: state, state_class: KNOWLEDGE, label: "The construct does not reproduce the allele: every result that used it is uninterpretable, including the destabilisation reading"}
+
+  - id: GENOTYPE01
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: CELL_MODEL
+    label: "Does the compound-heterozygous combination produce a defect that neither allele produces alone?"
+    why_unresolved: "Every experiment in this map replaces one allele. The child has two, and the truncating one contributes little full-length protein but is not nothing. An interaction would be invisible to every single-allele design here."
+    outcomes:
+      combination_defect:    S_DEFECT_IS_COMPOSITE
+      no_interaction:        T_PHENOTYPE_UNLOCATED
+      unestablished:         T_GENOTYPE_FRONTIER
+
+  # ================= neighbourhood: tissue and organism =================
+  - id: DELIVERY01
+    kind: branch
+    branch_role: INTERVENTION
+    resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
+    label: "Can the actuator reach the lineages that carry the burden, at the time they carry it?"
+    why_unresolved: "Every route in this map ends at a dish. Reaching a tissue is a separate physical problem from moving a cellular variable, and no actuator in the map has a delivery record."
+    outcomes:
+      reaches_relevant_lineages: S_DELIVERY_FEASIBLE
+      reaches_some_lineages:     S_DELIVERY_PARTIAL
+      cannot_reach:              T_DELIVERY_ABSENT
+      unassessable:              T_DELIVERY_BLOCKED
+  - {id: S_DELIVERY_FEASIBLE, kind: state, state_class: SYSTEM, label: "The actuator reaches the lineages that carry the burden"}
+  - {id: S_DELIVERY_PARTIAL, kind: state, state_class: SYSTEM, label: "Some lineages are reachable and others are not: tissue selectivity becomes a design variable, and which lineages matter becomes the question"}
+
+  - id: LINEAGE_WEIGHT01
+    kind: branch
+    branch_role: OBSERVATION
+    resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
+    label: "Which lineages' aneuploid burden accounts for which clinical features?"
+    why_unresolved: "The phenotype is multi-system and the burden is mosaic, so burden and feature are not uniformly related across tissues. Nothing in this project maps one onto the other, and partial delivery makes the mapping decision-relevant rather than academic."
+    observation_note: "Observation at organism scale; its outcomes are knowledge about which tissues matter."
+    outcomes:
+      a_dominant_lineage_exists: S_LINEAGE_PRIORITY_KNOWN
+      burden_is_distributed:     S_BURDEN_DISTRIBUTED
+      unestablished:             T_LINEAGE_WEIGHT_FRONTIER
+  - {id: S_LINEAGE_PRIORITY_KNOWN, kind: state, state_class: KNOWLEDGE, label: "One or a few lineages dominate the clinical burden: partial delivery may be sufficient, and tissue selectivity becomes a target rather than a limitation"}
+  - {id: S_BURDEN_DISTRIBUTED, kind: state, state_class: KNOWLEDGE, label: "The burden is distributed across lineages: partial delivery cannot be sufficient, and the organism route needs breadth the cellular route never had to supply"}
+
+  - id: WINDOW01
+    kind: branch
+    branch_role: OBSERVATION
+    resolves_by: MEASUREMENT
+    requires: ORGANISM_MODEL
+    label: "Is there a developmental window in which acting would change the accrued burden, and is any part of it still ahead of this child?"
+    why_unresolved: "IRREV01 asks whether a prospective component exists; this asks when it is. A window that closed before diagnosis and a window that is continuous are different situations with different routes, and nothing distinguishes them."
+    observation_note: "Observation; knowledge about timing, not a change to the system."
+    outcomes:
+      window_is_open:        S_WINDOW_OPEN
+      window_has_closed:     S_ESTABLISHED_BURDEN
+      burden_accrues_continuously: S_WINDOW_CONTINUOUS
+      unestablished:         T_WINDOW_FRONTIER
+  - {id: S_WINDOW_OPEN, kind: state, state_class: KNOWLEDGE, label: "A developmental window is still open: the prospective component is bounded in time and acting within it is the route"}
+  - {id: S_WINDOW_CONTINUOUS, kind: state, state_class: KNOWLEDGE, label: "The burden accrues continuously rather than in a window: there is no deadline, and a sustained route is both possible and necessary"}
+
+  - {id: T_FUNCDEF_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Which function is defective is unestablished; the panel is specified and unrun"}
+  - {id: T_CONSTRUCT_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Construct fidelity unestablished: repeat with the controls named"}
+  - {id: T_PHENOTYPE_UNLOCATED, kind: terminal, closes: NO_NEXT_STEP, terminal: DECLARED_SCIENTIFIC_FRONTIER, label: "Abundance normal, no single-allele defect, no allele interaction, and a faithful construct: the phenotype is not located by any assay this map contains, and no next experiment is currently identifiable"}
+  - {id: T_GENOTYPE_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Allele interaction unestablished; the two-allele design is specified and unrun"}
+  - {id: T_DELIVERY_ABSENT, kind: terminal, closes: ACTUATOR, terminal: SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, label: "No route reaches the relevant lineages for this actuator. Actuator-scoped: a different actuator may have a different delivery profile"}
+  - {id: T_DELIVERY_BLOCKED, kind: terminal, terminal: GOVERNANCE_BLOCKED, label: "Delivery is not assessable: no intervention in this child is authorised"}
+  - {id: T_LINEAGE_WEIGHT_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "The burden-to-feature mapping is unestablished and needs organism-level data this project does not hold"}
+  - {id: T_WINDOW_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "The developmental window is unestablished; natural-history data would settle it"}
 
 edges:
   # forward reachability from the case state
@@ -1092,8 +1358,53 @@ edges:
   - {from: C_CELL_SIZE, to: DEP_CELL_SIZE, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_ATTACH_TURNOVER, to: DEP_ATTACH_TURNOVER, label: EXPERIMENTAL_UNKNOWN}
   - {from: C_COHESION, to: DEP_COHESION, label: EXPERIMENTAL_UNKNOWN}
-  - {from: S_PCS_DECOUPLED, to: ENDPOINT01, label: EXPERIMENTAL_UNKNOWN, note: "If they dissociate, which one the phenotype tracks is the question the target audit never asked"}
-  - {from: S_MISSEGREGATION, to: ENDPOINT01, label: EXPERIMENTAL_UNKNOWN, note: "Available from the current state: the endpoint choice is auditable before any route is run"}
+  # ---- the not_destabilised district ----
+  - {from: S_ABUNDANCE_NORMAL, to: FUNCDEF01, label: EXPERIMENTAL_UNKNOWN, note: "Abundance normal means the abundance family does not apply; which function is broken becomes the question"}
+  - {from: S_DEFECT_IS_ACTIVATION, to: ACT02, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "Activation must be supplied or compensated, not stabilised"}
+  - {from: S_DEFECT_IS_SILENCING, to: C_TRIP13, label: GROUNDED, reentry: true, note: "The silencing variable has a named actuator"}
+  - {from: S_DEFECT_IS_ALIGNMENT, to: C_KIF18A, label: GROUNDED, reentry: true, note: "The alignment variable has named actuators"}
+  - {from: S_DEFECT_IS_COMPOSITE, to: COMBO_F2_F3, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "Composite with no stabilisation fallback"}
+  - {from: S_NO_CELLULAR_DEFECT, to: CONSTRUCT01, label: EXPERIMENTAL_UNKNOWN, note: "The one result that indicts the assay before the biology"}
+  - {from: S_PHENOTYPE_ELSEWHERE, to: GENOTYPE01, label: EXPERIMENTAL_UNKNOWN, note: "The compound-heterozygous combination is the nearest unexamined explanation"}
+  - {from: S_CONSTRUCT_ARTEFACT, to: EXPRVAL01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "If the construct is the problem, every result that used it needs re-establishing"}
+  # ---- the tissue and organism district ----
+  - {from: S_TISSUE_FRACTION_FALLS, to: DELIVERY01, label: PHYSICAL_ACTUATOR_MISSING, note: "Moving a tissue fraction in a model is not reaching a child's tissues"}
+  - {from: S_DELIVERY_PARTIAL, to: LINEAGE_WEIGHT01, label: EXPERIMENTAL_UNKNOWN, note: "Partial delivery makes which lineages matter a decision rather than a curiosity"}
+  - {from: S_DELIVERY_FEASIBLE, to: XSCALE02, label: EXPERIMENTAL_UNKNOWN, reentry: true}
+  - {from: S_LINEAGE_PRIORITY_KNOWN, to: XSCALE02, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "A dominant lineage makes partial delivery potentially sufficient"}
+  - {from: S_BURDEN_DISTRIBUTED, to: T_DELIVERY_ABSENT, label: PHYSICAL_ACTUATOR_MISSING, note: "Distributed burden plus partial delivery is an actuator-scoped dead end, not a biological one"}
+  - {from: S_PROSPECTIVE_EXISTS, to: WINDOW01, label: EXPERIMENTAL_UNKNOWN, note: "That a prospective component exists does not say when it is"}
+  - {from: S_WINDOW_OPEN, to: DELIVERY01, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "An open window makes delivery timing the binding constraint"}
+  - {from: S_WINDOW_CONTINUOUS, to: DELIVERY01, label: PHYSICAL_ACTUATOR_MISSING, reentry: true, note: "No deadline, but a sustained route needs sustained delivery"}
+
+  # The actuator- and configuration-scoped frontiers route into their shared continuations, so a null
+  # on one lever is never read as a closed control variable.
+  - {from: T_CELL_SIZE_NULL, to: NEXT_ACTUATOR01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_TURNOVER_NULL, to: NEXT_ACTUATOR01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_COHESION_NULL, to: NEXT_ACTUATOR01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_CENPE_F3_NULL, to: NEXT_ACTUATOR01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_KIF18A_F3_NULL, to: NEXT_ACTUATOR01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_TRIP13_F3_NULL, to: NEXT_ACTUATOR01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_POOL_INSUFFICIENT, to: NEXT_ACTUATOR01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true, note: "Its own label said the route returns to CV_BUBR1_ABUNDANCE; now it does"}
+  - {from: T_COMBO_INSUFFICIENT, to: NEXT_CONFIG01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_F1F2_INSUFFICIENT, to: NEXT_CONFIG01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_F2F3_INSUFFICIENT, to: NEXT_CONFIG01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_F3F4_INSUFFICIENT, to: NEXT_CONFIG01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_F1F4_INSUFFICIENT, to: NEXT_CONFIG01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true}
+  - {from: T_CLEAR_NULL, to: XFER_LINEAGE, label: CONTEXT_TRANSFER_REQUIRED, family_transition: true, reentry: true, note: "A context-scoped null opens the context dimension, not a biological closure"}
+  # Both closures are knowledge: they say a variable or a combination is finished, which is what the
+  # organism-scale and remaining-family questions then have to work around.
+  - {from: S_CV_CLOSED_ON_EVIDENCE, to: CV_CLEARANCE_ENTRY, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true, note: "A closed error-reduction variable leaves removal of the cells that carry the errors"}
+  - {from: S_COMBINATION_CLOSED, to: CV_CLEARANCE_ENTRY, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true}
+  - {from: S_ALIGN_IMPROVED_COMPENSATORY, to: MIS_MEASURE01, label: EXPERIMENTAL_UNKNOWN, note: "The step from a canonical intermediate to the terminal endpoint is a measurement, not an entailment"}
+  - {from: S_MIS_LOWERED_DEPENDENCY_UNTESTED, to: DEPTEST01, label: EXPERIMENTAL_UNKNOWN, note: "Efficacy shown; dependency is a separate design"}
+  - {from: S_MIS_LOWERED_VIA_ALTERNATE, to: DEPTEST01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "The alternative actuator faces the same dependency question the first one did"}
+  - {from: S_INTERMEDIATE_DECOUPLED, to: LIMFN01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "If alignment is not the limiting quantity here, which one is?"}
+  - {from: S_PCS_DECOUPLED, to: CLINLINK01, label: EXPERIMENTAL_UNKNOWN, note: "Decoupling in a dish forces the clinical question, which the dish cannot answer"}
+  - {from: S_ENDPOINTS_COUPLED, to: CLINLINK01, label: EXPERIMENTAL_UNKNOWN, note: "Coupling in a dish does not say which endpoint the phenotype follows"}
+  - {from: S_ENDPOINT_IS_MIS, to: C_COHESION, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true, note: "Cohesion remains a candidate route even when missegregation is the tracked endpoint"}
+  - {from: S_ENDPOINT_COMPOSITE, to: C_COHESION, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true, note: "A composite endpoint needs the cohesion arm as well as the missegregation one"}
+  - {from: S_MISSEGREGATION, to: COUPLING01, label: EXPERIMENTAL_UNKNOWN, note: "Available from the current state: the endpoint choice is auditable before any route is run"}
   - {from: S_ENDPOINT_IS_PCS, to: C_COHESION, label: CONCEPTUALLY_SUFFICIENT_ONLY, reentry: true, note: "A cohesion endpoint makes the cohesion variable the primary one rather than an alternative"}
   # ---- cross-family combinations, entered from the states that motivate them ----
   - {from: S_COMPOSITE_COMPENSATORY, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reaches the terminal endpoint by a mixed route, which the functional target permits"}

@@ -96,6 +96,72 @@ def validate(d: dict) -> list[str]:
         if n["kind"] in ("state", "all_of") and not out_edges.get(n["id"]):
             problems.append(f"{n['id']}: a {n['kind']} node with no outgoing transition is a dead end, not a terminal")
 
+    # ---- invariant: an observation cannot create an intervention state ----
+    roles = set(d.get("branch_role_vocabulary") or [])
+    classes = set(d.get("state_class_vocabulary") or [])
+    for n in d["nodes"]:
+        if n["kind"] == "branch":
+            if n.get("branch_role") not in roles:
+                problems.append(f"{n['id']}: branch_role {n.get('branch_role')!r} not in the closed "
+                                "vocabulary — a branch must say whether it intervenes or observes")
+                continue
+            if n["branch_role"] != "OBSERVATION":
+                continue
+            for name, target in (n.get("outcomes") or {}).items():
+                t = nodes.get(target) or {}
+                cls = t.get("state_class", "SYSTEM")
+                if t.get("kind") == "state" and cls != "KNOWLEDGE":
+                    problems.append(
+                        f"{n['id']} is an OBSERVATION and outcome {name!r} lands on {target} "
+                        f"(state_class {cls}). Observing the system cannot improve it; an observation's "
+                        "outcomes may only reach KNOWLEDGE states or terminals")
+        if n["kind"] == "state" and n.get("state_class", "SYSTEM") not in classes:
+            problems.append(f"{n['id']}: state_class {n.get('state_class')!r} not in the closed vocabulary")
+
+    # ---- invariant: a mechanistic intermediate cannot imply a terminal endpoint ----
+    for e in d["edges"]:
+        src, dst = nodes.get(e["from"]) or {}, nodes.get(e["to"]) or {}
+        if src.get("state_class") == "MECHANISTIC_INTERMEDIATE" and \
+                dst.get("state_class") == "TERMINAL_ENDPOINT" and not e.get("establishing_measurement"):
+            problems.append(
+                f"edge {e['from']}->{e['to']}: a mechanistic intermediate may not imply the terminal "
+                "endpoint without an edge that names the establishing measurement. Improving alignment "
+                "is not lowering missegregation until missegregation is measured")
+    for n in d["nodes"]:
+        if n["kind"] != "branch":
+            continue
+        for name, target in (n.get("outcomes") or {}).items():
+            src_cls = None
+            for e in d["edges"]:
+                if e["to"] == n["id"]:
+                    src_cls = (nodes.get(e["from"]) or {}).get("state_class")
+                    break
+            dst = nodes.get(target) or {}
+            if src_cls == "MECHANISTIC_INTERMEDIATE" and dst.get("state_class") == "TERMINAL_ENDPOINT" \
+                    and not n.get("establishes"):
+                problems.append(
+                    f"{n['id']} carries a mechanistic intermediate to the terminal endpoint via "
+                    f"{name!r} without declaring what it establishes")
+
+    # ---- invariant: positive efficacy is neutral with respect to independence ----
+    for n in d["nodes"]:
+        if n["kind"] != "branch":
+            continue
+        for name, target in (n.get("outcomes") or {}).items():
+            if not (nodes.get(target) or {}).get("dependency_established"):
+                continue
+            if not n.get("dependency_tested"):
+                problems.append(
+                    f"{n['id']} outcome {name!r} reaches {target}, which asserts dependency was "
+                    "established, but the branch does not declare dependency_tested. Positive efficacy "
+                    "alone says nothing about independence")
+            elif name not in (n.get("dependency_outcomes") or []):
+                problems.append(
+                    f"{n['id']} outcome {name!r} reaches {target}, which asserts dependency was "
+                    f"established, but {name!r} is not one of the branch's dependency_outcomes. The "
+                    "branch testing dependency is not enough: the particular result has to be the one "
+                    "that encodes the dependency finding, or an efficacy result rides in on it")
+
     for c in (d.get("campaigns") or []):
         for name, mapping in (c.get("outcomes") or {}).items():
             for bid, outcome in mapping.items():
@@ -400,8 +466,17 @@ def render(d: dict) -> str:
             return "**nothing further unresolved — the remaining chain is grounded**"
         return f"{len(r)} still unresolved: {', '.join('`' + x + '`' for x in sorted(r))}"
 
-    L = []
-    A = L.append
+    # The canonical artifact reads City -> frontiers -> control variables -> families -> contingent
+    # experiments -> motif hypotheses. Route-optimisation views still compute, but they are appendices:
+    # they answer "where to act", which is a question for a downstream user and not what this is.
+    SECTIONS: dict[str, list[str]] = {}
+    cur = ["head"]
+
+    def A(line: str = "") -> None:
+        SECTIONS.setdefault(cur[0], []).append(line)
+
+    def S(name: str) -> None:
+        cur[0] = name
     A("# MVA_001 — contingent route map")
     A("")
     A("Generated by `tools/control/compile_route_map.py` from `MVA_CONTINGENT_ROUTE_MAP.yaml`. Case data")
@@ -412,6 +487,7 @@ def render(d: dict) -> str:
     A("admissible result, how much of each resulting route is already known, and which ignorance is worth")
     A("removing first. No probabilities appear anywhere, because none is grounded.")
     A("")
+    S("target")
     A("## The target")
     A("")
     A("A biological state, never \"normal BUB1B\". All seven must hold at once:")
@@ -419,6 +495,7 @@ def render(d: dict) -> str:
     for k, v in d["target"]["components"].items():
         A(f"- `{k}` — {v}")
     A("")
+    S("target")
     A("## Target semantics audit")
     A("")
     A("The cell-level endpoints were audited individually, because a target built from the canonical")
@@ -454,6 +531,7 @@ def render(d: dict) -> str:
     A("need checkpoint competence for reasons other than fidelity\" — and that is now the one")
     A("unavoidable branch on the functional target.")
     A("")
+    S("experiments")
     A("## Campaigns: units of work, not units of ignorance")
     A("")
     A("A branch is something unknown; a campaign is a set of observations that can legitimately be")
@@ -461,6 +539,72 @@ def render(d: dict) -> str:
     A("")
     A("| campaign | resolves | needs | question |")
     A("|---|---|---|---|")
+    # ---- invariant: an observation cannot create an intervention state ----
+    roles = set(d.get("branch_role_vocabulary") or [])
+    classes = set(d.get("state_class_vocabulary") or [])
+    for n in d["nodes"]:
+        if n["kind"] == "branch":
+            if n.get("branch_role") not in roles:
+                problems.append(f"{n['id']}: branch_role {n.get('branch_role')!r} not in the closed "
+                                "vocabulary — a branch must say whether it intervenes or observes")
+                continue
+            if n["branch_role"] != "OBSERVATION":
+                continue
+            for name, target in (n.get("outcomes") or {}).items():
+                t = nodes.get(target) or {}
+                cls = t.get("state_class", "SYSTEM")
+                if t.get("kind") == "state" and cls != "KNOWLEDGE":
+                    problems.append(
+                        f"{n['id']} is an OBSERVATION and outcome {name!r} lands on {target} "
+                        f"(state_class {cls}). Observing the system cannot improve it; an observation's "
+                        "outcomes may only reach KNOWLEDGE states or terminals")
+        if n["kind"] == "state" and n.get("state_class", "SYSTEM") not in classes:
+            problems.append(f"{n['id']}: state_class {n.get('state_class')!r} not in the closed vocabulary")
+
+    # ---- invariant: a mechanistic intermediate cannot imply a terminal endpoint ----
+    for e in d["edges"]:
+        src, dst = nodes.get(e["from"]) or {}, nodes.get(e["to"]) or {}
+        if src.get("state_class") == "MECHANISTIC_INTERMEDIATE" and \
+                dst.get("state_class") == "TERMINAL_ENDPOINT" and not e.get("establishing_measurement"):
+            problems.append(
+                f"edge {e['from']}->{e['to']}: a mechanistic intermediate may not imply the terminal "
+                "endpoint without an edge that names the establishing measurement. Improving alignment "
+                "is not lowering missegregation until missegregation is measured")
+    for n in d["nodes"]:
+        if n["kind"] != "branch":
+            continue
+        for name, target in (n.get("outcomes") or {}).items():
+            src_cls = None
+            for e in d["edges"]:
+                if e["to"] == n["id"]:
+                    src_cls = (nodes.get(e["from"]) or {}).get("state_class")
+                    break
+            dst = nodes.get(target) or {}
+            if src_cls == "MECHANISTIC_INTERMEDIATE" and dst.get("state_class") == "TERMINAL_ENDPOINT" \
+                    and not n.get("establishes"):
+                problems.append(
+                    f"{n['id']} carries a mechanistic intermediate to the terminal endpoint via "
+                    f"{name!r} without declaring what it establishes")
+
+    # ---- invariant: positive efficacy is neutral with respect to independence ----
+    for n in d["nodes"]:
+        if n["kind"] != "branch":
+            continue
+        for name, target in (n.get("outcomes") or {}).items():
+            if not (nodes.get(target) or {}).get("dependency_established"):
+                continue
+            if not n.get("dependency_tested"):
+                problems.append(
+                    f"{n['id']} outcome {name!r} reaches {target}, which asserts dependency was "
+                    "established, but the branch does not declare dependency_tested. Positive efficacy "
+                    "alone says nothing about independence")
+            elif name not in (n.get("dependency_outcomes") or []):
+                problems.append(
+                    f"{n['id']} outcome {name!r} reaches {target}, which asserts dependency was "
+                    f"established, but {name!r} is not one of the branch's dependency_outcomes. The "
+                    "branch testing dependency is not enough: the particular result has to be the one "
+                    "that encodes the dependency finding, or an efficacy result rides in on it")
+
     for c in (d.get("campaigns") or []):
         A(f"| `{c['id']}` | {', '.join('`' + x + '`' for x in c['resolves'])} | {c['requires']} "
           f"| {' '.join(c['question'].split())} |")
@@ -482,6 +626,7 @@ def render(d: dict) -> str:
           + f" | {len(cov) + len(unc)}: " + ", ".join("`" + x + "`" for x in cov + unc)
           + " | " + (", ".join("`" + x + "`" for x in unc) or "none") + " |")
     A("")
+    S("appendix_reachability")
     A("## Reachability")
     A("")
     A("Three distinct claims, and only two of them are computed here.")
@@ -511,6 +656,7 @@ def render(d: dict) -> str:
     A("")
     A("`ROBUST_REACHABILITY` is `NOT_ESTABLISHED` for every row above.")
     A("")
+    S("experiments")
     A("## Every FLUX01 result, decided in advance")
     A("")
     flux = next((c for c in (d.get("campaigns") or []) if c["id"] == "FLUX01"), None)
@@ -545,6 +691,7 @@ def render(d: dict) -> str:
                 return "**reached**" if not x else f"{len(x)} left"
             A(f"| `{name}` | {show(c_cell)} | {show(c_org)} | {NEXT.get(name, '')} |")
         A("")
+    S("appendix_priority")
     A("## Priorities, reported separately")
     A("")
     A("The two families are not competing for one slot, so they get one line each.")
@@ -572,6 +719,7 @@ def render(d: dict) -> str:
         A("That asymmetry is the current state of the non-canonical route: the biology it needs is one")
         A("experiment away, and the risk question it needs is not in a dish at all.")
         A("")
+    S("appendix_priority")
     A("## Where the route map says to look first")
     A("")
     if base is None:
@@ -643,6 +791,7 @@ def render(d: dict) -> str:
         A("No branch has an outcome that leaves one or fewer experiments. Every route to the target still")
         A("requires at least two unresolved results.")
         A("")
+    S("experiments")
     A("## Branch nodes: every admissible outcome, continued")
     A("")
     for b in branches:
@@ -659,6 +808,7 @@ def render(d: dict) -> str:
             kind = f"`{tn.get('terminal')}`" if tn["kind"] == "terminal" else tn["kind"]
             A(f"| `{name}` | `{t}` ({kind}) | {fmt(t)} |")
         A("")
+    S("city")
     A("## Transitions by grounding label")
     A("")
     A("| label | count | meaning for the route |")
@@ -682,6 +832,7 @@ def render(d: dict) -> str:
             for e in by_label[label]:
                 A(f"- `{e['from']}` → `{e['to']}`" + (f" — {e['note']}" if e.get("note") else ""))
             A("")
+    S("city")
     A("## Grounded facts traversed without branching")
     A("")
     A("Per the PRD: a sufficiently grounded transition is traversed directly, with its applicability")
@@ -694,6 +845,7 @@ def render(d: dict) -> str:
         if g.get("consequence"):
             A(f"  - *consequence:* {g['consequence']}")
     A("")
+    S("city")
     A("## Deliberate loops and family transitions")
     A("")
     A("The map is acyclic except where a negative result re-enters a branch on a different arm, and")
@@ -705,6 +857,7 @@ def render(d: dict) -> str:
             tag = "re-entry" if e.get("reentry") else "family transition"
             A(f"- *{tag}:* `{e['from']}` → `{e['to']}` — {e.get('note', '')}")
     A("")
+    S("city")
     A("## The graph")
     A("")
     A("```mermaid")
@@ -731,6 +884,7 @@ def render(d: dict) -> str:
     A("Diamonds are unresolved branches, circles terminals, trapezoids AND nodes. Dotted edges are")
     A("deliberate loops or family transitions.")
     A("")
+    S("appendix_priority")
     A("## If EXP01 returned each result tomorrow")
     A("")
     A("Every outcome continues; none terminates in a bare unknown. The headline count is the same under")
@@ -845,6 +999,7 @@ def render(d: dict) -> str:
     A("Absence of a known BubR1 link was never recorded as independence. Every surviving candidate's")
     A("dependency branch has an `unestablished` outcome, and that is where they all sit today.")
     A("")
+    S("appendix_priority")
     A("## What can actually be done now")
     A("")
     A("The branches sort into three kinds of work, and treating them as one pool of \"unknowns\" was the")
@@ -872,6 +1027,7 @@ def render(d: dict) -> str:
     A("`CHAR01` remains the first bench experiment on the abundance family: cheapest, upstream of every")
     A("other F1 branch, and no patient material.")
     A("")
+    S("experiments")
     A("## Beyond the cell")
     A("")
     A("Reaching the cell-level state is not the disease being addressed, so the map continues past it.")
@@ -898,6 +1054,7 @@ def render(d: dict) -> str:
     A("phenotype is still ahead of this child is unestablished, and it bounds what any route here can")
     A("address. Cell-level reachability is not disease resolution, and this map does not claim it.")
     A("")
+    S("frontiers")
     A("## Frontier audit")
     A("")
     A("Every leaf, and why it is allowed to be one. The acceptance criterion is that no leaf exists")
@@ -953,6 +1110,7 @@ def render(d: dict) -> str:
     A("Each became a state with a real next question, and that is where most of this map's growth came")
     A("from.")
     A("")
+    S("city")
     A("## The city")
     A("")
     A("### Distinct biological states")
@@ -1012,6 +1170,7 @@ def render(d: dict) -> str:
             A(f"- `{e['from']}` → `{e['to']}` — {e['note']}"
               + (f" [{', '.join(e['evidence'])}]" if e.get("evidence") else ""))
     A("")
+    S("variables")
     A("## Control variables and actuators")
     A("")
     A("A failed or unsafe actuator closes the actuator. It closes the control variable only when the")
@@ -1025,6 +1184,7 @@ def render(d: dict) -> str:
         unsafe = str(spec.get("intrinsically_unsafe", "NOT_ESTABLISHED"))
         A(f"| `{cv}` | {tried} | {untried} | {' '.join(unsafe.split())[:150]} |")
     A("")
+    S("families")
     A("## Strategy families")
     A("")
     for fid, text in (d.get("families") or {}).items():
@@ -1034,6 +1194,7 @@ def render(d: dict) -> str:
     A("\"the established burden is fixed\" was allowed to be a leaf produced the only family that can act")
     A("on aneuploidy which already exists.")
     A("")
+    S("city")
     A("## City size")
     A("")
     kinds: dict[str, int] = {}
@@ -1052,6 +1213,7 @@ def render(d: dict) -> str:
     A("")
     A("---")
     A("")
+    S("motifs")
     A("# Analysis pass")
     A("")
     A("Separate from the city by construction, and run after it rather than during it. Motifs are")
@@ -1121,6 +1283,7 @@ def render(d: dict) -> str:
         if h.get("evidence_so_far"):
             A(f"*Evidence so far:* {', '.join(h['evidence_so_far'])}")
             A("")
+    S("tail")
     A("## What this map does not claim")
     A("")
     A("No probability is attached to any branch, because none is grounded. A route that \"conditionally")
@@ -1129,7 +1292,32 @@ def render(d: dict) -> str:
     A("observed rather than assumed. Nothing here is a treatment recommendation, and the terminal")
     A("`T_XFER_BLOCKED` is a governance boundary rather than a biological one: no patient-derived material")
     A("is available and none may be acquired.")
-    return "\n".join(L) + "\n"
+    ORDER = [("head", None),
+             ("target", None),
+             ("city", "# The city"),
+             ("frontiers", "# Frontiers"),
+             ("variables", "# Control variables and actuators"),
+             ("families", "# Strategy families"),
+             ("experiments", "# Contingent experiments"),
+             ("motifs", None),
+             ("tail", None)]
+    out: list[str] = []
+    for name, heading in ORDER:
+        if name not in SECTIONS:
+            continue
+        if heading:
+            out += ["---", "", heading, ""]
+        out += SECTIONS[name]
+    appendices = [k for k in SECTIONS if k.startswith("appendix_")]
+    if appendices:
+        out += ["---", "", "# Appendix: optional views", "",
+                "These answer *where to act*, which is a question for a downstream user rather than",
+                "the purpose of this artifact. They are kept because the computation is sound and",
+                "someone will want them, and they are an appendix because ranking routes by length or",
+                "leverage is not what this map is for. Nothing above depends on them.", ""]
+        for k in appendices:
+            out += SECTIONS[k]
+    return "\n".join(out) + "\n"
 
 
 def main() -> int:
