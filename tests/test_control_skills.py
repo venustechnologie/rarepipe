@@ -156,3 +156,44 @@ def test_every_repair_test_is_cited():
     cited = set(re.findall(rf"`{re.escape(path)}::(\w+)`", text))
     missing = sorted(defined - cited)
     assert not missing, f"{path} defines tests the requirements map never cites: {missing}"
+
+
+# ------------------------------------------------- the stability snapshot backs a document, not a compiler
+
+def test_the_stability_snapshot_is_internally_consistent():
+    """The stabilisation search has no compiler path, so its snapshot carries its own integrity check.
+
+    MVA_BUBR1_STABILITY_REALIZATION.md quotes measured effects out of this snapshot. Without a digest
+    check the quotes would be assertions about files nobody verified, which is the failure mode the
+    whole evidence discipline exists to prevent. Every manifest entry must have its file at the
+    recorded digest, and every stored file must be declared — an undeclared document is one a rejection
+    could have been quietly based on.
+    """
+    import hashlib
+    import json
+
+    root = ROOT / "data/literature/mva-stability-v1"
+    manifest = json.loads((root / "manifest.json").read_text())
+    declared = {}
+    for entry in manifest["documents"]:
+        path = root / "docs" / f"{entry['source_id'].replace(':', '_')}.txt"
+        assert path.exists(), f"{entry['source_id']} is declared but not stored"
+        body = path.read_bytes()
+        assert hashlib.sha256(body).hexdigest() == entry["sha256"], f"{entry['source_id']} does not match its digest"
+        assert len(body) == entry["bytes"], f"{entry['source_id']} byte count does not match"
+        assert entry["matched_queries"], f"{entry['source_id']} records no query that found it"
+        declared[path.name] = entry
+    stored = {p.name for p in (root / "docs").glob("*.txt")}
+    assert stored == set(declared), f"undeclared documents in the snapshot: {sorted(stored - set(declared))}"
+
+
+def test_every_source_the_stability_document_cites_is_in_its_snapshot():
+    """A citation in the document must be a document in the snapshot, so a reader can check it."""
+    import json
+
+    root = ROOT / "data/literature/mva-stability-v1"
+    declared = {e["source_id"] for e in json.loads((root / "manifest.json").read_text())["documents"]}
+    text = (ROOT / "docs/control/MVA_BUBR1_STABILITY_REALIZATION.md").read_text()
+    cited = set(re.findall(r"PMID:\d+", text))
+    assert cited, "the stability document cites nothing"
+    assert cited <= declared, f"cited but not in the snapshot: {sorted(cited - declared)}"

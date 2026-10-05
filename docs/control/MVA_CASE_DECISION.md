@@ -60,7 +60,7 @@ Both at once, and the two must not be merged:
 | level | verdict | basis |
 |---|---|---|
 | variant class (kinase domain) | `function_persists` | I909T and L1012P restored the measured function at wild-type-comparable level |
-| this child's allele | `insufficient` | no experiment expressed this exact substitution; sharing a domain does not settle residual function |
+| this child's allele (exact-allele evidence) | `insufficient` | no experiment expressed this exact substitution; sharing a domain does not settle residual function |
 | **decision** | **`INSUFFICIENT`** | the residual-function dependency stays open |
 
 The region assignment moved the class-level reading a long way and moved the decision not at all. That
@@ -95,6 +95,9 @@ longer separate H01 from H02, because the class-level evidence says it returns. 
 remaining biological uncertainty.
 
 ## The experiment that would change it
+
+Specified in full, with its precommitted interpretation matrix, in
+`MVA_EXP01_DECISION_PACKET.md`. In outline:
 
 Deplete endogenous BubR1 (shRNA in U2OS or HeLa, as in PMID:20516114 Fig. 4) and express an
 RNAi-insensitive construct carrying this child's exact substitution at wild-type-comparable level,

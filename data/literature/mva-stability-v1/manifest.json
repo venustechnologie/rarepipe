@@ -1,0 +1,358 @@
+{
+  "corpus_version": "mva-stability-v1",
+  "purpose": "Physical stabilisation search for BubR1: mechanisms that raise BubR1 protein abundance or reduce its turnover. Searched by physical function, never by therapeutic indication.",
+  "index": "Europe PMC REST (https://www.ebi.ac.uk/europepmc/webservices/rest/search)",
+  "provider": {
+    "id": "scientific-literature-provider",
+    "version": "0.1.0"
+  },
+  "full_text_policy": "titles and abstracts only; full text is not stored, so a claim whose support lives only in a figure or methods section cannot be grounded from this snapshot",
+  "guards": {
+    "case_identity": "rarepipe.stages.adjudicate.disclosure.check_query \u2014 every query passed",
+    "therapy_filter": "rarepipe.stages.mechanism.retrieve.check_search_query \u2014 every query passed; 'inhibitor', 'drug', 'treatment' and similar are refused by design"
+  },
+  "queries": {
+    "round_1_broad": [
+      "BUBR1 protein stability",
+      "BUB1B protein turnover",
+      "BUBR1 ubiquitination degradation",
+      "BUBR1 HSP90 chaperone",
+      "BUBR1 proteasome degradation",
+      "BUBR1 acetylation protein level",
+      "BUBR1 protein half-life cycloheximide",
+      "BUBR1 misfolding",
+      "BUBR1 BUB3 binding stabilization",
+      "BUBR1 phosphorylation protein abundance",
+      "BUB1B transcript stability nonsense mediated decay",
+      "BUBR1 degradation APC/C degron"
+    ],
+    "round_2_targeted_mechanism_classes": [
+      "BUBR1 K668 acetylation",
+      "BUBR1 acetylation lysine degradation",
+      "BUBR1 deubiquitinase",
+      "BUBR1 USP protein stability",
+      "BUBR1 HSP70 quality control",
+      "BUBR1 Cdh1 degradation",
+      "BUBR1 stability missense mutant",
+      "BUB1B variant BUBR1 protein level western blot",
+      "BubR1 SIRT2 acetylation protein level",
+      "BUBR1 PP2A B56 stability",
+      "BUBR1 geldanamycin",
+      "BUBR1 protein level restored overexpression"
+    ]
+  },
+  "retrieval": {
+    "page_size": 25,
+    "unique_records_seen": 354,
+    "documents_stored": 14
+  },
+  "note": "Stored documents are the cited set plus every candidate that passed the BubR1-plus-stability screen, so a rejection recorded in MVA_BUBR1_STABILITY_REALIZATION.md can be checked against the same text that produced it.",
+  "documents": [
+    {
+      "source_id": "PMID:19371599",
+      "pmcid": null,
+      "title": "Heat shock protein inhibitors, 17-DMAG and KNK437, enhance arsenic trioxide-induced mitotic apoptosis.",
+      "pub_year": "2009",
+      "journal": "",
+      "bytes": 1385,
+      "sha256": "62ed3ea27b3e06006e2f09c1dd209ec8aa4aca6a02d33525aa58fc4eeb3a507c",
+      "matched_queries": [
+        "BUBR1 geldanamycin"
+      ],
+      "triage_score": 5,
+      "triage_reasons": [
+        "checkpoint"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:20516114",
+      "pmcid": null,
+      "title": "Molecular causes for BUBR1 dysfunction in the human cancer predisposition syndrome mosaic variegated aneuploidy.",
+      "pub_year": "2010",
+      "journal": "",
+      "bytes": 1337,
+      "sha256": "04cd50a53cf129a367dbecd1986ddcd0fab1454125f698dc4645cddf77bc86c4",
+      "matched_queries": [
+        "BUB1B transcript stability nonsense mediated decay",
+        "BUBR1 geldanamycin",
+        "BUBR1 misfolding"
+      ],
+      "triage_score": 39,
+      "triage_reasons": [
+        "patient",
+        "mosaic variegated aneuploidy",
+        "checkpoint",
+        "mitotic checkpoint",
+        "protein abundance",
+        "missense",
+        "kinase domain",
+        "truncating",
+        "chromosome alignment"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:23300461",
+      "pmcid": null,
+      "title": "Reduced life- and healthspan in mice carrying a mono-allelic BubR1 MVA mutation.",
+      "pub_year": "2012",
+      "journal": "",
+      "bytes": 1813,
+      "sha256": "3f3eac4c00690fc749487f090150035b63d124b9805399c8814dfdff626088eb",
+      "matched_queries": [
+        "BUB1B transcript stability nonsense mediated decay",
+        "BUB1B variant BUBR1 protein level western blot"
+      ],
+      "triage_score": 23,
+      "triage_reasons": [
+        "patient",
+        "mosaic variegated aneuploidy",
+        "checkpoint",
+        "mitotic checkpoint",
+        "missense"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:24825348",
+      "pmcid": null,
+      "title": "SIRT2 induces the checkpoint kinase BubR1 to increase lifespan.",
+      "pub_year": "2014",
+      "journal": "",
+      "bytes": 1202,
+      "sha256": "1003d8126813359bad92ae31487ff4e10f38f9c681a09d34b1769232a8040a07",
+      "matched_queries": [
+        "BUBR1 K668 acetylation"
+      ],
+      "triage_score": 10,
+      "triage_reasons": [
+        "checkpoint",
+        "mitotic checkpoint",
+        "hypomorph"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:29067790",
+      "pmcid": null,
+      "title": "Sirt2-BubR1 acetylation pathway mediates the effects of advanced maternal age on oocyte quality.",
+      "pub_year": "2018",
+      "journal": "",
+      "bytes": 1313,
+      "sha256": "28bba0e528a7742452032b8ae1c6ac224faba19c8a1a3d7956f72b1cff04b098",
+      "matched_queries": [
+        "BUBR1 K668 acetylation"
+      ],
+      "triage_score": 12,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "kinetochore"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:31738183",
+      "pmcid": null,
+      "title": "BubR1 allelic effects drive phenotypic heterogeneity in mosaic-variegated aneuploidy progeria syndrome.",
+      "pub_year": "2020",
+      "journal": "",
+      "bytes": 1656,
+      "sha256": "36d885166746f6fcd468092ae9251a54b3ed8224451f38a3b2d4f670e7338d9a",
+      "matched_queries": [
+        "BUB1B variant BUBR1 protein level western blot",
+        "BUBR1 protein half-life cycloheximide"
+      ],
+      "triage_score": 13,
+      "triage_reasons": [
+        "patient",
+        "protein level",
+        "chromosome missegregation"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:33892776",
+      "pmcid": null,
+      "title": "Physiological relevance of post-translational regulation of the spindle assembly checkpoint protein BubR1.",
+      "pub_year": "2021",
+      "journal": "",
+      "bytes": 1288,
+      "sha256": "c860ab8bd625c041883c74af4b158886b2aa5e9fc85892e19c63ab105b24e771",
+      "matched_queries": [
+        "BUBR1 K668 acetylation",
+        "BUBR1 PP2A B56 stability",
+        "BUBR1 acetylation lysine degradation",
+        "BUBR1 degradation APC/C degron"
+      ],
+      "triage_score": 19,
+      "triage_reasons": [
+        "mosaic variegated aneuploidy",
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "kinetochore",
+        "chromosome alignment"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:35217622",
+      "pmcid": null,
+      "title": "Role of ubiquitin-protein ligase UBR5 in the disassembly of mitotic checkpoint complexes.",
+      "pub_year": "2022",
+      "journal": "",
+      "bytes": 1863,
+      "sha256": "287900934b4271930170e056034600184447de90b523cabe38414371c7d2ffba",
+      "matched_queries": [
+        "BUBR1 degradation APC/C degron"
+      ],
+      "triage_score": 7,
+      "triage_reasons": [
+        "checkpoint",
+        "mitotic checkpoint"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:35811551",
+      "pmcid": null,
+      "title": "Mitotic checkpoint gene expression is tuned by codon usage bias.",
+      "pub_year": "2022",
+      "journal": "",
+      "bytes": 1305,
+      "sha256": "7e835580d39bed978bf65e01e987f7c35475cdfde697bdcecb434b0c4b54ceab",
+      "matched_queries": [
+        "BUBR1 protein half-life cycloheximide"
+      ],
+      "triage_score": 15,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "mitotic checkpoint",
+        "protein level"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:38008853",
+      "pmcid": null,
+      "title": "E3-ubiquitin ligase, FBXW7 regulates mitotic progression by targeting BubR1 for ubiquitin-mediated degradation.",
+      "pub_year": "2023",
+      "journal": "",
+      "bytes": 1623,
+      "sha256": "5fff3ad462cac8c5d7499392f9086b7187bb414205a0e3aa7ef894b4ba964366",
+      "matched_queries": [
+        "BUBR1 BUB3 binding stabilization",
+        "BUBR1 PP2A B56 stability",
+        "BUBR1 degradation APC/C degron",
+        "BUBR1 phosphorylation protein abundance",
+        "BUBR1 proteasome degradation",
+        "BUBR1 ubiquitination degradation"
+      ],
+      "triage_score": 13,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "kinetochore"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:40607964",
+      "pmcid": null,
+      "title": "BubR1 Insufficiency Drives Transcriptomic Alterations and Pathology Associated With Cardiac Aging and Heart Failure.",
+      "pub_year": "2025",
+      "journal": "",
+      "bytes": 1804,
+      "sha256": "c3b693ced68b2dc85576bfed35184fe0fca63fd2cdd80052e4a75c17f8f047cd",
+      "matched_queries": [
+        "BUBR1 K668 acetylation",
+        "BUBR1 acetylation lysine degradation",
+        "BUBR1 acetylation protein level",
+        "BUBR1 protein stability",
+        "BubR1 SIRT2 acetylation protein level"
+      ],
+      "triage_score": 10,
+      "triage_reasons": [
+        "patient",
+        "protein level",
+        "hypomorph"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:41533580",
+      "pmcid": null,
+      "title": "Linking kinetochore attachment to checkpoint control: the role of Aurora B in BubR1 acetylation.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 1631,
+      "sha256": "e6be9549695a8f9dffb0cdf88e9ce39dbd9589e4529f4bc6e6f4a942b04203e3",
+      "matched_queries": [
+        "BUBR1 BUB3 binding stabilization",
+        "BUBR1 acetylation lysine degradation",
+        "BUBR1 acetylation protein level",
+        "BUBR1 degradation APC/C degron",
+        "BUBR1 proteasome degradation",
+        "BUBR1 protein stability",
+        "BUBR1 ubiquitination degradation"
+      ],
+      "triage_score": 20,
+      "triage_reasons": [
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "mitotic checkpoint",
+        "kinetochore",
+        "rescue"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:41534835",
+      "pmcid": null,
+      "title": "Targeting the splicing factor CWC22 induces mitotic slippage through repression of BubR1 expression and CDK1 activity in cancer cells.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 2024,
+      "sha256": "181bd295c750c8d1120b86229d40b0e0c71a25f2cd5cf8535e03021e72192815",
+      "matched_queries": [
+        "BUBR1 proteasome degradation",
+        "BUBR1 ubiquitination degradation"
+      ],
+      "triage_score": 14,
+      "triage_reasons": [
+        "patient",
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "mitotic checkpoint"
+      ],
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:42434306",
+      "pmcid": null,
+      "title": "Functional and clinical evidence for two novel heterozygous &lt;i&gt;BUB1B&lt;/i&gt; variants and their value in precision genetic counseling for recurrent pregnancy loss.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 2419,
+      "sha256": "331e194d4e508a4b416585b1c4910c441e24123d8b63fe4581ae50829766f82b",
+      "matched_queries": [
+        "BUB1B variant BUBR1 protein level western blot",
+        "BUBR1 protein stability",
+        "BUBR1 stability missense mutant"
+      ],
+      "triage_score": 31,
+      "triage_reasons": [
+        "mosaic variegated aneuploidy",
+        "premature chromatid separation",
+        "checkpoint",
+        "spindle assembly checkpoint",
+        "protein level",
+        "western blot",
+        "missense"
+      ],
+      "status": "FOUND_IN_INDEX"
+    }
+  ]
+}

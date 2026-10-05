@@ -3,6 +3,8 @@
 Case MVA_001. This is a case evidence artifact, not a new ontology. It records the experiments one
 paper performed, what each one can carry, and what it cannot.
 
+Downstream of this: `MVA_CASE_DECISION.md` (the case verdict), `MVA_EXP01_DECISION_PACKET.md` (the experiment that resolves it) and `MVA_BUBR1_STABILITY_REALIZATION.md` (the physical stabilisation search the turnover finding opened).
+
 The canonical artifact is `research/experiments/PMID_20516114.yaml` in the research directory that
 travels with the controlled case work — sixteen records, `VX_0001`–`VX_0016`, already present and
 load-bearing: `VX_0007` and `VX_0008` are the evidence refs H01 cites in `prospective/seed.py`. A
