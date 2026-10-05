@@ -198,6 +198,18 @@ def required(d: dict) -> dict[str, frozenset[str] | None]:
     return cost(d)
 
 
+def dominators_for(d: dict, goal: str) -> set[str]:
+    """Branch nodes every route to `goal` must pass through, tested by deletion.
+
+    Family-scoped, because with two families a globally unavoidable branch is rare while the branch
+    that gates one whole family is the decision-relevant fact.
+    """
+    if cost(d).get(goal) is None:
+        return set()
+    return {b["id"] for b in d["nodes"] if b["kind"] == "branch"
+            and cost(d, drop=b["id"]).get(goal) is None}
+
+
 def dominators(d: dict) -> set[str]:
     """Branch nodes every route to the target must pass through: the unavoidable experiments.
 
@@ -478,23 +490,73 @@ def render(d: dict) -> str:
     A("")
     A("### What the map says about priority")
     A("")
-    A("Two readings, and they disagree, which is the useful part.")
+    f1_dom = sorted(dominators_for(d, "F1_COMPLETE"))
+    f2_dom = sorted(dominators_for(d, "F2_COMPLETE"))
+    A("No single branch gates every route, because the two families are genuinely alternative. The")
+    A("decision-relevant fact is which branch gates a whole family:")
     A("")
-    A("**By branch count**, the bypass family is shorter. But three of its four remaining branches are")
-    A("component discoveries — find a component nobody has described — and one is a measurement. A route")
-    A("made of discoveries is not short.")
+    A("| family | unavoidable branches |")
+    A("|---|---|")
+    A(f"| F1 abundance | {', '.join('`' + x + '`' for x in f1_dom) or 'none'} |")
+    A(f"| F2 bypass | {', '.join('`' + x + '`' for x in f2_dom) or 'none'} |")
     A("")
-    A("**By runnable measurement**, the abundance family is the one that can be worked today: every one of")
-    A("its branches is a measurement, and `CHAR01` sits upstream of all of them. `CHAR01` is also the")
-    A("cheapest: one construct, a cycloheximide chase with HSP90 inhibition and MG132, no patient material,")
-    A("and a strict subset of what STAB01 already specifies.")
+    f1_runnable = sum(1 for x in f1_dom if branch_kind(x) == "runnable measurement")
+    f2_disc = [x for x in f2_dom if branch_kind(x) == "component discovery"]
+    A(f"The two families are blocked by different kinds of thing. **F1** is a strict chain: all")
+    A(f"{len(f1_dom)} of its branches are unavoidable and {f1_runnable} are runnable measurements, so it")
+    A("is long but every step is work someone can do. **F2** is gated by")
+    A(("`" + "`, `".join(f2_disc) + "`, which is a component discovery — the one hole the external search"
+       " could not fill." if f2_disc else "runnable measurements only."))
     A("")
-    A("So the chronological next experiment is not the most valuable one. `EXP01` asks whether the altered")
-    A("protein works at matched abundance. `CHAR01` asks whether the premise underneath that question holds")
-    A("for this allele at all — and the premise is currently class-level inference: `MC_0006` is")
+    A("So the bypass family is not blocked by effort but by the absence of a thing. A route cannot be")
+    A("assembled from two supplied functions and a missing one.")
+    A("")
+    if base:
+        disc = [x for x in sorted(base) if branch_kind(x) == "component discovery"]
+        A(f"The shortest route holds **{runnable(base)} runnable measurements of {len(base)}**"
+          + (f", with `{'`, `'.join(disc)}` still a component discovery." if disc else ", and no discovery."))
+        A("")
+    A("Two readings, and where they disagree is the useful part. **By branch count** the bypass family")
+    A("is shorter. **By kind**, what matters is how many of those branches are measurements someone can")
+    A("run rather than components nobody has described — which is why the external search mattered more")
+    A("than another pass over the graph.")
+    A("")
+    if "CHAR01" in f1_dom:
+        A("`CHAR01` remains the leading runnable experiment on the abundance family: the corrected graph")
+        A("still makes it unavoidable for F1, it is the cheapest branch on that family, and it needs no")
+        A("patient material — one construct, a cycloheximide chase with HSP90 inhibition and MG132, a")
+        A("strict subset of what STAB01 already specifies.")
+    else:
+        A("`CHAR01` is no longer unavoidable for the abundance family under the corrected graph, so its")
+        A("priority rests on cost rather than on dominance.")
+    A("")
+    A("It is not EXP01, and the reason is about the premise rather than the question. `EXP01` asks whether")
+    A("the altered protein works at matched abundance. `CHAR01` asks whether the premise underneath that")
+    A("question holds for this allele at all — and the premise is class-level inference: `MC_0006` is")
     A("`UNRESOLVED` on zero establishing records, `MC_0005` rests on 0 establishing and 11 indirect, and")
-    A("Q921H is a kinase-domain substitution that is normal in both level and function. If this allele is")
-    A("not destabilised, EXP01's matched-abundance framing is miscast before it is run.")
+    A("Q921H is a kinase-domain substitution normal in both level and function. If this allele is not")
+    A("destabilised, EXP01's matched-abundance framing is miscast before it is run.")
+    A("")
+    A("### What the external search changed")
+    A("")
+    A("The three component-discovery diamonds were the map's biggest holes. Function-first discovery")
+    A("against external literature, followed by dependency adjudication, replaced two of the three with")
+    A("named candidates:")
+    A("")
+    A("- **alignment** — `CENP-E` is **closed by evidence**, which is the most useful single result: it")
+    A("  has a BubR1-independent route to the outer corona, while the mechanism by which it initiates")
+    A("  congression is explicitly BubR1-dependent. Localisation is not function, the same distinction")
+    A("  Y155C forces. `KIF18A` and microtubule `poleward flux` survive as named candidates with their")
+    A("  dependency unestablished.")
+    A("- **silencing** — `TRIP13` with `APC15` survives as a named candidate. It carries a specific extra")
+    A("  risk the map records as its own outcome: the same protein maintains open-state Mad2 for")
+    A("  checkpoint activation, so augmenting it for silencing may trade one broken function for another.")
+    A("- **activation** — nothing survived function-first discovery. This stays a bounded external")
+    A("  frontier, not an impossibility: `NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`, with the searched")
+    A("  universe recorded in `data/literature/mva-bypass-v1`.")
+    A("")
+    A("Absence of a known BubR1 link was never recorded as independence. Every surviving candidate's")
+    A("dependency branch has an `unestablished` outcome, and that is where they all sit today.")
     A("")
     A("## What this map does not claim")
     A("")

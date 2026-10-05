@@ -343,3 +343,65 @@ def test_the_committed_route_map_document_is_not_stale():
     committed = (ROOT / "docs/control/MVA_CONTINGENT_ROUTE_MAP.md").read_text()
     assert committed == M.render(d), ("docs/control/MVA_CONTINGENT_ROUTE_MAP.md is stale: run "
                                       "uv run python tools/control/compile_route_map.py")
+
+
+def test_a_bounded_negative_search_is_not_biological_impossibility():
+    """Three distinct frontier states, and the strongest one must earn its use.
+
+    An empty search and an established impossibility are different claims. Calling a hole in the
+    literature `NO_KNOWN_PHYSICAL_REALIZATION` would convert the limits of our searching into a fact
+    about biology, which is the failure this vocabulary exists to prevent.
+    """
+    M, d = _route_map()
+    vocab = set(d["terminal_vocabulary"])
+    for state in ("NOT_IN_LOCAL_CASE_CORPUS", "NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE",
+                  "NO_KNOWN_PHYSICAL_REALIZATION"):
+        assert state in vocab, state
+    for n in d["nodes"]:
+        if n["kind"] == "terminal" and n.get("terminal") == "NO_KNOWN_PHYSICAL_REALIZATION":
+            assert "evidence" in n or "justification" in n, (
+                f"{n['id']} claims no known physical realization without recording what justifies it; "
+                "a bounded negative search belongs in NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE")
+
+
+def test_absence_of_a_known_bubr1_link_is_never_recorded_as_independence():
+    """Every dependency adjudication keeps an `unestablished` outcome distinct from independence.
+
+    Silence in the literature is the normal state for a candidate nobody tested against BubR1. A
+    branch that offered only independent/dependent would force silence into one of them.
+    """
+    M, d = _route_map()
+    dep = [n for n in d["nodes"] if n["kind"] == "branch" and n["id"].startswith("DEP_")]
+    assert dep, "no dependency adjudication branches found"
+    for n in dep:
+        outcomes = set(n["outcomes"])
+        assert "unestablished" in outcomes, f"{n['id']} cannot record an untested dependency"
+        assert any(o.startswith("requires_bubr1") for o in outcomes), f"{n['id']}"
+        assert "independence" not in n["why_unresolved"].lower() or "not independence" in \
+            n["why_unresolved"].lower() or "not evidence" in n["why_unresolved"].lower(), n["id"]
+
+
+def test_a_composite_bypass_is_not_credited_for_its_parts():
+    """Assembling components that each supply a function does not establish the biological state.
+
+    TRIP13 is the proof of the worry: the same protein supports checkpoint activation and drives
+    mitotic exit, so a composite assembled from per-function components can conflict with itself.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    out = [e for e in d["edges"] if e["from"] == "F2_COMPLETE"]
+    assert out, "F2_COMPLETE has no outgoing transition"
+    for e in out:
+        assert nodes[e["to"]]["kind"] == "branch", (
+            "the composite must pass through a validation branch rather than reaching the target "
+            f"directly; it goes to {e['to']}")
+
+
+def test_abundance_route_safety_belongs_to_the_stabilisation_manipulation():
+    """EXP01's safety readouts describe ectopic expression, not the actuator that finally raises it."""
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    f1 = nodes["F1_COMPLETE"]
+    assert "S_POP_SAFE_F1B" in f1["of"], "F1 must require safety under the stabilisation manipulation"
+    assert "S_POP_SAFE_F1" not in f1["of"], "F1 must not inherit EXP01's safety observation"
+    assert M.cost(d)["S_POP_SAFE_F1B"] is not None

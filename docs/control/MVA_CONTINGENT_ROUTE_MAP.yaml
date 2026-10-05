@@ -21,7 +21,10 @@ label_vocabulary: [GROUNDED, CONTEXT_TRANSFER_REQUIRED, EXPERIMENTAL_UNKNOWN,
                    PHYSICAL_ACTUATOR_MISSING, CONCEPTUALLY_SUFFICIENT_ONLY, UNSAFE]
 resolves_by_vocabulary: [MEASUREMENT, COMPONENT_DISCOVERY]
 terminal_vocabulary: [TARGET_REACHED_IN_MODEL, UNSAFE, NO_KNOWN_CONTINUATION,
-                      NO_PHYSICAL_REALIZATION, CONTEXT_TRANSFER_REQUIRED, BOUNDED_FRONTIER]
+                      NOT_IN_LOCAL_CASE_CORPUS, NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE,
+                      NO_KNOWN_PHYSICAL_REALIZATION, CONTEXT_TRANSFER_REQUIRED, BOUNDED_FRONTIER]
+# A bounded negative search is not biological impossibility. NO_KNOWN_PHYSICAL_REALIZATION is reserved
+# for evidence that justifies it; a search that simply came back empty gets the middle state.
 
 nodes:
   # ---------- forward from the current case state ----------
@@ -36,7 +39,7 @@ nodes:
   - {id: S_REF_STABILISABLE, kind: state, label: "A perturbation raises the steady-state abundance of the reference destabilised substrates (I909T / L1012P)"}
   - {id: S_CASE_STABILISABLE, kind: state, label: "The same perturbation raises the exact case allele's steady-state abundance"}
   - {id: S_STABILISED_FUNCTIONAL, kind: state, label: "The protein stabilised by that perturbation is functional, not merely present"}
-  - {id: F1_COMPLETE, kind: all_of, of: [S_XFER_OK, S_POP_SAFE_F1], label: "Abundance route complete: the child's own protein, raised by a physical perturbation, functional, in a relevant cell, without population harm"}
+  - {id: F1_COMPLETE, kind: all_of, of: [S_XFER_OK, S_POP_SAFE_F1B], label: "Abundance route complete: the child's own protein, raised by a physical perturbation, functional, in a relevant cell, without population harm"}
   - {id: S_XFER_OK, kind: state, label: "The effect transfers to a cell type relevant to this child"}
   # ---------- the bypass family (F2): supply the function independently ----------
   - {id: S_ALIGN_SUPPLIED, kind: state, label: "Chromosome alignment supplied independently of the child's BubR1"}
@@ -46,7 +49,9 @@ nodes:
   # Population safety is manipulation-specific and must not be shared between families: EXP01's
   # viability, death and division readouts are observations about ectopic expression of the altered
   # protein, and say nothing about whatever component a bypass would introduce.
-  - {id: S_POP_SAFE_F1, kind: state, label: "No increase in cell death, no loss of viability or division rate, under the abundance manipulation"}
+  - {id: S_POP_SAFE_F1, kind: state, label: "No increase in cell death, no loss of viability or division rate, under EXP01's ectopic-expression condition"}
+  - {id: S_POP_SAFE_F1B, kind: state, label: "No increase in cell death, no loss of viability or division rate, under the actual physical stabilisation manipulation"}
+  - {id: S_COMPOSITE_VALIDATED, kind: state, label: "The assembled composite system was directly shown to lower chromosome missegregation while holding the required functional state and population safety"}
   - {id: S_POP_SAFE_F2, kind: state, label: "No increase in cell death, no loss of viability or division rate, under the bypass component"}
 
   # ---------- branch nodes: unresolved, enumerated, never terminal ----------
@@ -59,7 +64,8 @@ nodes:
       destabilised_like_reference: S_ABUNDANCE_LOW
       not_destabilised:            S_ABUNDANCE_NORMAL
       destabilised_other_mechanism: S_ABUNDANCE_LOW_OTHER
-      not_expressible:             T_CHAR_CEILING
+      not_expressible:             S_NOT_EXPRESSIBLE
+  - {id: S_NOT_EXPRESSIBLE, kind: state, label: "The exact allele did not reach wild-type-comparable abundance in the tested construct and condition — a property of this construct and promoter, not yet a property of the protein"}
   - {id: S_ABUNDANCE_LOW_OTHER, kind: state, label: "Reduced abundance by a route that is not HSP90-dependent misfolding, so P1/P2 grounding does not apply"}
 
   - id: EXP01
@@ -133,22 +139,76 @@ nodes:
       harm:         T_UNSAFE
       insufficient: T_SAFE01_REPEAT
 
-  - id: BYPASS_ALIGN
+  - id: SAFE02
     kind: branch
-    resolves_by: COMPONENT_DISCOVERY
-    label: "Is there a physically realisable way to supply chromosome alignment without the child's BubR1?"
-    why_unresolved: "Alignment depends on the central region 484-715, which is grounded; what is missing is a component that supplies that function. The synthesis layer found routes under every evidence-compatible model and the realization layer returned NO_GROUNDED_REALIZATION for them."
+    resolves_by: MEASUREMENT
+    label: "Does the physical stabilisation manipulation itself preserve viability, division rate and cell death?"
+    why_unresolved: "Chaperone and degradation perturbations are broadly cytotoxic at the doses that engage their targets, and EXP01's readouts describe a different manipulation entirely."
     outcomes:
-      grounded_component_found: S_ALIGN_SUPPLIED
-      no_component:             T_ALIGN_NO_ACTUATOR
-  - id: BYPASS_SIL
+      preserved:    S_POP_SAFE_F1B
+      harm:         T_UNSAFE_F1
+      insufficient: T_SAFE02_REPEAT
+
+  - id: EXPRVAL01
     kind: branch
-    resolves_by: COMPONENT_DISCOVERY
-    label: "Is there a physically realisable way to supply timely checkpoint silencing independently?"
-    why_unresolved: "Silencing was never measured at restored abundance for any MVA allele, and no component is known to supply it."
+    resolves_by: MEASUREMENT
+    label: "Is the failure to reach wild-type-comparable abundance a property of the construct and condition rather than the protein?"
+    why_unresolved: "Codon usage, promoter strength, tag placement and degradation during expression are all testable, and mitotic checkpoint gene expression is known to be tuned by codon usage."
     outcomes:
-      grounded_component_found: S_SIL_SUPPLIED
-      no_component:             T_SIL_NO_ACTUATOR
+      construct_limited:       S_ABUNDANCE_LOW
+      protein_limited:         S_PROTEIN_CEILING
+      insufficient:            T_EXPR_INVALID
+
+  - id: COMPOSITE_VALID
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Does the assembled composite system actually lower chromosome missegregation while holding the functional state and population safety?"
+    why_unresolved: "No composite has been assembled, and the component functions interact: a protein recruited to supply one function may perturb another."
+    outcomes:
+      system_validated:   S_COMPOSITE_VALIDATED
+      functions_conflict: T_COMPOSITE_CONFLICT
+      no_improvement:     T_COMPOSITE_NULL
+      insufficient:       T_COMPOSITE_REPEAT
+
+  # ---------- named alignment candidates, from data/literature/mva-bypass-v1 ----------
+  - {id: C_CENPE, kind: state, label: "CENP-E/kinesin-7: demonstrated to initiate chromosome congression of polar chromosomes, and physically manipulable (depletion, inhibition, truncation constructs)"}
+  - {id: C_KIF18A, kind: state, label: "KIF18A: promotes chromosome congression in cooperation with CENP-E downstream of CENP-C, identified in a genome-wide Cas9 screen; physically manipulable (knockout, inhibitors)"}
+  - {id: C_FLUX, kind: state, label: "Microtubule poleward flux: reported as a target for modifying chromosome segregation errors — a physical handle on the microtubule side rather than on kinetochore signalling"}
+
+  - id: DEP_KIF18A
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Does KIF18A support chromosome alignment when BubR1 is limiting, or does its congression role run through CENP-E and therefore through BubR1?"
+    why_unresolved: "KIF18A's congression role was defined in cooperation with CENP-E, and CENP-E's congression mechanism is BubR1-dependent. No experiment places KIF18A in a BubR1-limited background. Absence of a direct BubR1 link is not independence."
+    outcomes:
+      independent_of_bubr1: S_ALIGN_SUPPLIED
+      requires_bubr1:       T_KIF18A_DEPENDENT
+      unestablished:        T_KIF18A_FRONTIER
+
+  - id: DEP_FLUX
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Does modifying poleward flux lower missegregation in a BubR1-limited background, and is the effect independent of residual BubR1?"
+    why_unresolved: "The flux work reports modification of segregation errors without reference to BubR1, and no retrieved record tests it against BubR1 status. Silence is not independence."
+    outcomes:
+      independent_of_bubr1: S_ALIGN_SUPPLIED
+      requires_bubr1:       T_FLUX_DEPENDENT
+      unestablished:        T_FLUX_FRONTIER
+
+  # ---------- named silencing candidate ----------
+  - {id: C_TRIP13, kind: state, label: "TRIP13 with APC15: catalytic MCC disassembly drives timely mitotic exit; degron-tagged depletion shows the requirement, so the state is physically manipulable"}
+
+  - id: DEP_TRIP13
+    kind: branch
+    resolves_by: MEASUREMENT
+    label: "Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit without requiring BubR1, and without degrading checkpoint activation?"
+    why_unresolved: "TRIP13 acts catalytically on Mad2 and APC15 on Cdc20, neither of which is BubR1 — but the substrate complex contains BubR1, and no experiment runs this in a BubR1-limited background. The same paper shows TRIP13 is also required to maintain open-state Mad2 for checkpoint activation, so augmenting it for silencing cannot be assumed to leave activation intact."
+    outcomes:
+      independent_and_specific: S_SIL_SUPPLIED
+      requires_bubr1:           T_TRIP13_DEPENDENT
+      degrades_activation:      T_TRIP13_CONFLICT
+      unestablished:            T_TRIP13_FRONTIER
+
   - id: BYPASS_ACT
     kind: branch
     resolves_by: COMPONENT_DISCOVERY
@@ -160,23 +220,37 @@ nodes:
 
   # ---------- terminals ----------
   - {id: TARGET, kind: terminal, terminal: TARGET_REACHED_IN_MODEL, label: "Target biological state reached in model"}
-  - {id: T_CHAR_CEILING, kind: terminal, terminal: NO_PHYSICAL_REALIZATION, label: "The allele cannot be held at wild-type-comparable abundance by any available means: no abundance route has a ceiling that reaches the target, and the question becomes bypass-only"}
+  - {id: T_EXPR_INVALID, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Expression validity unresolved: the construct and condition are the suspect, not the protein"}
   - {id: T_EXP01_CEILING, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Matched abundance not achieved: function at matched abundance stays unresolved and the route re-enters at STAB01"}
   - {id: T_EXP01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Confounded or invalid: the failed validity gate is named and the condition repeated"}
   - {id: T_STAB01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Perturbation did not engage, or the population was compromised: repeat under a valid condition"}
   - {id: T_STAB02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
   - {id: T_FUNCVAL_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Repeat under a valid condition"}
-  - {id: T_POOL_ONLY, kind: terminal, terminal: NO_PHYSICAL_REALIZATION, label: "Change confined to the kinetochore pool: closes the FBXW7-type route to whole-cell abundance"}
-  - {id: T_NO_ACTUATOR, kind: terminal, terminal: NO_PHYSICAL_REALIZATION, label: "This substrate class is not controllable through HSP90, proteasomal, SIRT2 or FBXW7 machinery: the abundance family has no physical actuator and the search must move to machinery outside P1-P4"}
+  - {id: T_POOL_ONLY, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Change confined to the kinetochore pool: closes the FBXW7-type route to whole-cell abundance"}
+  - {id: T_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "Not controllable through the interrogated machinery (HSP90, proteasomal, SIRT2, FBXW7). 50 queries over four rounds found no grounded reverse direction, which bounds the searched universe and does not establish impossibility"}
   - {id: T_CASE_REFRACTORY, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The reference class stabilises and this allele does not: a real and interpretable finding that closes the abundance family for this child"}
   - {id: T_PRESENT_NOT_FUNCTIONAL, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Abundance raised without function restored: stabilisation is not the lever, and the route returns to functional bypass"}
   - {id: T_NO_TRANSFER, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "Effect does not hold in a relevant cell type"}
   - {id: T_XFER_BLOCKED, kind: terminal, terminal: CONTEXT_TRANSFER_REQUIRED, label: "Cannot be tested: no patient-derived material is available and acquisition is not authorised. A governance boundary, not a biological one"}
+  - {id: S_PROTEIN_CEILING, kind: state, label: "The protein itself cannot be held at wild-type-comparable abundance by expression alone — a real ceiling, established rather than assumed"}
+  - {id: T_UNSAFE_F1, kind: terminal, terminal: UNSAFE, label: "The stabilisation manipulation harms the population: closed on safety grounds whatever it does to abundance"}
+  - {id: T_SAFE02_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Safety readouts invalid under the stabilisation manipulation: repeat"}
+  - {id: T_COMPOSITE_CONFLICT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Components supply their functions individually and conflict as a system: the composite is not a route in this configuration"}
+  - {id: T_COMPOSITE_NULL, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The assembled system did not lower missegregation: supplying the functions was not sufficient"}
+  - {id: T_COMPOSITE_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Composite validation invalid: repeat"}
   - {id: T_UNSAFE, kind: terminal, terminal: UNSAFE, label: "The component supplies the function and harms the population: closed on safety grounds, and no benefit verdict overrides it"}
   - {id: T_SAFE01_REPEAT, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Safety readouts invalid: repeat under a valid condition"}
-  - {id: T_ALIGN_NO_ACTUATOR, kind: terminal, terminal: NO_PHYSICAL_REALIZATION, label: "No component known to supply alignment"}
-  - {id: T_SIL_NO_ACTUATOR, kind: terminal, terminal: NO_PHYSICAL_REALIZATION, label: "No component known to supply silencing"}
-  - {id: T_ACT_NO_ACTUATOR, kind: terminal, terminal: NO_PHYSICAL_REALIZATION, label: "No component known to supply activation"}
+  - {id: T_CENPE_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "CENP-E cannot supply alignment independently of BubR1: closed by evidence, not by an empty search"}
+  - {id: T_KIF18A_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "KIF18A's alignment role requires BubR1"}
+  - {id: T_KIF18A_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "KIF18A dependency unestablished: the experiment is specified and unrun"}
+  - {id: T_FLUX_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The flux effect requires BubR1"}
+  - {id: T_FLUX_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Flux dependency unestablished: the experiment is specified and unrun"}
+  - {id: T_TRIP13_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "TRIP13-driven exit requires BubR1"}
+  - {id: T_TRIP13_CONFLICT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Augmenting TRIP13 restores exit at the cost of checkpoint activation: it trades one target component for another"}
+  - {id: T_TRIP13_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "TRIP13 dependency and specificity unestablished: the experiment is specified and unrun"}
+  - {id: T_ALIGN_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "No component surviving dependency adjudication for alignment in the searched external universe (data/literature/mva-bypass-v1). A bounded negative search, not biological impossibility"}
+  - {id: T_SIL_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "No component surviving dependency adjudication for silencing in the searched external universe (data/literature/mva-bypass-v1). A bounded negative search, not biological impossibility"}
+  - {id: T_ACT_NO_ACTUATOR, kind: terminal, terminal: NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE, label: "No component surviving dependency adjudication for activation in the searched external universe (data/literature/mva-bypass-v1). A bounded negative search, not biological impossibility"}
 
 edges:
   # forward reachability from the case state
@@ -191,10 +265,21 @@ edges:
   # The disease state is not a dead end: both families leave from it, and the bypass family does not
   # wait on EXP01. Nothing about supplying a lost function independently depends on first learning
   # whether the child's own protein would work at matched abundance.
-  - {from: S_MISSEGREGATION, to: BYPASS_ALIGN, label: PHYSICAL_ACTUATOR_MISSING, note: "Available from the current state; independent of EXP01's result"}
-  - {from: S_MISSEGREGATION, to: BYPASS_ACT, label: PHYSICAL_ACTUATOR_MISSING, note: "Available from the current state; independent of EXP01's result"}
-  - {from: S_MISSEGREGATION, to: BYPASS_SIL, label: PHYSICAL_ACTUATOR_MISSING, note: "Available from the current state; independent of EXP01's result"}
-  - {from: S_ABUNDANCE_NORMAL, to: B_MULTI_DEFECT, label: GROUNDED, note: "If abundance is normal then the observed cellular phenotype is a direct functional defect, which is the Y155C regime rather than the I909T regime", evidence: ["PMID:20516114"]}
+  - {from: S_MISSEGREGATION, to: C_CENPE, label: GROUNDED, note: "CENP-E is required for congression of polar chromosomes", evidence: ["PMID:41120314"]}
+  - {from: S_MISSEGREGATION, to: C_KIF18A, label: GROUNDED, note: "KIF18A promotes congression, from a genome-wide screen", evidence: ["PMID:41218610"]}
+  - {from: S_MISSEGREGATION, to: C_FLUX, label: GROUNDED, note: "Poleward flux reported as a target for modifying segregation errors", evidence: ["PMID:39541344"]}
+  - {from: S_MISSEGREGATION, to: C_TRIP13, label: GROUNDED, note: "TRIP13 and APC15 drive mitotic exit by MCC turnover", evidence: ["PMID:30341343"]}
+  - {from: S_MISSEGREGATION, to: BYPASS_ACT, label: PHYSICAL_ACTUATOR_MISSING, note: "No named candidate survived function-first discovery for checkpoint activation; available from the current state and independent of EXP01's result"}
+  # CENP-E is closed by evidence rather than left unresolved: it has a BubR1-independent route to the
+  # outer corona, and the mechanism by which it initiates congression is explicitly BubR1-dependent.
+  # Localisation is not function — the same distinction Y155C forces.
+  - {from: C_CENPE, to: T_CENPE_DEPENDENT, label: GROUNDED, note: "CENP-E reduces Aurora B-mediated phosphorylation in a BubR1-dependent manner; the BubR1-independent pathway targets it to the corona without being shown to deliver alignment", evidence: ["PMID:41120314", "PMID:38354735"]}
+  - {from: C_KIF18A, to: DEP_KIF18A, label: EXPERIMENTAL_UNKNOWN}
+  - {from: C_FLUX, to: DEP_FLUX, label: EXPERIMENTAL_UNKNOWN}
+  - {from: C_TRIP13, to: DEP_TRIP13, label: EXPERIMENTAL_UNKNOWN}
+  # Normal abundance excludes a simple low-abundance explanation. It does not say which function is
+  # broken, or that more than one is: Y155C is normally expressed and loses exactly one.
+  - {from: S_ABUNDANCE_NORMAL, to: EXP01, label: EXPERIMENTAL_UNKNOWN, note: "Routes to exact functional characterisation; the matching requirement is already satisfied, so EXP01 reads as a direct function test", evidence: ["PMID:20516114"]}
   # the abundance family
   - {from: S_ABUNDANCE_LOW, to: EXP01, label: EXPERIMENTAL_UNKNOWN}
   - {from: S_FUNCTION_OK, to: S_MATCHED_ACHIEVABLE, label: GROUNDED, note: "EXP01 returning full function entails matched abundance was achieved, which is its own gate"}
@@ -211,21 +296,39 @@ edges:
   - {from: F1_COMPLETE, to: TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Restoring abundance of a functional protein in the relevant cell is sufficient in model. Population endpoints (viability, division, death) must still be observed, never assumed"}
   - {from: B_TURNOVER_ONLY, to: STAB01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "Re-enters STAB01 on the folding-capacity arm (P1-R) rather than the degradative arm. A deliberate loop: the same branch node asked of a different arm"}
   # negative EXP01 branches route into the bypass family
-  - {from: B_ALIGN_DEFECT, to: BYPASS_ALIGN, label: PHYSICAL_ACTUATOR_MISSING, note: "Alignment must be supplied independently. The requirement is grounded (central region 484-715); the component is not"}
-  - {from: B_SIL_DEFECT, to: BYPASS_SIL, label: PHYSICAL_ACTUATOR_MISSING}
-  - {from: B_SEG_DEFECT, to: BYPASS_ALIGN, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Segregation fidelity is downstream of alignment and checkpoint; a segregation-only defect is addressed through whichever upstream function is failing"}
-  - {from: B_MULTI_DEFECT, to: BYPASS_ALIGN, label: PHYSICAL_ACTUATOR_MISSING, note: "Composite replacement: each lost function must be supplied, and the functions are separable, so they must be supplied separately", evidence: ["PMID:20516114"]}
-  - {from: B_MULTI_DEFECT, to: BYPASS_SIL, label: PHYSICAL_ACTUATOR_MISSING}
+  - {from: B_ALIGN_DEFECT, to: C_KIF18A, label: GROUNDED, note: "Alignment must be supplied independently. The requirement is grounded (central region 484-715); the component is not"}
+  - {from: B_SIL_DEFECT, to: C_TRIP13, label: GROUNDED}
+  - {from: B_SEG_DEFECT, to: C_KIF18A, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Segregation fidelity is downstream of alignment and checkpoint; a segregation-only defect is addressed through whichever upstream function is failing"}
+  - {from: B_MULTI_DEFECT, to: C_KIF18A, label: GROUNDED, note: "Composite replacement: each lost function must be supplied, and the functions are separable, so they must be supplied separately", evidence: ["PMID:20516114"]}
+  - {from: B_MULTI_DEFECT, to: C_TRIP13, label: GROUNDED}
   - {from: B_MULTI_DEFECT, to: BYPASS_ACT, label: PHYSICAL_ACTUATOR_MISSING}
-  - {from: T_CHAR_CEILING, to: BYPASS_ALIGN, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true, note: "An unreachable abundance ceiling forces the bypass family. The terminal closes the abundance family and opens this one"}
+  # Failing to express an allele in one construct is an expression-validity result before it is a
+  # biological one. It opens stabilisation and bypass; it does not close the abundance family.
+  - {from: S_NOT_EXPRESSIBLE, to: STAB01, label: EXPERIMENTAL_UNKNOWN, note: "Can the protein be held up at all? A stabilising perturbation may raise what a promoter could not"}
+  # An established ceiling is still not the end of the abundance family: expression and stabilisation
+  # are different levers, and a protein that a promoter cannot raise may still be one a chaperone or
+  # degradation perturbation can.
+  - {from: S_PROTEIN_CEILING, to: STAB01, label: EXPERIMENTAL_UNKNOWN, note: "Stabilisation is a different lever from expression"}
+  - {from: S_PROTEIN_CEILING, to: C_KIF18A, label: GROUNDED, family_transition: true, note: "Bypass remains available"}
+  - {from: S_NOT_EXPRESSIBLE, to: EXPRVAL01, label: EXPERIMENTAL_UNKNOWN, note: "Expression validity: codon usage, construct design, promoter strength and degradation during expression are testable before concluding anything about the protein"}
+  - {from: S_NOT_EXPRESSIBLE, to: C_KIF18A, label: GROUNDED, family_transition: true, note: "Bypass remains available as an alternative continuation"}
   - {from: S_ALIGN_SUPPLIED, to: F2_COMPLETE, label: GROUNDED, note: "AND-node member"}
   - {from: S_SIL_SUPPLIED, to: F2_COMPLETE, label: GROUNDED, note: "AND-node member"}
   - {from: S_ACT_SUPPLIED, to: F2_COMPLETE, label: GROUNDED, note: "AND-node member"}
   - {from: S_POP_SAFE_F2, to: F2_COMPLETE, label: GROUNDED, note: "AND-node member"}
-  - {from: S_POP_SAFE_F1, to: F1_COMPLETE, label: GROUNDED, note: "AND-node member"}
-  - {from: F2_COMPLETE, to: TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY}
+  # EXP01's safety readouts describe ectopic expression of the altered protein. The actuator that
+  # finally raises abundance is a different manipulation with its own population effects, and a
+  # chaperone or degradation perturbation is exactly the kind that is broadly cytotoxic.
+  - {from: S_POP_SAFE_F1, to: SAFE02, label: EXPERIMENTAL_UNKNOWN, note: "EXP01 safety does not transfer to the stabilisation actuator"}
+  - {from: S_POP_SAFE_F1B, to: F1_COMPLETE, label: GROUNDED, note: "AND-node member"}
+  # Assembling components that each supply a function is not evidence that the assembled system
+  # yields the biological state. The functions interact, and TRIP13 is the proof of concept for the
+  # worry: the same protein supports checkpoint activation and drives mitotic exit, so augmenting it
+  # for silencing cannot be assumed to leave activation intact.
+  - {from: F2_COMPLETE, to: COMPOSITE_VALID, label: EXPERIMENTAL_UNKNOWN, note: "The assembled system must be shown to produce the state, not credited for its parts"}
+  - {from: S_COMPOSITE_VALIDATED, to: TARGET, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Validated as a system in the tested context; transfer to a relevant cell type remains separate"}
   # backward regression from the target, merged where it meets the forward graph
-  - {from: T_NO_ACTUATOR, to: BYPASS_ALIGN, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true, note: "Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family"}
+  - {from: T_NO_ACTUATOR, to: C_KIF18A, label: GROUNDED, family_transition: true, note: "Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family"}
   - {from: T_EXP01_CEILING, to: STAB01, label: PHYSICAL_ACTUATOR_MISSING, family_transition: true, note: "Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?"}
 
 # Transitions that are grounded and therefore traversed rather than branched.

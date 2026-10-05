@@ -23,7 +23,7 @@ A biological state, never "normal BUB1B". All seven must hold at once:
 ## Where the route map says to look first
 
 From today, the smallest set of unresolved branch nodes that would establish the target is
-**4**: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01`.
+**5**: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01`.
 
 **That count alone would mislead, so it is split by kind.** A branch entered only through a
 missing physical actuator is a *component discovery* — find something nobody has described —
@@ -33,11 +33,12 @@ interchangeable units of work, and the shortest route by count is not the shorte
 | branch | kind |
 |---|---|
 | `BYPASS_ACT` | component discovery |
-| `BYPASS_ALIGN` | component discovery |
-| `BYPASS_SIL` | component discovery |
+| `COMPOSITE_VALID` | runnable measurement |
+| `DEP_FLUX` | runnable measurement |
+| `DEP_TRIP13` | runnable measurement |
 | `SAFE01` | runnable measurement |
 
-Runnable measurements on that route: **1 of 4**.
+Runnable measurements on that route: **4 of 5**.
 
 Unavoidable experiments — every route from the case state to the target passes through these:
 
@@ -50,21 +51,27 @@ them would invent work that does not exist.
 
 | branch | kind | best outcome | what remains after it | runnable |
 |---|---|---|---|---|
-| `CHAR01` | runnable measurement | `destabilised_like_reference` | 4: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` | 1 |
-| `EXP01` | runnable measurement | `full_function` | 4: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` | 1 |
-| `STAB01` | runnable measurement | `steady_state_increased` | 4: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` | 1 |
-| `STAB02` | runnable measurement | `case_allele_stabilised` | 4: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` | 1 |
-| `FUNCVAL01` | runnable measurement | `functional` | 3: `CHAR01`, `EXP01`, `XFER01` | 3 |
-| `XFER01` | runnable measurement | `transfers` | 2: `CHAR01`, `EXP01` | 2 |
-| `SAFE01` | runnable measurement | `preserved` | 3: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL` | 0 |
-| `BYPASS_ALIGN` | component discovery | `grounded_component_found` | 3: `BYPASS_ACT`, `BYPASS_SIL`, `SAFE01` | 1 |
-| `BYPASS_SIL` | component discovery | `grounded_component_found` | 3: `BYPASS_ACT`, `BYPASS_ALIGN`, `SAFE01` | 1 |
-| `BYPASS_ACT` | component discovery | `grounded_component_found` | 3: `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` | 1 |
+| `CHAR01` | runnable measurement | `destabilised_like_reference` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `EXP01` | runnable measurement | `full_function` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `STAB01` | runnable measurement | `steady_state_increased` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `STAB02` | runnable measurement | `case_allele_stabilised` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `FUNCVAL01` | runnable measurement | `functional` | 4: `CHAR01`, `EXP01`, `SAFE02`, `XFER01` | 4 |
+| `XFER01` | runnable measurement | `transfers` | 3: `CHAR01`, `EXP01`, `SAFE02` | 3 |
+| `SAFE01` | runnable measurement | `preserved` | 4: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13` | 3 |
+| `SAFE02` | runnable measurement | `preserved` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `EXPRVAL01` | runnable measurement | `construct_limited` | 5: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
+| `COMPOSITE_VALID` | runnable measurement | `system_validated` | 0: **nothing further** | 0 |
+| `DEP_KIF18A` | runnable measurement | `independent_of_bubr1` | 4: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` | 3 |
+| `DEP_FLUX` | runnable measurement | `independent_of_bubr1` | 4: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` | 3 |
+| `DEP_TRIP13` | runnable measurement | `independent_and_specific` | 4: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `SAFE01` | 3 |
+| `BYPASS_ACT` | component discovery | `grounded_component_found` | 4: `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` | 4 |
 
 ### Highest-leverage opportunities
 
-No branch has an outcome that leaves one or fewer experiments. Every route to the target still
-requires at least two unresolved results.
+Branches with an admissible outcome that leaves **one or no** further experiment between the case
+state and a chain whose remaining steps are grounded:
+
+- `COMPOSITE_VALID` = `system_validated` → the remaining chain is grounded
 
 ## Branch nodes: every admissible outcome, continued
 
@@ -76,10 +83,10 @@ Does this exact allele destabilise the protein at all? Cycloheximide chase, HSP9
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `destabilised_like_reference` | `S_ABUNDANCE_LOW` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `not_destabilised` | `S_ABUNDANCE_NORMAL` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `destabilised_other_mechanism` | `S_ABUNDANCE_LOW_OTHER` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `not_expressible` | `T_CHAR_CEILING` (`NO_PHYSICAL_REALIZATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `destabilised_like_reference` | `S_ABUNDANCE_LOW` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `not_destabilised` | `S_ABUNDANCE_NORMAL` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `destabilised_other_mechanism` | `S_ABUNDANCE_LOW_OTHER` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `not_expressible` | `S_NOT_EXPRESSIBLE` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ### `EXP01`
 
@@ -89,13 +96,13 @@ At matched abundance, are alignment, silencing and segregation normal for the ex
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `full_function` | `S_FUNCTION_OK` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `alignment_defect` | `B_ALIGN_DEFECT` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `silencing_defect` | `B_SIL_DEFECT` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `segregation_defect` | `B_SEG_DEFECT` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `multiple_defects` | `B_MULTI_DEFECT` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `matched_not_achieved` | `T_EXP01_CEILING` (`BOUNDED_FRONTIER`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `confounded_invalid` | `T_EXP01_REPEAT` (`BOUNDED_FRONTIER`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `full_function` | `S_FUNCTION_OK` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `alignment_defect` | `B_ALIGN_DEFECT` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `silencing_defect` | `B_SIL_DEFECT` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `segregation_defect` | `B_SEG_DEFECT` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `multiple_defects` | `B_MULTI_DEFECT` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `matched_not_achieved` | `T_EXP01_CEILING` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `confounded_invalid` | `T_EXP01_REPEAT` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ### `STAB01`
 
@@ -105,11 +112,11 @@ Can the steady-state abundance of a misfolding kinase-domain BubR1 missense prot
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `steady_state_increased` | `S_REF_STABILISABLE` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `turnover_reduced_only` | `B_TURNOVER_ONLY` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `local_pool_only` | `T_POOL_ONLY` (`NO_PHYSICAL_REALIZATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `no_stabilisation` | `T_NO_ACTUATOR` (`NO_PHYSICAL_REALIZATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `insufficient` | `T_STAB01_REPEAT` (`BOUNDED_FRONTIER`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `steady_state_increased` | `S_REF_STABILISABLE` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `turnover_reduced_only` | `B_TURNOVER_ONLY` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `local_pool_only` | `T_POOL_ONLY` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `no_stabilisation` | `T_NO_ACTUATOR` (`NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `insufficient` | `T_STAB01_REPEAT` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ### `STAB02`
 
@@ -119,9 +126,9 @@ Does the working perturbation raise the exact case allele's abundance toward wil
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `case_allele_stabilised` | `S_CASE_STABILISABLE` (state) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `case_allele_refractory` | `T_CASE_REFRACTORY` (`NO_KNOWN_CONTINUATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `insufficient` | `T_STAB02_REPEAT` (`BOUNDED_FRONTIER`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `case_allele_stabilised` | `S_CASE_STABILISABLE` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `case_allele_refractory` | `T_CASE_REFRACTORY` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `insufficient` | `T_STAB02_REPEAT` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ### `FUNCVAL01`
 
@@ -131,9 +138,9 @@ Is the protein stabilised by that perturbation functional, or merely present?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `functional` | `S_STABILISED_FUNCTIONAL` (state) | 3 still unresolved: `CHAR01`, `EXP01`, `XFER01` |
-| `not_functional` | `T_PRESENT_NOT_FUNCTIONAL` (`NO_KNOWN_CONTINUATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `insufficient` | `T_FUNCVAL_REPEAT` (`BOUNDED_FRONTIER`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `functional` | `S_STABILISED_FUNCTIONAL` (state) | 4 still unresolved: `CHAR01`, `EXP01`, `SAFE02`, `XFER01` |
+| `not_functional` | `T_PRESENT_NOT_FUNCTIONAL` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `insufficient` | `T_FUNCVAL_REPEAT` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ### `XFER01`
 
@@ -143,9 +150,9 @@ Does the effect hold in a cell type relevant to this child?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `transfers` | `S_XFER_OK` (state) | 2 still unresolved: `CHAR01`, `EXP01` |
-| `does_not_transfer` | `T_NO_TRANSFER` (`CONTEXT_TRANSFER_REQUIRED`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `cannot_be_tested` | `T_XFER_BLOCKED` (`CONTEXT_TRANSFER_REQUIRED`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `transfers` | `S_XFER_OK` (state) | 3 still unresolved: `CHAR01`, `EXP01`, `SAFE02` |
+| `does_not_transfer` | `T_NO_TRANSFER` (`CONTEXT_TRANSFER_REQUIRED`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `cannot_be_tested` | `T_XFER_BLOCKED` (`CONTEXT_TRANSFER_REQUIRED`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ### `SAFE01`
 
@@ -155,31 +162,83 @@ Does the bypass component preserve viability, division rate and cell death?
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `preserved` | `S_POP_SAFE_F2` (state) | 3 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL` |
-| `harm` | `T_UNSAFE` (`UNSAFE`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `insufficient` | `T_SAFE01_REPEAT` (`BOUNDED_FRONTIER`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `preserved` | `S_POP_SAFE_F2` (state) | 4 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13` |
+| `harm` | `T_UNSAFE` (`UNSAFE`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `insufficient` | `T_SAFE01_REPEAT` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
-### `BYPASS_ALIGN`
+### `SAFE02`
 
-Is there a physically realisable way to supply chromosome alignment without the child's BubR1?
+Does the physical stabilisation manipulation itself preserve viability, division rate and cell death?
 
-*Why unresolved:* Alignment depends on the central region 484-715, which is grounded; what is missing is a component that supplies that function. The synthesis layer found routes under every evidence-compatible model and the realization layer returned NO_GROUNDED_REALIZATION for them.
-
-| outcome | leads to | route state from there |
-|---|---|---|
-| `grounded_component_found` | `S_ALIGN_SUPPLIED` (state) | 3 still unresolved: `BYPASS_ACT`, `BYPASS_SIL`, `SAFE01` |
-| `no_component` | `T_ALIGN_NO_ACTUATOR` (`NO_PHYSICAL_REALIZATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-
-### `BYPASS_SIL`
-
-Is there a physically realisable way to supply timely checkpoint silencing independently?
-
-*Why unresolved:* Silencing was never measured at restored abundance for any MVA allele, and no component is known to supply it.
+*Why unresolved:* Chaperone and degradation perturbations are broadly cytotoxic at the doses that engage their targets, and EXP01's readouts describe a different manipulation entirely.
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `grounded_component_found` | `S_SIL_SUPPLIED` (state) | 3 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `SAFE01` |
-| `no_component` | `T_SIL_NO_ACTUATOR` (`NO_PHYSICAL_REALIZATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `preserved` | `S_POP_SAFE_F1B` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `harm` | `T_UNSAFE_F1` (`UNSAFE`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `insufficient` | `T_SAFE02_REPEAT` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `EXPRVAL01`
+
+Is the failure to reach wild-type-comparable abundance a property of the construct and condition rather than the protein?
+
+*Why unresolved:* Codon usage, promoter strength, tag placement and degradation during expression are all testable, and mitotic checkpoint gene expression is known to be tuned by codon usage.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `construct_limited` | `S_ABUNDANCE_LOW` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `protein_limited` | `S_PROTEIN_CEILING` (state) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `insufficient` | `T_EXPR_INVALID` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `COMPOSITE_VALID`
+
+Does the assembled composite system actually lower chromosome missegregation while holding the functional state and population safety?
+
+*Why unresolved:* No composite has been assembled, and the component functions interact: a protein recruited to supply one function may perturb another.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `system_validated` | `S_COMPOSITE_VALIDATED` (state) | **nothing further unresolved — the remaining chain is grounded** |
+| `functions_conflict` | `T_COMPOSITE_CONFLICT` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `no_improvement` | `T_COMPOSITE_NULL` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `insufficient` | `T_COMPOSITE_REPEAT` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `DEP_KIF18A`
+
+Does KIF18A support chromosome alignment when BubR1 is limiting, or does its congression role run through CENP-E and therefore through BubR1?
+
+*Why unresolved:* KIF18A's congression role was defined in cooperation with CENP-E, and CENP-E's congression mechanism is BubR1-dependent. No experiment places KIF18A in a BubR1-limited background. Absence of a direct BubR1 link is not independence.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `independent_of_bubr1` | `S_ALIGN_SUPPLIED` (state) | 4 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` |
+| `requires_bubr1` | `T_KIF18A_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `unestablished` | `T_KIF18A_FRONTIER` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `DEP_FLUX`
+
+Does modifying poleward flux lower missegregation in a BubR1-limited background, and is the effect independent of residual BubR1?
+
+*Why unresolved:* The flux work reports modification of segregation errors without reference to BubR1, and no retrieved record tests it against BubR1 status. Silence is not independence.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `independent_of_bubr1` | `S_ALIGN_SUPPLIED` (state) | 4 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_TRIP13`, `SAFE01` |
+| `requires_bubr1` | `T_FLUX_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `unestablished` | `T_FLUX_FRONTIER` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+
+### `DEP_TRIP13`
+
+Does augmenting TRIP13/APC15-driven MCC turnover restore timely exit without requiring BubR1, and without degrading checkpoint activation?
+
+*Why unresolved:* TRIP13 acts catalytically on Mad2 and APC15 on Cdc20, neither of which is BubR1 — but the substrate complex contains BubR1, and no experiment runs this in a BubR1-limited background. The same paper shows TRIP13 is also required to maintain open-state Mad2 for checkpoint activation, so augmenting it for silencing cannot be assumed to leave activation intact.
+
+| outcome | leads to | route state from there |
+|---|---|---|
+| `independent_and_specific` | `S_SIL_SUPPLIED` (state) | 4 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `SAFE01` |
+| `requires_bubr1` | `T_TRIP13_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `degrades_activation` | `T_TRIP13_CONFLICT` (`NO_KNOWN_CONTINUATION`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `unestablished` | `T_TRIP13_FRONTIER` (`BOUNDED_FRONTIER`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ### `BYPASS_ACT`
 
@@ -189,33 +248,25 @@ Is there a physically realisable way to supply checkpoint activation independent
 
 | outcome | leads to | route state from there |
 |---|---|---|
-| `grounded_component_found` | `S_ACT_SUPPLIED` (state) | 3 still unresolved: `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
-| `no_component` | `T_ACT_NO_ACTUATOR` (`NO_PHYSICAL_REALIZATION`) | 4 still unresolved: `BYPASS_ACT`, `BYPASS_ALIGN`, `BYPASS_SIL`, `SAFE01` |
+| `grounded_component_found` | `S_ACT_SUPPLIED` (state) | 4 still unresolved: `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
+| `no_component` | `T_ACT_NO_ACTUATOR` (`NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`) | 5 still unresolved: `BYPASS_ACT`, `COMPOSITE_VALID`, `DEP_FLUX`, `DEP_TRIP13`, `SAFE01` |
 
 ## Transitions by grounding label
 
 | label | count | meaning for the route |
 |---|---|---|
-| `GROUNDED` | 11 | traversed directly; no branch created |
+| `GROUNDED` | 22 | traversed directly; no branch created |
 | `CONTEXT_TRANSFER_REQUIRED` | 2 | the relation holds somewhere else and the transfer is unestablished |
-| `EXPERIMENTAL_UNKNOWN` | 7 | a branch node; outcomes enumerated above |
-| `PHYSICAL_ACTUATOR_MISSING` | 12 | the requirement is grounded and no component is known to supply it |
+| `EXPERIMENTAL_UNKNOWN` | 16 | a branch node; outcomes enumerated above |
+| `PHYSICAL_ACTUATOR_MISSING` | 4 | the requirement is grounded and no component is known to supply it |
 | `CONCEPTUALLY_SUFFICIENT_ONLY` | 3 | sufficient in model; not a physical claim |
 | `UNSAFE` | 0 | closed on safety grounds |
 
 **`PHYSICAL_ACTUATOR_MISSING` transitions:**
 
-- `S_MISSEGREGATION` → `BYPASS_ALIGN` — Available from the current state; independent of EXP01's result
-- `S_MISSEGREGATION` → `BYPASS_ACT` — Available from the current state; independent of EXP01's result
-- `S_MISSEGREGATION` → `BYPASS_SIL` — Available from the current state; independent of EXP01's result
+- `S_MISSEGREGATION` → `BYPASS_ACT` — No named candidate survived function-first discovery for checkpoint activation; available from the current state and independent of EXP01's result
 - `S_MATCHED_ACHIEVABLE` → `STAB01` — Ectopic matching is a laboratory condition, not a control the case can hold. A physical actuator is required and none is grounded
-- `B_ALIGN_DEFECT` → `BYPASS_ALIGN` — Alignment must be supplied independently. The requirement is grounded (central region 484-715); the component is not
-- `B_SIL_DEFECT` → `BYPASS_SIL`
-- `B_MULTI_DEFECT` → `BYPASS_ALIGN` — Composite replacement: each lost function must be supplied, and the functions are separable, so they must be supplied separately
-- `B_MULTI_DEFECT` → `BYPASS_SIL`
 - `B_MULTI_DEFECT` → `BYPASS_ACT`
-- `T_CHAR_CEILING` → `BYPASS_ALIGN` — An unreachable abundance ceiling forces the bypass family. The terminal closes the abundance family and opens this one
-- `T_NO_ACTUATOR` → `BYPASS_ALIGN` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
 - `T_EXP01_CEILING` → `STAB01` — Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?
 
 **`CONTEXT_TRANSFER_REQUIRED` transitions:**
@@ -248,8 +299,9 @@ terminals may close one family while opening another — the PRD's "a negative e
 edge and opens another branch".
 
 - *re-entry:* `B_TURNOVER_ONLY` → `STAB01` — Re-enters STAB01 on the folding-capacity arm (P1-R) rather than the degradative arm. A deliberate loop: the same branch node asked of a different arm
-- *family transition:* `T_CHAR_CEILING` → `BYPASS_ALIGN` — An unreachable abundance ceiling forces the bypass family. The terminal closes the abundance family and opens this one
-- *family transition:* `T_NO_ACTUATOR` → `BYPASS_ALIGN` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
+- *family transition:* `S_PROTEIN_CEILING` → `C_KIF18A` — Bypass remains available
+- *family transition:* `S_NOT_EXPRESSIBLE` → `C_KIF18A` — Bypass remains available as an alternative continuation
+- *family transition:* `T_NO_ACTUATOR` → `C_KIF18A` — Merge point: a dead abundance actuator and a failed EXP01 arrive at the same bypass family
 - *family transition:* `T_EXP01_CEILING` → `STAB01` — Matched abundance unreachable ectopically closes the function question and opens the stabilisation question: can it be held up at all?
 
 ## The graph
@@ -273,8 +325,11 @@ graph TD
   S_ACT_SUPPLIED["S_ACT_SUPPLIED"]
   F2_COMPLETE[/"F2_COMPLETE"/]
   S_POP_SAFE_F1["S_POP_SAFE_F1"]
+  S_POP_SAFE_F1B["S_POP_SAFE_F1B"]
+  S_COMPOSITE_VALIDATED["S_COMPOSITE_VALIDATED"]
   S_POP_SAFE_F2["S_POP_SAFE_F2"]
   CHAR01{{"CHAR01"}}
+  S_NOT_EXPRESSIBLE["S_NOT_EXPRESSIBLE"]
   S_ABUNDANCE_LOW_OTHER["S_ABUNDANCE_LOW_OTHER"]
   EXP01{{"EXP01"}}
   B_ALIGN_DEFECT["B_ALIGN_DEFECT"]
@@ -287,31 +342,53 @@ graph TD
   FUNCVAL01{{"FUNCVAL01"}}
   XFER01{{"XFER01"}}
   SAFE01{{"SAFE01"}}
-  BYPASS_ALIGN{{"BYPASS_ALIGN"}}
-  BYPASS_SIL{{"BYPASS_SIL"}}
+  SAFE02{{"SAFE02"}}
+  EXPRVAL01{{"EXPRVAL01"}}
+  COMPOSITE_VALID{{"COMPOSITE_VALID"}}
+  C_CENPE["C_CENPE"]
+  C_KIF18A["C_KIF18A"]
+  C_FLUX["C_FLUX"]
+  DEP_KIF18A{{"DEP_KIF18A"}}
+  DEP_FLUX{{"DEP_FLUX"}}
+  C_TRIP13["C_TRIP13"]
+  DEP_TRIP13{{"DEP_TRIP13"}}
   BYPASS_ACT{{"BYPASS_ACT"}}
   TARGET(("TARGET<br/>TARGET_REACHED_IN_MODEL"))
-  T_CHAR_CEILING(("T_CHAR_CEILING<br/>NO_PHYSICAL_REALIZATION"))
+  T_EXPR_INVALID(("T_EXPR_INVALID<br/>BOUNDED_FRONTIER"))
   T_EXP01_CEILING(("T_EXP01_CEILING<br/>BOUNDED_FRONTIER"))
   T_EXP01_REPEAT(("T_EXP01_REPEAT<br/>BOUNDED_FRONTIER"))
   T_STAB01_REPEAT(("T_STAB01_REPEAT<br/>BOUNDED_FRONTIER"))
   T_STAB02_REPEAT(("T_STAB02_REPEAT<br/>BOUNDED_FRONTIER"))
   T_FUNCVAL_REPEAT(("T_FUNCVAL_REPEAT<br/>BOUNDED_FRONTIER"))
-  T_POOL_ONLY(("T_POOL_ONLY<br/>NO_PHYSICAL_REALIZATION"))
-  T_NO_ACTUATOR(("T_NO_ACTUATOR<br/>NO_PHYSICAL_REALIZATION"))
+  T_POOL_ONLY(("T_POOL_ONLY<br/>NO_KNOWN_CONTINUATION"))
+  T_NO_ACTUATOR(("T_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
   T_CASE_REFRACTORY(("T_CASE_REFRACTORY<br/>NO_KNOWN_CONTINUATION"))
   T_PRESENT_NOT_FUNCTIONAL(("T_PRESENT_NOT_FUNCTIONAL<br/>NO_KNOWN_CONTINUATION"))
   T_NO_TRANSFER(("T_NO_TRANSFER<br/>CONTEXT_TRANSFER_REQUIRED"))
   T_XFER_BLOCKED(("T_XFER_BLOCKED<br/>CONTEXT_TRANSFER_REQUIRED"))
+  S_PROTEIN_CEILING["S_PROTEIN_CEILING"]
+  T_UNSAFE_F1(("T_UNSAFE_F1<br/>UNSAFE"))
+  T_SAFE02_REPEAT(("T_SAFE02_REPEAT<br/>BOUNDED_FRONTIER"))
+  T_COMPOSITE_CONFLICT(("T_COMPOSITE_CONFLICT<br/>NO_KNOWN_CONTINUATION"))
+  T_COMPOSITE_NULL(("T_COMPOSITE_NULL<br/>NO_KNOWN_CONTINUATION"))
+  T_COMPOSITE_REPEAT(("T_COMPOSITE_REPEAT<br/>BOUNDED_FRONTIER"))
   T_UNSAFE(("T_UNSAFE<br/>UNSAFE"))
   T_SAFE01_REPEAT(("T_SAFE01_REPEAT<br/>BOUNDED_FRONTIER"))
-  T_ALIGN_NO_ACTUATOR(("T_ALIGN_NO_ACTUATOR<br/>NO_PHYSICAL_REALIZATION"))
-  T_SIL_NO_ACTUATOR(("T_SIL_NO_ACTUATOR<br/>NO_PHYSICAL_REALIZATION"))
-  T_ACT_NO_ACTUATOR(("T_ACT_NO_ACTUATOR<br/>NO_PHYSICAL_REALIZATION"))
+  T_CENPE_DEPENDENT(("T_CENPE_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
+  T_KIF18A_DEPENDENT(("T_KIF18A_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
+  T_KIF18A_FRONTIER(("T_KIF18A_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_FLUX_DEPENDENT(("T_FLUX_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
+  T_FLUX_FRONTIER(("T_FLUX_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_TRIP13_DEPENDENT(("T_TRIP13_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
+  T_TRIP13_CONFLICT(("T_TRIP13_CONFLICT<br/>NO_KNOWN_CONTINUATION"))
+  T_TRIP13_FRONTIER(("T_TRIP13_FRONTIER<br/>BOUNDED_FRONTIER"))
+  T_ALIGN_NO_ACTUATOR(("T_ALIGN_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
+  T_SIL_NO_ACTUATOR(("T_SIL_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
+  T_ACT_NO_ACTUATOR(("T_ACT_NO_ACTUATOR<br/>NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE"))
   CHAR01 -->|destabilised_like_reference| S_ABUNDANCE_LOW
   CHAR01 -->|not_destabilised| S_ABUNDANCE_NORMAL
   CHAR01 -->|destabilised_other_mechanism| S_ABUNDANCE_LOW_OTHER
-  CHAR01 -->|not_expressible| T_CHAR_CEILING
+  CHAR01 -->|not_expressible| S_NOT_EXPRESSIBLE
   EXP01 -->|full_function| S_FUNCTION_OK
   EXP01 -->|alignment_defect| B_ALIGN_DEFECT
   EXP01 -->|silencing_defect| B_SIL_DEFECT
@@ -336,10 +413,26 @@ graph TD
   SAFE01 -->|preserved| S_POP_SAFE_F2
   SAFE01 -->|harm| T_UNSAFE
   SAFE01 -->|insufficient| T_SAFE01_REPEAT
-  BYPASS_ALIGN -->|grounded_component_found| S_ALIGN_SUPPLIED
-  BYPASS_ALIGN -->|no_component| T_ALIGN_NO_ACTUATOR
-  BYPASS_SIL -->|grounded_component_found| S_SIL_SUPPLIED
-  BYPASS_SIL -->|no_component| T_SIL_NO_ACTUATOR
+  SAFE02 -->|preserved| S_POP_SAFE_F1B
+  SAFE02 -->|harm| T_UNSAFE_F1
+  SAFE02 -->|insufficient| T_SAFE02_REPEAT
+  EXPRVAL01 -->|construct_limited| S_ABUNDANCE_LOW
+  EXPRVAL01 -->|protein_limited| S_PROTEIN_CEILING
+  EXPRVAL01 -->|insufficient| T_EXPR_INVALID
+  COMPOSITE_VALID -->|system_validated| S_COMPOSITE_VALIDATED
+  COMPOSITE_VALID -->|functions_conflict| T_COMPOSITE_CONFLICT
+  COMPOSITE_VALID -->|no_improvement| T_COMPOSITE_NULL
+  COMPOSITE_VALID -->|insufficient| T_COMPOSITE_REPEAT
+  DEP_KIF18A -->|independent_of_bubr1| S_ALIGN_SUPPLIED
+  DEP_KIF18A -->|requires_bubr1| T_KIF18A_DEPENDENT
+  DEP_KIF18A -->|unestablished| T_KIF18A_FRONTIER
+  DEP_FLUX -->|independent_of_bubr1| S_ALIGN_SUPPLIED
+  DEP_FLUX -->|requires_bubr1| T_FLUX_DEPENDENT
+  DEP_FLUX -->|unestablished| T_FLUX_FRONTIER
+  DEP_TRIP13 -->|independent_and_specific| S_SIL_SUPPLIED
+  DEP_TRIP13 -->|requires_bubr1| T_TRIP13_DEPENDENT
+  DEP_TRIP13 -->|degrades_activation| T_TRIP13_CONFLICT
+  DEP_TRIP13 -->|unestablished| T_TRIP13_FRONTIER
   BYPASS_ACT -->|grounded_component_found| S_ACT_SUPPLIED
   BYPASS_ACT -->|no_component| T_ACT_NO_ACTUATOR
   S0_CASE -->|GROUNDED| S_MISSEGREGATION
@@ -347,10 +440,16 @@ graph TD
   S_CLASS_PREMISE -->|EXPERIMENTAL_UNKNOWN| CHAR01
   S_ABUNDANCE_LOW -->|CONTEXT_TRANSFER_REQUIRED| S_MISSEGREGATION
   S_ABUNDANCE_LOW_OTHER -->|EXPERIMENTAL_UNKNOWN| EXP01
-  S_MISSEGREGATION -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ALIGN
+  S_MISSEGREGATION -->|GROUNDED| C_CENPE
+  S_MISSEGREGATION -->|GROUNDED| C_KIF18A
+  S_MISSEGREGATION -->|GROUNDED| C_FLUX
+  S_MISSEGREGATION -->|GROUNDED| C_TRIP13
   S_MISSEGREGATION -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ACT
-  S_MISSEGREGATION -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_SIL
-  S_ABUNDANCE_NORMAL -->|GROUNDED| B_MULTI_DEFECT
+  C_CENPE -->|GROUNDED| T_CENPE_DEPENDENT
+  C_KIF18A -->|EXPERIMENTAL_UNKNOWN| DEP_KIF18A
+  C_FLUX -->|EXPERIMENTAL_UNKNOWN| DEP_FLUX
+  C_TRIP13 -->|EXPERIMENTAL_UNKNOWN| DEP_TRIP13
+  S_ABUNDANCE_NORMAL -->|EXPERIMENTAL_UNKNOWN| EXP01
   S_ABUNDANCE_LOW -->|EXPERIMENTAL_UNKNOWN| EXP01
   S_FUNCTION_OK -->|GROUNDED| S_MATCHED_ACHIEVABLE
   S_MATCHED_ACHIEVABLE -->|PHYSICAL_ACTUATOR_MISSING| STAB01
@@ -362,23 +461,29 @@ graph TD
   S_ALIGN_SUPPLIED -->|EXPERIMENTAL_UNKNOWN| SAFE01
   F1_COMPLETE -->|CONCEPTUALLY_SUFFICIENT_ONLY| TARGET
   B_TURNOVER_ONLY -.->|EXPERIMENTAL_UNKNOWN| STAB01
-  B_ALIGN_DEFECT -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ALIGN
-  B_SIL_DEFECT -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_SIL
-  B_SEG_DEFECT -->|CONCEPTUALLY_SUFFICIENT_ONLY| BYPASS_ALIGN
-  B_MULTI_DEFECT -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ALIGN
-  B_MULTI_DEFECT -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_SIL
+  B_ALIGN_DEFECT -->|GROUNDED| C_KIF18A
+  B_SIL_DEFECT -->|GROUNDED| C_TRIP13
+  B_SEG_DEFECT -->|CONCEPTUALLY_SUFFICIENT_ONLY| C_KIF18A
+  B_MULTI_DEFECT -->|GROUNDED| C_KIF18A
+  B_MULTI_DEFECT -->|GROUNDED| C_TRIP13
   B_MULTI_DEFECT -->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ACT
-  T_CHAR_CEILING -.->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ALIGN
+  S_NOT_EXPRESSIBLE -->|EXPERIMENTAL_UNKNOWN| STAB01
+  S_PROTEIN_CEILING -->|EXPERIMENTAL_UNKNOWN| STAB01
+  S_PROTEIN_CEILING -.->|GROUNDED| C_KIF18A
+  S_NOT_EXPRESSIBLE -->|EXPERIMENTAL_UNKNOWN| EXPRVAL01
+  S_NOT_EXPRESSIBLE -.->|GROUNDED| C_KIF18A
   S_ALIGN_SUPPLIED -->|GROUNDED| F2_COMPLETE
   S_SIL_SUPPLIED -->|GROUNDED| F2_COMPLETE
   S_ACT_SUPPLIED -->|GROUNDED| F2_COMPLETE
   S_POP_SAFE_F2 -->|GROUNDED| F2_COMPLETE
-  S_POP_SAFE_F1 -->|GROUNDED| F1_COMPLETE
-  F2_COMPLETE -->|CONCEPTUALLY_SUFFICIENT_ONLY| TARGET
-  T_NO_ACTUATOR -.->|PHYSICAL_ACTUATOR_MISSING| BYPASS_ALIGN
+  S_POP_SAFE_F1 -->|EXPERIMENTAL_UNKNOWN| SAFE02
+  S_POP_SAFE_F1B -->|GROUNDED| F1_COMPLETE
+  F2_COMPLETE -->|EXPERIMENTAL_UNKNOWN| COMPOSITE_VALID
+  S_COMPOSITE_VALIDATED -->|CONCEPTUALLY_SUFFICIENT_ONLY| TARGET
+  T_NO_ACTUATOR -.->|GROUNDED| C_KIF18A
   T_EXP01_CEILING -.->|PHYSICAL_ACTUATOR_MISSING| STAB01
   S_XFER_OK --> F1_COMPLETE
-  S_POP_SAFE_F1 --> F1_COMPLETE
+  S_POP_SAFE_F1B --> F1_COMPLETE
   S_ALIGN_SUPPLIED --> F2_COMPLETE
   S_ACT_SUPPLIED --> F2_COMPLETE
   S_SIL_SUPPLIED --> F2_COMPLETE
@@ -397,36 +502,74 @@ composite bypass (supply each lost function independently).
 
 | EXP01 result | F1 abundance family | F2 bypass family | what it decides |
 |---|---|---|---|
-| `full_function` | 4 left (4 runnable) | 4 left (1 runnable) | the abundance premise survives for this allele; the whole question becomes physical |
-| `alignment_defect` | **closed** | 4 left (1 runnable) | F1 cannot be a complete solution; alignment must be supplied independently |
-| `silencing_defect` | **closed** | 4 left (1 runnable) | F1 cannot be a complete solution; silencing must be supplied independently |
-| `segregation_defect` | **closed** | 4 left (1 runnable) | the failing upstream function must be identified before a route is chosen |
-| `multiple_defects` | **closed** | 4 left (1 runnable) | F1 is closed as a complete solution; composite replacement is the only route |
-| `matched_not_achieved` | unresolved — the result decides nothing | 4 left (1 runnable) | the function question is unanswerable until the protein can be held up at all |
-| `confounded_invalid` | unresolved — the result decides nothing | 4 left (1 runnable) | nothing; the named validity gate is repeated |
+| `full_function` | 5 left (5 runnable) | 4 left (3 runnable) | the abundance premise survives for this allele; the whole question becomes physical |
+| `alignment_defect` | **closed** | 4 left (3 runnable) | F1 cannot be a complete solution; alignment must be supplied independently |
+| `silencing_defect` | **closed** | 4 left (3 runnable) | F1 cannot be a complete solution; silencing must be supplied independently |
+| `segregation_defect` | **closed** | 4 left (3 runnable) | the failing upstream function must be identified before a route is chosen |
+| `multiple_defects` | **closed** | 4 left (3 runnable) | F1 is closed as a complete solution; composite replacement is the only route |
+| `matched_not_achieved` | unresolved — the result decides nothing | 4 left (3 runnable) | the function question is unanswerable until the protein can be held up at all |
+| `confounded_invalid` | unresolved — the result decides nothing | 4 left (3 runnable) | nothing; the named validity gate is repeated |
 
 Then, recursively, at each branch the same question. The per-branch distance table above is that
 answer in aggregate: it is the remaining-unknown set after every branch's best admissible outcome.
 
 ### What the map says about priority
 
-Two readings, and they disagree, which is the useful part.
+No single branch gates every route, because the two families are genuinely alternative. The
+decision-relevant fact is which branch gates a whole family:
 
-**By branch count**, the bypass family is shorter. But three of its four remaining branches are
-component discoveries — find a component nobody has described — and one is a measurement. A route
-made of discoveries is not short.
+| family | unavoidable branches |
+|---|---|
+| F1 abundance | `CHAR01`, `EXP01`, `FUNCVAL01`, `SAFE02`, `STAB01`, `STAB02`, `XFER01` |
+| F2 bypass | `BYPASS_ACT`, `DEP_TRIP13`, `SAFE01` |
 
-**By runnable measurement**, the abundance family is the one that can be worked today: every one of
-its branches is a measurement, and `CHAR01` sits upstream of all of them. `CHAR01` is also the
-cheapest: one construct, a cycloheximide chase with HSP90 inhibition and MG132, no patient material,
-and a strict subset of what STAB01 already specifies.
+The two families are blocked by different kinds of thing. **F1** is a strict chain: all
+7 of its branches are unavoidable and 7 are runnable measurements, so it
+is long but every step is work someone can do. **F2** is gated by
+`BYPASS_ACT`, which is a component discovery — the one hole the external search could not fill.
 
-So the chronological next experiment is not the most valuable one. `EXP01` asks whether the altered
-protein works at matched abundance. `CHAR01` asks whether the premise underneath that question holds
-for this allele at all — and the premise is currently class-level inference: `MC_0006` is
+So the bypass family is not blocked by effort but by the absence of a thing. A route cannot be
+assembled from two supplied functions and a missing one.
+
+The shortest route holds **4 runnable measurements of 5**, with `BYPASS_ACT` still a component discovery.
+
+Two readings, and where they disagree is the useful part. **By branch count** the bypass family
+is shorter. **By kind**, what matters is how many of those branches are measurements someone can
+run rather than components nobody has described — which is why the external search mattered more
+than another pass over the graph.
+
+`CHAR01` remains the leading runnable experiment on the abundance family: the corrected graph
+still makes it unavoidable for F1, it is the cheapest branch on that family, and it needs no
+patient material — one construct, a cycloheximide chase with HSP90 inhibition and MG132, a
+strict subset of what STAB01 already specifies.
+
+It is not EXP01, and the reason is about the premise rather than the question. `EXP01` asks whether
+the altered protein works at matched abundance. `CHAR01` asks whether the premise underneath that
+question holds for this allele at all — and the premise is class-level inference: `MC_0006` is
 `UNRESOLVED` on zero establishing records, `MC_0005` rests on 0 establishing and 11 indirect, and
-Q921H is a kinase-domain substitution that is normal in both level and function. If this allele is
-not destabilised, EXP01's matched-abundance framing is miscast before it is run.
+Q921H is a kinase-domain substitution normal in both level and function. If this allele is not
+destabilised, EXP01's matched-abundance framing is miscast before it is run.
+
+### What the external search changed
+
+The three component-discovery diamonds were the map's biggest holes. Function-first discovery
+against external literature, followed by dependency adjudication, replaced two of the three with
+named candidates:
+
+- **alignment** — `CENP-E` is **closed by evidence**, which is the most useful single result: it
+  has a BubR1-independent route to the outer corona, while the mechanism by which it initiates
+  congression is explicitly BubR1-dependent. Localisation is not function, the same distinction
+  Y155C forces. `KIF18A` and microtubule `poleward flux` survive as named candidates with their
+  dependency unestablished.
+- **silencing** — `TRIP13` with `APC15` survives as a named candidate. It carries a specific extra
+  risk the map records as its own outcome: the same protein maintains open-state Mad2 for
+  checkpoint activation, so augmenting it for silencing may trade one broken function for another.
+- **activation** — nothing survived function-first discovery. This stays a bounded external
+  frontier, not an impossibility: `NOT_FOUND_IN_SEARCHED_EXTERNAL_UNIVERSE`, with the searched
+  universe recorded in `data/literature/mva-bypass-v1`.
+
+Absence of a known BubR1 link was never recorded as independence. Every surviving candidate's
+dependency branch has an `unestablished` outcome, and that is where they all sit today.
 
 ## What this map does not claim
 

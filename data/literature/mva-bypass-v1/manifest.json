@@ -1,0 +1,192 @@
+{
+  "corpus_version": "mva-bypass-v1",
+  "purpose": "Function-first discovery of physical components able to supply chromosome alignment, checkpoint activation or checkpoint silencing, followed by BubR1-dependency adjudication for each candidate.",
+  "index": "Europe PMC REST (https://www.ebi.ac.uk/europepmc/webservices/rest/search)",
+  "provider": {
+    "id": "scientific-literature-provider",
+    "version": "0.1.0"
+  },
+  "full_text_policy": "titles and abstracts only; full text is not stored",
+  "two_stage_protocol": {
+    "stage_1_function_first": "Searched for a measured functional effect without naming BUB1B, so the candidate set is not pre-filtered by what is already known to touch this gene.",
+    "stage_2_dependency_adjudication": "Searched each surviving candidate together with BubR1/BUB1B. Naming the gene is correct here because this is no longer discovery. Absence of a known link is recorded as INDEPENDENCE_UNESTABLISHED, never as independence."
+  },
+  "queries": {
+    "stage_1_by_function": {
+      "ALIGN": [
+        "chromosome alignment restored depletion kinetochore component",
+        "chromosome congression CENP-E end-on attachment measured",
+        "kinetochore microtubule attachment error correction Aurora B measured",
+        "misaligned chromosomes rescued overexpression kinetochore protein",
+        "MCAK Kif2 depolymerase chromosome alignment quantified"
+      ],
+      "ACT": [
+        "mitotic checkpoint activation restored MAD2 overexpression",
+        "MPS1 TTK kinase mitotic checkpoint activation measured",
+        "APC/C Cdc20 inhibition mitotic arrest without kinetochore signalling",
+        "KNL1 Blinkin checkpoint signalling reconstitution measured",
+        "mitotic checkpoint complex assembly reconstituted recombinant"
+      ],
+      "SIL": [
+        "mitotic checkpoint silencing PP1 PP2A kinetochore measured",
+        "p31comet TRIP13 MAD2 checkpoint silencing measured",
+        "mitotic checkpoint complex disassembly UBR5 measured",
+        "USP44 deubiquitinase checkpoint silencing mitotic exit",
+        "timely mitotic exit restored depletion phosphatase"
+      ]
+    },
+    "stage_2_dependency": [
+      "KIF18A BUB1B BubR1",
+      "CENP-E BubR1 dependency",
+      "microtubule poleward flux BubR1",
+      "TRIP13 BubR1 BUB1B",
+      "APC15 BubR1 mitotic checkpoint complex",
+      "UBR5 BubR1 BUB1B",
+      "USP44 BubR1",
+      "MPS1 TTK BubR1 BUB1B",
+      "Aurora B BubR1 dependency",
+      "KIF18A chromosome congression human cells measured",
+      "TRIP13 mitotic exit human cells measured",
+      "poleward flux chromosome segregation errors human"
+    ]
+  },
+  "retrieval": {
+    "page_size_stage_1": 25,
+    "page_size_stage_2": 20,
+    "unique_records_seen": 413,
+    "documents_stored": 9
+  },
+  "adjudication_outcome": "No candidate is established as BubR1-independent for the function it would supply. CENP-E has a BubR1-independent route to the outer corona (PMID:38354735) while the mechanism by which it initiates congression is explicitly BubR1-dependent (PMID:41120314) \u2014 localisation is not function, which is the same distinction Y155C forces. The three bypass branches therefore hold named candidates with open dependency questions rather than grounded components.",
+  "documents": [
+    {
+      "source_id": "PMID:28564602",
+      "title": "Mad2 Overexpression Uncovers a Critical Role for TRIP13 in Mitotic Exit.",
+      "pub_year": "2017",
+      "journal": "",
+      "bytes": 1172,
+      "sha256": "28b0a51db1e27cf19f27ae3875e5eb875ee5d14cdb0645bd06ce088220e24172",
+      "matched_queries": [
+        "p31comet TRIP13 MAD2 checkpoint silencing measured"
+      ],
+      "triage_score": 14,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:30341343",
+      "title": "TRIP13 and APC15 drive mitotic exit by turnover of interphase- and unattached kinetochore-produced MCC.",
+      "pub_year": "2018",
+      "journal": "",
+      "bytes": 1228,
+      "sha256": "fb56c58a8284ed018825d9d9ba61410695143fa2ee439dfe2cde8c45c725bb5f",
+      "matched_queries": [
+        "APC15 BubR1 mitotic checkpoint complex",
+        "p31comet TRIP13 MAD2 checkpoint silencing measured"
+      ],
+      "triage_score": 10,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:36108046",
+      "title": "Recovery from spindle checkpoint-mediated arrest requires a novel Dnt1-dependent APC/C activation mechanism.",
+      "pub_year": "2022",
+      "journal": "",
+      "bytes": 1573,
+      "sha256": "1f97ea4324c2e6627b17767bbec92b7bcbd51f6d991e8c1cb4a6ac1d64ded464",
+      "matched_queries": [
+        "APC15 BubR1 mitotic checkpoint complex",
+        "p31comet TRIP13 MAD2 checkpoint silencing measured"
+      ],
+      "triage_score": 19,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:38354735",
+      "title": "A conserved CENP-E region mediates BubR1-independent recruitment to the outer corona at mitotic onset.",
+      "pub_year": "2024",
+      "journal": "",
+      "bytes": 1893,
+      "sha256": "3e737e8ba130180a44960af2bc1e769b71b32e7a930915bac663e5698054e969",
+      "matched_queries": [
+        "microtubule poleward flux BubR1"
+      ],
+      "triage_score": 9,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:39541344",
+      "title": "Microtubule poleward flux as a target for modifying chromosome segregation errors.",
+      "pub_year": "2024",
+      "journal": "",
+      "bytes": 1798,
+      "sha256": "46aae63a5b8e6912e233534977069ba0b686ad12e92d8a44f329202723bbdf60",
+      "matched_queries": [
+        "KIF18A chromosome congression human cells measured",
+        "misaligned chromosomes rescued overexpression kinetochore protein",
+        "poleward flux chromosome segregation errors human"
+      ],
+      "triage_score": 12,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:41120314",
+      "title": "CENP-E initiates chromosome congression by opposing Aurora kinases to promote end-on attachments.",
+      "pub_year": "2025",
+      "journal": "",
+      "bytes": 1294,
+      "sha256": "41704fef09eedda90d03ceeae9ea17247a103838612af1867317ca6455fb41ab",
+      "matched_queries": [
+        "KIF18A BUB1B BubR1",
+        "KIF18A chromosome congression human cells measured",
+        "chromosome congression CENP-E end-on attachment measured",
+        "kinetochore microtubule attachment error correction Aurora B measured",
+        "microtubule poleward flux BubR1"
+      ],
+      "triage_score": 3,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:41218610",
+      "title": "KIF18A promotes chromosome congression in cooperation with CENP-E downstream of CENP-C.",
+      "pub_year": "2025",
+      "journal": "",
+      "bytes": 1151,
+      "sha256": "a04fb3432f1893085a9899ef7bc7b7ddd8c366a4642cba9ec51ea2c02949612c",
+      "matched_queries": [
+        "Aurora B BubR1 dependency",
+        "CENP-E BubR1 dependency",
+        "KIF18A chromosome congression human cells measured",
+        "chromosome congression CENP-E end-on attachment measured"
+      ],
+      "triage_score": 11,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:42647139",
+      "title": "Spindle Assembly Checkpoint Competency Determines Sensitivity to KIF18A Inhibition in Small Cell Lung Cancer.",
+      "pub_year": "2026",
+      "journal": "",
+      "bytes": 2417,
+      "sha256": "d8dad82aaf7eabfb82a9fb76c67c25fd0cc0b98e8e68b050d7bd839411aadb2d",
+      "matched_queries": [
+        "KIF18A BUB1B BubR1",
+        "KIF18A chromosome congression human cells measured",
+        "MPS1 TTK BubR1 BUB1B"
+      ],
+      "triage_score": 23,
+      "status": "FOUND_IN_INDEX"
+    },
+    {
+      "source_id": "PMID:PPR657410",
+      "title": "A BubR1-independent pathway for CENP-E targeting to the outer corona of kinetochores",
+      "pub_year": "2023",
+      "journal": "",
+      "bytes": 1202,
+      "sha256": "f8921cc41c132d00b1c55237beaed937f7ebf940ca58d3c72af980341aa92fd2",
+      "matched_queries": [
+        "CENP-E BubR1 dependency"
+      ],
+      "triage_score": 13,
+      "status": "FOUND_IN_INDEX"
+    }
+  ]
+}
