@@ -109,8 +109,10 @@ campaigns:
         {DEP_FLUX: independent_of_bubr1, SAFE01: harm}
       no_reduction:
         {DEP_FLUX: no_reduction}
-      effect_requires_residual_bubr1:
-        {DEP_FLUX: requires_bubr1}
+      lower_missegregation_benefit_needs_residual_bubr1:
+        {DEP_FLUX: benefit_requires_residual_bubr1, SAFE01: preserved}
+      benefit_absent_in_limiting_regime:
+        {DEP_FLUX: benefit_absent_in_limiting_regime}
       insufficient_or_invalid:
         {DEP_FLUX: unestablished, SAFE01: insufficient}
   - id: CHAR01
@@ -325,13 +327,15 @@ nodes:
     kind: branch
     resolves_by: MEASUREMENT
     requires: CELL_MODEL
-    label: "Does modifying poleward flux lower missegregation in a BubR1-limited background, and is the effect independent of residual BubR1?"
+    label: "Does modifying poleward flux lower missegregation in a BubR1-limiting background, and is the benefit independent of residual BubR1 or does it exploit it?"
+    classification_not_success: "Independence is a mechanistic classification, not a success criterion. The functional target requires low missegregation with the population preserved; it does not require that the route avoid BubR1. A benefit that depends on residual BubR1 is a compensatory route rather than a failed bypass, and it only closes if the benefit disappears in the limiting regime this case actually occupies."
     why_unresolved: "Full-text adjudication: BubR1 appears zero times in 454 sentences, so dependency is wholly unaddressed and silence is not independence. What the full text does add is a positive mechanistic argument — by targeting poleward flux, chromosome alignment is affected independently of kinetochore attachment status, which is the axis BubR1 acts on — plus three mechanistically independent perturbations (low-dose taxol, HAUS8 or NuMA codepletion) that rescued misalignment, lagging chromosomes and micronuclei in human RPE-1 and in OVKATE cells, and a stated predictor of when it works (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven, which is the transfer this case needs."
     outcomes:
-      independent_of_bubr1: S_FLUX_LOWERS_MIS
-      no_reduction:         S_FLUX_NOT_THE_LEVER
-      requires_bubr1:       T_FLUX_DEPENDENT
-      unestablished:        T_FLUX_FRONTIER
+      independent_of_bubr1:              S_FLUX_LOWERS_MIS
+      benefit_requires_residual_bubr1:   S_FLUX_COMPENSATORY
+      benefit_absent_in_limiting_regime: T_FLUX_DEPENDENT
+      no_reduction:                      S_FLUX_NOT_THE_LEVER
+      unestablished:                     T_FLUX_FRONTIER
 
   # ---------- named silencing candidate ----------
   - {id: C_TRIP13, kind: state, label: "TRIP13 with APC15: catalytic MCC disassembly drives timely mitotic exit; degron-tagged depletion shows the requirement, so the state is physically manipulable"}
@@ -477,8 +481,12 @@ nodes:
   - {id: T_KIF18A_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "KIF18A dependency unestablished: the experiment is specified and unrun"}
   # Engaged and ineffective is a different result from dependent or untested, and it continues:
   # flux is not the lever in this state, which leaves the other alignment candidate and F1.
+  # The third strategy, between repairing the protein and routing around it: exploit the residual
+  # function that is there and change a different physical process. The functional target never
+  # required BubR1-independence, so this reaches it exactly as a bypass would.
+  - {id: S_FLUX_COMPENSATORY, kind: state, label: "Flux manipulation lowers missegregation with the population preserved, and the benefit depends on residual BubR1: a compensatory route — residual function exploited, a different physical process altered"}
   - {id: S_FLUX_NOT_THE_LEVER, kind: state, label: "The flux manipulation engaged its target and missegregation did not fall: flux is not the controllable physics for this state"}
-  - {id: T_FLUX_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The flux effect requires BubR1"}
+  - {id: T_FLUX_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "The benefit disappears in the limiting regime this case occupies: it needs more BubR1 than the case has, so it is not a route for this case whatever it does in replete cells"}
   - {id: T_FLUX_FRONTIER, kind: terminal, terminal: BOUNDED_FRONTIER, label: "Flux dependency unestablished: the experiment is specified and unrun"}
   - {id: T_TRIP13_DEPENDENT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "TRIP13-driven exit requires BubR1"}
   - {id: T_TRIP13_CONFLICT, kind: terminal, terminal: NO_KNOWN_CONTINUATION, label: "Augmenting TRIP13 restores exit at the cost of checkpoint activation: it trades one target component for another"}
@@ -567,6 +575,8 @@ edges:
   - {from: CANONICAL_CELLULAR_STATE, to: S_MIS_LOWERED, label: GROUNDED, note: "The canonical trajectory entails the terminal state; it is one route to it, not the definition of it"}
   - {from: S_FLUX_NOT_THE_LEVER, to: C_KIF18A, label: GROUNDED, reentry: true, note: "The other named alignment candidate remains"}
   - {from: S_FLUX_NOT_THE_LEVER, to: CHAR01, label: EXPERIMENTAL_UNKNOWN, reentry: true, note: "And the abundance family is untouched by a flux null"}
+  - {from: S_FLUX_COMPENSATORY, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "Reaches the terminal endpoint by exploiting residual function rather than replacing it; the functional target does not ask which", evidence: ["PMID:39541344"]}
+  - {from: S_FLUX_COMPENSATORY, to: S_ALIGN_SUPPLIED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "It supplies alignment compensatorily, which the canonical state would still have to account for"}
   - {from: S_FLUX_LOWERS_MIS, to: S_MIS_LOWERED, label: CONCEPTUALLY_SUFFICIENT_ONLY, note: "The flux work measures lagging chromosomes and micronuclei directly — the terminal endpoint, not a canonical intermediate", evidence: ["PMID:39541344"]}
   - {from: S_FLUX_LOWERS_MIS, to: S_ALIGN_SUPPLIED, label: GROUNDED, note: "It also supplies alignment, which the canonical state still needs"}
   - {from: S_POP_SAFE_F1B, to: S_POP_SAFE_ANY, label: GROUNDED, note: "Either family's own safety observation satisfies the functional target's safety conjunct"}
@@ -608,4 +618,5 @@ grounded_facts:
   - {id: G_BUBR1_REQUIRED_FOR_CONGRESSION, statement: "BubR1 is required for the initiation of chromosome congression independently of its role in recruiting CENP-E, and its absence cannot be compensated by inhibiting Aurora kinases", evidence: ["PMID:41120314"], consequence: "Raises the bar for any alignment bypass: the function to be supplied is one BubR1 is directly required for, not merely one it assists"}
   - {id: G_NO_LIMITING_EXPERIMENT, statement: "Across all five full texts adjudicated, every experiment ran at BubR1-present or BubR1-absent (siRNA or degron depletion). None ran at BubR1-limiting", evidence: ["PMID:41120314", "PMID:38354735", "PMID:41218610", "PMID:39541344", "PMID:30341343"], consequence: "This case is BubR1-limiting, not BubR1-null. Every dependency verdict in the literature is therefore about a different regime, and that is why each dependency branch keeps an `unestablished` outcome rather than resolving on the published work"}
   - {id: G_LOCALISATION_NOT_FUNCTION, statement: "A BubR1-independent route can target a component to the kinetochore without being shown to deliver the component's function", evidence: ["PMID:38354735", "PMID:41120314"], consequence: "The same distinction Y155C forces inside this case: normal localisation with a dead function. A bypass candidate must be adjudicated on its function, never on its localisation"}
+  - {id: G_THREE_FAMILIES, statement: "Three route families are distinguishable once independence stops being a success criterion: F1 repairs or stabilises the defective protein, F2 supplies a lost function without it, and F3 exploits the residual function that is present while altering a different physical process", derivation: "Structural consequence of this map, not a literature claim: it follows from defining the functional target by the terminal cellular state and from DEP_FLUX carrying independence as a classification rather than a success criterion", consequence: "F3 is only visible because the functional target is defined by the terminal cellular state rather than by the canonical trajectory. An approach that required repairing the gene first would not look for it"}
   - {id: G_KEN_SELF_DEFEATING, statement: "The BubR1 KEN degron is also required for checkpoint function", evidence: ["PMID:17406666", "PMID:20516114"], consequence: "Degron disruption is excluded as a stabilisation route on function grounds, not evidence grounds"}

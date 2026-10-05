@@ -110,6 +110,10 @@ def validate(d: dict) -> list[str]:
             if missing:
                 problems.append(f"campaign {c['id']}: declares joint outcomes that never decide "
                                 f"{sorted(missing)}, so a branch it claims to resolve is left open")
+    for g in (d.get("grounded_facts") or []):
+        if not g.get("evidence") and not g.get("derivation"):
+            problems.append(f"{g['id']}: a grounded fact needs either evidence or a stated derivation; "
+                            "with neither it is an assertion wearing the word 'grounded'")
     problems += cycles(d, nodes, out_edges)
     return problems
 
@@ -284,10 +288,11 @@ def campaign_cover(d: dict, branches: frozenset[str]) -> tuple[list[str], list[s
 def blocking_outcomes(d: dict, dest: str) -> list[tuple[str, str]]:
     """Single branch outcomes that make `dest` unreachable.
 
-    Conditional reachability says a destination is reachable if the branches fall a particular way.
-    Robust reachability asks whether any single admissible result can close it. Empty list means
-    robust; otherwise these are the results that end it, which is the honest thing to report instead
-    of a probability nobody has.
+    This is SINGLE_OUTCOME_RESILIENCE, and the name matters. It perturbs one branch at a time, so an
+    empty list means no *single* admissible result closes the destination. It does not establish
+    robust reachability, which would require every admissible combination of outcomes across all
+    branches — a policy space this function does not search. Calling it "robust" overstated it, so
+    ROBUST_REACHABILITY is reported as NOT_ESTABLISHED rather than inferred from this.
     """
     out = []
     for b in d["nodes"]:
@@ -431,25 +436,34 @@ def render(d: dict) -> str:
           + f" | {len(cov) + len(unc)}: " + ", ".join("`" + x + "`" for x in cov + unc)
           + " | " + (", ".join("`" + x + "`" for x in unc) or "none") + " |")
     A("")
-    A("## Reachability: conditional and robust")
+    A("## Reachability")
     A("")
-    A("Conditional reachability is whether a destination is reachable if the branches fall a particular")
-    A("way. Robust reachability asks whether any single admissible result can close it. No probability")
-    A("is attached to either, and none is available.")
+    A("Three distinct claims, and only two of them are computed here.")
     A("")
-    A("| destination | conditional | robust | single results that close it |")
+    A("- `CONDITIONAL_REACHABLE` — reachable if the branches fall a particular way.")
+    A("- `SINGLE_OUTCOME_RESILIENT` — no *single* admissible result closes it. One branch is perturbed")
+    A("  at a time.")
+    A("- `ROBUST_REACHABILITY` — **`NOT_ESTABLISHED`.** It would require every admissible combination")
+    A("  of outcomes across all branches, and this tool searches no such policy space. An earlier")
+    A("  version of this section called single-outcome resilience \"robust\", which overstated it.")
+    A("")
+    A("No probability is attached to any of them, and none is available.")
+    A("")
+    A("| destination | `CONDITIONAL_REACHABLE` | `SINGLE_OUTCOME_RESILIENT` | single results that close it |")
     A("|---|---|---|---|")
     for dest in ("CANONICAL_CELLULAR_STATE", G, U):
         if dest not in nodes:
             continue
         c = cost(d).get(dest)
         blockers = blocking_outcomes(d, dest)
-        cond = "no" if c is None else (f"yes, {len(c)} branch(es)")
-        rob = "**yes**" if (c is not None and not blockers) else "no"
+        cond = "NO" if c is None else (f"YES, {len(c)} branch(es)")
+        rob = "**YES**" if (c is not None and not blockers) else "NO"
         shown = ", ".join(f"`{b}`=`{o}`" for b, o in blockers[:6]) or "none"
         if len(blockers) > 6:
             shown += f", and {len(blockers) - 6} more"
         A(f"| `{dest}` | {cond} | {rob} | {shown} |")
+    A("")
+    A("`ROBUST_REACHABILITY` is `NOT_ESTABLISHED` for every row above.")
     A("")
     A("## Every FLUX01 result, decided in advance")
     A("")
@@ -628,7 +642,9 @@ def render(d: dict) -> str:
     A("boundary recorded, rather than being split into alternative worlds because it has caveats.")
     A("")
     for g in d["grounded_facts"]:
-        A(f"- **`{g['id']}`** — {g['statement']} [{', '.join(g['evidence'])}]")
+        src = (", ".join(g["evidence"]) if g.get("evidence")
+               else "derived: " + g["derivation"] if g.get("derivation") else "")
+        A(f"- **`{g['id']}`** — {g['statement']} [{src}]")
         if g.get("consequence"):
             A(f"  - *consequence:* {g['consequence']}")
     A("")

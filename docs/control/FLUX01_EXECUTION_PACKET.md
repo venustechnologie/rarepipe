@@ -12,6 +12,14 @@ safety is manipulation-specific, so this campaign settles it for flux and for no
 vocabulary; the five admissible results below are the campaign's declared outcomes in the map, and their
 continuations are already computed there.
 
+**Independence classifies the route; it does not grade the result.** The cell-level functional target is
+low missegregation with viability, division and cell death preserved. It does not require that the route
+avoid BubR1. So a benefit that depends on residual BubR1 is **not a failed bypass** — it is a
+compensatory route, the third strategy between repairing the protein and routing around it: exploit the
+residual function that is present, alter a different physical process. It closes only if the benefit
+disappears in the limiting regime this case occupies, because then it needs more protein than the case
+has.
+
 **What this is not.** Not a treatment, not a candidate for anybody, and not a claim about MVA. Every
 agent below is a tool for setting a state variable in a dish. Reaching the cell-level state would not
 be disease resolution — the map keeps five further unknowns between it and the organism scale.
@@ -29,10 +37,16 @@ shRNA line, as used for the abundance titration in PMID:20516114 Fig. 4D. hTERT-
 the flux readouts because the flux work was done there and it is non-transformed; a HeLa inducible line
 is the fallback where the RPE-1 titration is not available.
 
-**Graded levels, not one condition.** Doxycycline titrated to span at least: replete, mildly reduced,
-the informative window around ~13% of wild-type where segregation was near-normal, and ~6% where most
-cells missegregated. The patient-line range (full-length BubR1 reduced 2–6 fold) sits above the
-breaking point, which is precisely why a single arbitrary knockdown would not represent this case.
+**Graded levels, not one condition.** Doxycycline is titrated to produce an **experimentally measured
+BubR1-limiting gradient spanning the known reference regimes** — replete, partially reduced, and down
+toward the range where published work reported segregation failure — with the gradient defined by what
+the blot measures in this system, not by importing numbers from another.
+
+**No abundance level here is claimed to reproduce this child.** The published percentages come from a
+different cell line with normal protein, and this case's own BubR1 level has never been measured
+(`MC_0006` is `UNRESOLVED` on zero establishing records). The gradient exists so the result is read as
+a function of abundance rather than at one arbitrary point; it is not a model of the patient, and no
+row of it should be described as such.
 
 **Level is measured, not assumed.** Quantitative immunoblot from the same lysates as the functional
 readout, every replicate, with the loading control and depletion efficiency reported. A condition whose
@@ -55,12 +69,16 @@ inferred.
 
 ## 3. The independence test — the part that is not a single condition
 
-`DEP_FLUX` asks whether the effect requires residual BubR1. A single BubR1-limiting condition cannot
-answer that. It is answered by a **dose-response of the rescue against BubR1 level**:
+`DEP_FLUX` asks whether the benefit requires residual BubR1. A single BubR1-limiting condition cannot
+answer that. It is answered by a **dose-response of the rescue against measured BubR1 level**, and the
+answer is a classification rather than a pass or fail:
 
-- If rescue magnitude scales with residual BubR1, the effect **requires** it → `effect_requires_residual_bubr1`.
-- If rescue is comparable across the graded levels, including near the breaking point, the effect is
-  **independent** of residual BubR1 within the tested range.
+- Rescue comparable across the gradient, including at its most limiting end → **independent**, a bypass
+  route.
+- Rescue present but scaling with residual BubR1 → **compensatory**, and still a route to the functional
+  target. This is a result, not a disappointment.
+- Rescue present in replete cells and **absent at the limiting end of the gradient** → it needs more
+  protein than this case has, and only this closes it.
 - Absence of a BubR1 interaction in one condition is not independence. The claim is licensed by the
   gradient, not by a single well.
 
@@ -100,7 +118,7 @@ canonical mechanistic intermediates, not universal success criteria.
 | BubR1-limiting + vehicle | the defect that is to be rescued, at each graded level |
 | BubR1-replete + each flux arm | whether the perturbation harms a normal population by itself |
 | KIF18A-depleted + each flux arm | **replication** of the published rescue in these hands; if this fails, the assay cannot detect the effect and no conclusion about BubR1-limiting is admissible |
-| BubR1-saturating depletion | the regime boundary — where the published literature's "absent" condition sits relative to ours |
+| BubR1-saturating depletion | the regime boundary — where the published literature's "absent" condition sits on this gradient |
 
 The KIF18A arm is the load-bearing one. It is the positive control for the entire campaign.
 
@@ -111,10 +129,11 @@ Precommitted, and taken from the map rather than invented here. Continuations ar
 
 | result | condition |
 |---|---|
-| `lower_missegregation_population_preserved` | missegregation falls at BubR1-limiting with flux engagement validated, rescue not scaling with residual BubR1, and viability, death and division unchanged |
+| `lower_missegregation_population_preserved` | missegregation falls across the gradient with flux engagement validated, rescue not scaling with residual BubR1, and viability, death and division unchanged |
+| `lower_missegregation_benefit_needs_residual_bubr1` | missegregation falls with the population preserved, and rescue magnitude scales with residual BubR1 while remaining present at the limiting end — **a compensatory route, not a failure** |
 | `lower_missegregation_population_harmed` | missegregation falls but death rises, or viability or division fall |
-| `no_reduction` | flux engagement validated and missegregation does not fall |
-| `effect_requires_residual_bubr1` | rescue magnitude scales with residual BubR1 |
+| `no_reduction` | flux engagement validated and missegregation does not fall anywhere on the gradient |
+| `benefit_absent_in_limiting_regime` | rescue present in replete cells and absent at the limiting end: it needs more BubR1 than this case has |
 | `insufficient_or_invalid` | flux engagement not validated, the KIF18A control failed, BubR1 level unmeasured, or a required readout missing |
 
 Harm is assigned whatever the missegregation result; no benefit verdict overrides it.

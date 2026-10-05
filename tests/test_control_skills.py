@@ -375,7 +375,11 @@ def test_absence_of_a_known_bubr1_link_is_never_recorded_as_independence():
     for n in dep:
         outcomes = set(n["outcomes"])
         assert "unestablished" in outcomes, f"{n['id']} cannot record an untested dependency"
-        assert any(o.startswith("requires_bubr1") for o in outcomes), f"{n['id']}"
+        # Matched on meaning, not on a name prefix: DEP_FLUX now distinguishes a benefit that
+        # *exploits* residual BubR1 (a compensatory route) from one that vanishes without it, and a
+        # prefix check would have forced those two very different results to share a label.
+        assert any("bubr1" in o for o in outcomes), (
+            f"{n['id']} records no outcome in which the candidate depends on BubR1")
         assert "independence" not in n["why_unresolved"].lower() or "not independence" in \
             n["why_unresolved"].lower() or "not evidence" in n["why_unresolved"].lower(), n["id"]
 
@@ -606,3 +610,60 @@ def test_robust_and_conditional_reachability_are_distinguished():
         "no single admissible result should close the cell-level state")
     assert M.blocking_outcomes(d, organism), (
         "the organism target is only conditionally reachable; if nothing closes it the map is too kind")
+
+
+def test_a_bubr1_dependent_benefit_is_a_route_not_a_failure():
+    """Independence classifies a route; it does not grade the result.
+
+    The functional target is low missegregation with the population preserved — it never required the
+    route to avoid BubR1. So a benefit that exploits residual protein is a compensatory route, the
+    third strategy between repair and bypass, and it must still reach the target. Only a benefit that
+    vanishes in the limiting regime closes, because then it needs more protein than the case has.
+    """
+    M, d = _route_map()
+    nodes = {n["id"]: n for n in d["nodes"]}
+    dep = next(n for n in d["nodes"] if n["id"] == "DEP_FLUX")
+    comp = dep["outcomes"]["benefit_requires_residual_bubr1"]
+    assert nodes[comp]["kind"] != "terminal", "a compensatory benefit must not terminate"
+    reached = M.cost(d, decided={"DEP_FLUX": "benefit_requires_residual_bubr1",
+                                 "SAFE01": "preserved"}).get(M.goal(d))
+    assert reached is not None and not reached, (
+        "a population-preserving, BubR1-dependent rescue must still reach the cell-level state")
+    gone = dep["outcomes"]["benefit_absent_in_limiting_regime"]
+    assert nodes[gone]["kind"] == "terminal", (
+        "losing the benefit in the limiting regime is the one result that closes this route")
+
+
+def test_robust_reachability_is_not_claimed():
+    """Single-outcome resilience is a weaker claim and must not be reported as robustness."""
+    import inspect
+
+    M, d = _route_map()
+    doc = inspect.getdoc(M.blocking_outcomes) or ""
+    assert "SINGLE_OUTCOME_RESILIENCE" in doc, "the metric must name itself honestly"
+    rendered = M.render(d)
+    line = next(l for l in rendered.splitlines() if "ROBUST_REACHABILITY" in l)
+    assert "NOT_ESTABLISHED" in line, line
+    assert "SINGLE_OUTCOME_RESILIENT" in rendered
+    assert "SINGLE_OUTCOME_RESILIENT" in rendered.split("## Reachability")[1].split("##")[0]
+
+
+def test_a_grounded_fact_is_evidenced_or_derived():
+    """Otherwise it is an assertion wearing the word "grounded"."""
+    M, d = _route_map()
+    for g in d["grounded_facts"]:
+        assert g.get("evidence") or g.get("derivation"), g["id"]
+    assert not M.validate(d)
+
+
+def test_char01_does_not_read_a_transcript_change_two_ways():
+    """An altered transcript cannot be both a biological class and a validity failure.
+
+    Protein stability cannot be read off an arm whose transcript level differs, so the condition is
+    uninterpretable for this question. Letting it also name a biological result would mean the same
+    observation both assigns and voids a verdict.
+    """
+    text = (ROOT / "docs/control/CHAR01_EXECUTION_PACKET.md").read_text()
+    assert "validity failure, never a biological result" in text
+    assert "altered transcript" not in text.split("## 4.")[0].split("| `destabilised_other_mechanism`")[1].split("|")[1]
+    assert "simple abundance-limited instability is not demonstrated" in text

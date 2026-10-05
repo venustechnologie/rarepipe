@@ -76,17 +76,26 @@ SAFE01 appears in two campaigns because it is component-specific: whichever camp
 | `FUNCTIONAL_CELLULAR_TARGET` | 2: `DEP_FLUX`, `SAFE01` | 1: `FLUX01` | none |
 | `ORGANISM_TARGET` | 7: `ACT_SAFETY01`, `DEP_FLUX`, `IRREV01`, `SAFE01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | 6: `FLUX01`, `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` | `ACT_SAFETY01`, `IRREV01`, `SAFE_ORG`, `XSCALE01`, `XSCALE02` |
 
-## Reachability: conditional and robust
+## Reachability
 
-Conditional reachability is whether a destination is reachable if the branches fall a particular
-way. Robust reachability asks whether any single admissible result can close it. No probability
-is attached to either, and none is available.
+Three distinct claims, and only two of them are computed here.
 
-| destination | conditional | robust | single results that close it |
+- `CONDITIONAL_REACHABLE` — reachable if the branches fall a particular way.
+- `SINGLE_OUTCOME_RESILIENT` — no *single* admissible result closes it. One branch is perturbed
+  at a time.
+- `ROBUST_REACHABILITY` — **`NOT_ESTABLISHED`.** It would require every admissible combination
+  of outcomes across all branches, and this tool searches no such policy space. An earlier
+  version of this section called single-outcome resilience "robust", which overstated it.
+
+No probability is attached to any of them, and none is available.
+
+| destination | `CONDITIONAL_REACHABLE` | `SINGLE_OUTCOME_RESILIENT` | single results that close it |
 |---|---|---|---|
-| `CANONICAL_CELLULAR_STATE` | yes, 5 branch(es) | **yes** | none |
-| `FUNCTIONAL_CELLULAR_TARGET` | yes, 2 branch(es) | **yes** | none |
-| `ORGANISM_TARGET` | yes, 7 branch(es) | no | `IRREV01`=`established_and_fixed`, `IRREV01`=`unestablished`, `SAFE_ORG`=`harm`, `SAFE_ORG`=`unassessable`, `XSCALE01`=`no_aggregate`, `XSCALE01`=`untestable`, and 2 more |
+| `CANONICAL_CELLULAR_STATE` | YES, 5 branch(es) | **YES** | none |
+| `FUNCTIONAL_CELLULAR_TARGET` | YES, 2 branch(es) | **YES** | none |
+| `ORGANISM_TARGET` | YES, 7 branch(es) | NO | `IRREV01`=`established_and_fixed`, `IRREV01`=`unestablished`, `SAFE_ORG`=`harm`, `SAFE_ORG`=`unassessable`, `XSCALE01`=`no_aggregate`, `XSCALE01`=`untestable`, and 2 more |
+
+`ROBUST_REACHABILITY` is `NOT_ESTABLISHED` for every row above.
 
 ## Every FLUX01 result, decided in advance
 
@@ -98,7 +107,8 @@ the branch outcomes it implies, and the continuation is computed rather than wai
 | `lower_missegregation_population_preserved` | **reached** | 5 left | the cell-level functional state is reached by a non-canonical route; the risk gate `ACT_SAFETY01` becomes live and the tissue scale opens |
 | `lower_missegregation_population_harmed` | 3 left | 8 left | `SAFE01` closes on safety grounds; no benefit verdict overrides it, and the flux component is out as a route whatever it did to missegregation |
 | `no_reduction` | 5 left | 9 left | flux is not the controllable physics for this state; `C_KIF18A` remains the other named alignment candidate and the abundance family is untouched |
-| `effect_requires_residual_bubr1` | 5 left | 9 left | the bypass premise fails for this component — it is not independent of the protein it was meant to work around |
+| `lower_missegregation_benefit_needs_residual_bubr1` | **reached** | 5 left |  |
+| `benefit_absent_in_limiting_regime` | 5 left | 9 left |  |
 | `insufficient_or_invalid` | 7 left | 11 left | nothing moves; the named validity gate is repeated at BubR1-limiting |
 
 ## Priorities, reported separately
@@ -181,6 +191,7 @@ state and a chain whose remaining steps are grounded:
 - `SAFE01` = `preserved` → then only `DEP_FLUX` remains
 - `SAFE02` = `preserved` → then only `DEP_FLUX` remains
 - `DEP_FLUX` = `independent_of_bubr1` → then only `SAFE01` remains
+- `DEP_FLUX` = `benefit_requires_residual_bubr1` → then only `SAFE01` remains
 
 ## Branch nodes: every admissible outcome, continued
 
@@ -326,15 +337,16 @@ Does KIF18A support chromosome alignment when BubR1 is limiting, or does its con
 
 ### `DEP_FLUX`
 
-Does modifying poleward flux lower missegregation in a BubR1-limited background, and is the effect independent of residual BubR1?
+Does modifying poleward flux lower missegregation in a BubR1-limiting background, and is the benefit independent of residual BubR1 or does it exploit it?
 
 *Why unresolved:* Full-text adjudication: BubR1 appears zero times in 454 sentences, so dependency is wholly unaddressed and silence is not independence. What the full text does add is a positive mechanistic argument — by targeting poleward flux, chromosome alignment is affected independently of kinetochore attachment status, which is the axis BubR1 acts on — plus three mechanistically independent perturbations (low-dose taxol, HAUS8 or NuMA codepletion) that rescued misalignment, lagging chromosomes and micronuclei in human RPE-1 and in OVKATE cells, and a stated predictor of when it works (antiparallel overlap length). The misalignment rescued was flux-driven, not attachment-driven, which is the transfer this case needs.
 
 | outcome | leads to | route state from there |
 |---|---|---|
 | `independent_of_bubr1` | `S_FLUX_LOWERS_MIS` (state) | 1 still unresolved: `SAFE01` |
+| `benefit_requires_residual_bubr1` | `S_FLUX_COMPENSATORY` (state) | 1 still unresolved: `SAFE01` |
+| `benefit_absent_in_limiting_regime` | `T_FLUX_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
 | `no_reduction` | `S_FLUX_NOT_THE_LEVER` (state) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
-| `requires_bubr1` | `T_FLUX_DEPENDENT` (`NO_KNOWN_CONTINUATION`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
 | `unestablished` | `T_FLUX_FRONTIER` (`BOUNDED_FRONTIER`) | 2 still unresolved: `DEP_FLUX`, `SAFE01` |
 
 ### `DEP_TRIP13`
@@ -429,7 +441,7 @@ Does the manipulation avoid organism-level harm?
 | `CONTEXT_TRANSFER_REQUIRED` | 2 | the relation holds somewhere else and the transfer is unestablished |
 | `EXPERIMENTAL_UNKNOWN` | 23 | a branch node; outcomes enumerated above |
 | `PHYSICAL_ACTUATOR_MISSING` | 5 | the requirement is grounded and no component is known to supply it |
-| `CONCEPTUALLY_SUFFICIENT_ONLY` | 7 | sufficient in model; not a physical claim |
+| `CONCEPTUALLY_SUFFICIENT_ONLY` | 9 | sufficient in model; not a physical claim |
 | `UNSAFE` | 0 | closed on safety grounds |
 
 **`PHYSICAL_ACTUATOR_MISSING` transitions:**
@@ -466,6 +478,8 @@ boundary recorded, rather than being split into alternative worlds because it ha
   - *consequence:* This case is BubR1-limiting, not BubR1-null. Every dependency verdict in the literature is therefore about a different regime, and that is why each dependency branch keeps an `unestablished` outcome rather than resolving on the published work
 - **`G_LOCALISATION_NOT_FUNCTION`** — A BubR1-independent route can target a component to the kinetochore without being shown to deliver the component's function [PMID:38354735, PMID:41120314]
   - *consequence:* The same distinction Y155C forces inside this case: normal localisation with a dead function. A bypass candidate must be adjudicated on its function, never on its localisation
+- **`G_THREE_FAMILIES`** — Three route families are distinguishable once independence stops being a success criterion: F1 repairs or stabilises the defective protein, F2 supplies a lost function without it, and F3 exploits the residual function that is present while altering a different physical process [derived: Structural consequence of this map, not a literature claim: it follows from defining the functional target by the terminal cellular state and from DEP_FLUX carrying independence as a classification rather than a success criterion]
+  - *consequence:* F3 is only visible because the functional target is defined by the terminal cellular state rather than by the canonical trajectory. An approach that required repairing the gene first would not look for it
 - **`G_KEN_SELF_DEFEATING`** — The BubR1 KEN degron is also required for checkpoint function [PMID:17406666, PMID:20516114]
   - *consequence:* Degron disruption is excluded as a stabilisation route on function grounds, not evidence grounds
 
@@ -584,6 +598,7 @@ graph TD
   T_CENPE_DEPENDENT(("T_CENPE_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
   T_KIF18A_DEPENDENT(("T_KIF18A_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
   T_KIF18A_FRONTIER(("T_KIF18A_FRONTIER<br/>BOUNDED_FRONTIER"))
+  S_FLUX_COMPENSATORY["S_FLUX_COMPENSATORY"]
   S_FLUX_NOT_THE_LEVER["S_FLUX_NOT_THE_LEVER"]
   T_FLUX_DEPENDENT(("T_FLUX_DEPENDENT<br/>NO_KNOWN_CONTINUATION"))
   T_FLUX_FRONTIER(("T_FLUX_FRONTIER<br/>BOUNDED_FRONTIER"))
@@ -635,8 +650,9 @@ graph TD
   DEP_KIF18A -->|requires_bubr1| T_KIF18A_DEPENDENT
   DEP_KIF18A -->|unestablished| T_KIF18A_FRONTIER
   DEP_FLUX -->|independent_of_bubr1| S_FLUX_LOWERS_MIS
+  DEP_FLUX -->|benefit_requires_residual_bubr1| S_FLUX_COMPENSATORY
+  DEP_FLUX -->|benefit_absent_in_limiting_regime| T_FLUX_DEPENDENT
   DEP_FLUX -->|no_reduction| S_FLUX_NOT_THE_LEVER
-  DEP_FLUX -->|requires_bubr1| T_FLUX_DEPENDENT
   DEP_FLUX -->|unestablished| T_FLUX_FRONTIER
   DEP_TRIP13 -->|independent_and_specific| S_SIL_SUPPLIED
   DEP_TRIP13 -->|requires_bubr1| T_TRIP13_DEPENDENT
@@ -705,6 +721,8 @@ graph TD
   CANONICAL_CELLULAR_STATE -->|GROUNDED| S_MIS_LOWERED
   S_FLUX_NOT_THE_LEVER -.->|GROUNDED| C_KIF18A
   S_FLUX_NOT_THE_LEVER -.->|EXPERIMENTAL_UNKNOWN| CHAR01
+  S_FLUX_COMPENSATORY -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_MIS_LOWERED
+  S_FLUX_COMPENSATORY -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_ALIGN_SUPPLIED
   S_FLUX_LOWERS_MIS -->|CONCEPTUALLY_SUFFICIENT_ONLY| S_MIS_LOWERED
   S_FLUX_LOWERS_MIS -->|GROUNDED| S_ALIGN_SUPPLIED
   S_POP_SAFE_F1B -->|GROUNDED| S_POP_SAFE_ANY

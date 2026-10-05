@@ -56,8 +56,8 @@ Precommitted, from the map.
 | result | condition | what it means for F1 |
 |---|---|---|
 | `destabilised_like_reference` | C1 reduced versus W, C2 turnover elevated, C3 HSP90-dependent, C4 proteasomal, C5 transcript normal | the class premise holds for this allele; the abundance family is correctly framed and EXP01 is the next question |
-| `not_destabilised` | C1 comparable to W with C5 normal | the premise is wrong for this allele. The phenotype is then a direct functional defect — the Y155C regime, not the I909T regime — and the route goes to exact functional characterisation rather than to stabilisation |
-| `destabilised_other_mechanism` | C1 reduced but not HSP90-dependent, or not proteasomal, or with an altered transcript | abundance is reduced by a route where the P1/P2 grounding does not apply, so the stabilisation mechanisms in `MVA_STAB01_PROTOCOL.md` lose their basis for this allele |
+| `not_destabilised` | C1 comparable to W with C5 normal | **simple abundance-limited instability is not demonstrated in this construct; exact functional characterisation remains required.** That is the whole entitlement. It does not establish a direct functional defect, and it does not assign the allele to the Y155C regime — a construct in a cell line is not the child's protein, and this assay measures abundance, not function |
+| `destabilised_other_mechanism` | C1 reduced **with C5 normal**, but not HSP90-dependent or not proteasomal | abundance is reduced by a route where the P1/P2 grounding does not apply, so the stabilisation mechanisms in `MVA_STAB01_PROTOCOL.md` lose their basis for this allele |
 | `not_expressible` | no construct dose reaches W's level | an expression-validity result before a biological one: it opens `EXPRVAL01` and stabilisation, and does **not** close the abundance family |
 
 The last row is a deliberate correction. Failing to express a construct says something about the
@@ -70,8 +70,15 @@ means, declared before the test arms are read — **no numerical threshold is sp
 is grounded.** Blinding of the blot quantification to arm identity, with the key held outside the
 scoring record.
 
-Validity fails, and no result is assigned, if: R1 and R2 do not reproduce their published reduction
+Validity fails, and **no result is assigned**, if: R1 and R2 do not reproduce their published reduction
 relative to W; or Q921H does not come back normal; or C5 shows a transcript difference in the test arm.
+
+**On C5 specifically**, because the two readings must not overlap. A transcript difference in the test
+arm is a **validity failure, never a biological result**: protein stability cannot be read off an arm
+whose transcript level differs, so the condition is uninterpretable for this question and routes to
+expression-validity investigation rather than to any of the four results. Every result above therefore
+requires C5 normal, and `destabilised_other_mechanism` means "reduced abundance at normal transcript by a
+non-HSP90 or non-proteasomal route" — not "reduced transcript".
 
 ## 5. What this experiment cannot conclude
 
