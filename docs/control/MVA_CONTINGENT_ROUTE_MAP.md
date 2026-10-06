@@ -2132,6 +2132,18 @@ not be able to borrow the parent's support.
 
 **Falsification is asymmetric.** A negative result kills this bridge ONLY. LV1 rests on the four neighbourhoods sharing a phosphatase substrate and on the four-allele retrodiction, neither of which involves K668. A positive result creates a candidate cross-district mechanism connecting abundance control to phosphatase delivery — which is why it is worth asking even though the structural fact leans against it.
 
+**Required gate.** BubR1 abundance must be experimentally matched across the comparison conditions. If it is not matched the experiment is NON-INFORMATIVE for this bridge, because the established K668 stability effect confounds the recruitment readout. This is the same gate EXP01 and CHAR01 are built around and it is the reason the question is answerable at all.
+
+**Primary readout.** kinetochore PP2A-B56 recruitment, per kinetochore.
+
+| outcome | consequence |
+|---|---|
+| `recruitment_changes_at_matched_abundance` | BR1 supported. Opens a downstream co-movement test: whether the recruitment change moves the four LV1 readouts together. |
+| `recruitment_unchanged_at_matched_abundance` | BR1 closed. LV1 untouched — it rests on four neighbourhoods sharing a phosphatase substrate and on the four-allele retrodiction, neither of which involves K668. |
+| `abundance_not_matched` | Validity failure. No BR1 conclusion in either direction, and in particular no negative one. |
+
+**Promotion rule.** Structural proximity does not promote this. K668 sitting at the B56 interface is already established and is not evidence that its acetylation state changes recruitment — the residue is outside the three positions that carry binding, so the structural fact leans against. Only the matched-abundance result promotes it.
+
 *F1 and LV1 stay separate. This bridge is not in `edges`, not in `control_variables`, and contributes nothing to reachability.*
 
 ### `LV2_PROTEOSTASIS_CAPACITY` — BIOLOGICAL_LATENT_VARIABLE

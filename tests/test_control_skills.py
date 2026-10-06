@@ -1150,3 +1150,38 @@ def test_a_bridge_hypothesis_cannot_borrow_its_parents_support():
         blob = " ".join(parent["existing_evidence"]) + parent["why_one_variable_could_generate_all"]
         assert "K668" not in blob, (
             f"{parent['id']} leans on the bridge's residue for its own support")
+
+
+def test_br1_has_a_gate_that_makes_a_negative_result_meaningful():
+    """Without matched abundance the known stability effect confounds the recruitment readout.
+
+    So "no change" would be uninformative rather than negative, and the three admissible outcomes are
+    fixed to keep that distinction: supported, closed, or a validity failure that concludes nothing in
+    either direction.
+    """
+    M, d = _route_map()
+    br = next(h["bridge_hypothesis"] for h in d["latent_variable_hypotheses"]
+              if h.get("bridge_hypothesis"))
+    assert "matched" in br["required_gate"].lower()
+    assert "NON-INFORMATIVE" in br["required_gate"] or "non-informative" in br["required_gate"]
+    assert set(br["outcomes"]) == {"recruitment_changes_at_matched_abundance",
+                                   "recruitment_unchanged_at_matched_abundance",
+                                   "abundance_not_matched"}
+    assert "no br1 conclusion" in br["outcomes"]["abundance_not_matched"].lower()
+    assert "lv1 untouched" in br["outcomes"]["recruitment_unchanged_at_matched_abundance"].lower()
+    assert "PP2A-B56" in br["primary_readout"]
+
+
+def test_structural_proximity_does_not_promote_br1():
+    """K668 being at the interface is established and is not evidence about its acetylation state.
+
+    The structural fact leans against the bridge, since the residue sits outside the three positions
+    that carry binding. Only the matched-abundance result promotes it.
+    """
+    M, d = _route_map()
+    br = next(h["bridge_hypothesis"] for h in d["latent_variable_hypotheses"]
+              if h.get("bridge_hypothesis"))
+    assert "Structural proximity does not promote" in br["promotion_rule"]
+    assert "leans against" in br["promotion_rule"] or "against" in br["promotion_rule"]
+    assert br.get("inherits_nothing"), "BR1 must state that it inherits no support from LV1"
+    assert not M.validate(d)

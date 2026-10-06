@@ -237,6 +237,11 @@ def validate(d: dict) -> list[str]:
                 problems.append(f"{h['id']}: a bridge hypothesis must be NOT_ESTABLISHED")
             if br["id"] in node_ids or br["id"] in (d.get("control_variables") or {}):
                 problems.append(f"{br['id']} is part of the city")
+            if br.get("outcomes") and set(br["outcomes"]) != {
+                    "recruitment_changes_at_matched_abundance",
+                    "recruitment_unchanged_at_matched_abundance", "abundance_not_matched"}:
+                problems.append(f"{br['id']}: the three admissible outcomes are fixed, and one of them "
+                                "must be the validity failure where abundance was not matched")
             for field in ("what_is_established", "what_is_not_established", "discriminating_question",
                           "discriminating_experiment", "falsification_is_asymmetric"):
                 if not br.get(field):
@@ -1489,6 +1494,18 @@ def render(d: dict) -> str:
             A("")
             A(f"**Falsification is asymmetric.** {' '.join(br['falsification_is_asymmetric'].split())}")
             A("")
+            if br.get("required_gate"):
+                A(f"**Required gate.** {' '.join(br['required_gate'].split())}")
+                A("")
+                A(f"**Primary readout.** {br['primary_readout']}.")
+                A("")
+                A("| outcome | consequence |")
+                A("|---|---|")
+                for k, v in br["outcomes"].items():
+                    A(f"| `{k}` | {' '.join(v.split())} |")
+                A("")
+                A(f"**Promotion rule.** {' '.join(br['promotion_rule'].split())}")
+                A("")
             A(f"*{' '.join(br['does_not_merge'].split())}*")
             A("")
     A("### Negative results")

@@ -1707,6 +1707,25 @@ latent_variable_hypotheses:
         structural fact leans against it."
       does_not_merge: "F1 and LV1 stay separate. This bridge is not in `edges`, not in
         `control_variables`, and contributes nothing to reachability."
+      required_gate: "BubR1 abundance must be experimentally matched across the comparison conditions.
+        If it is not matched the experiment is NON-INFORMATIVE for this bridge, because the
+        established K668 stability effect confounds the recruitment readout. This is the same gate
+        EXP01 and CHAR01 are built around and it is the reason the question is answerable at all."
+      primary_readout: "kinetochore PP2A-B56 recruitment, per kinetochore"
+      outcomes:
+        recruitment_changes_at_matched_abundance: "BR1 supported. Opens a downstream co-movement test:
+          whether the recruitment change moves the four LV1 readouts together."
+        recruitment_unchanged_at_matched_abundance: "BR1 closed. LV1 untouched — it rests on four
+          neighbourhoods sharing a phosphatase substrate and on the four-allele retrodiction, neither
+          of which involves K668."
+        abundance_not_matched: "Validity failure. No BR1 conclusion in either direction, and in
+          particular no negative one."
+      promotion_rule: "Structural proximity does not promote this. K668 sitting at the B56 interface
+        is already established and is not evidence that its acetylation state changes recruitment —
+        the residue is outside the three positions that carry binding, so the structural fact leans
+        against. Only the matched-abundance result promotes it."
+      inherits_nothing: "BR1 may not borrow LV1's four-neighbourhood support or its allele
+        retrodiction. Neither mentions K668, and a test asserts the parent never cites it."
 
   - id: LV2_PROTEOSTASIS_CAPACITY
     kind: BIOLOGICAL_LATENT_VARIABLE

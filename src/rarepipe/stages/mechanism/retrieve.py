@@ -18,7 +18,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from rarepipe.core.artifacts import utc_now
-from rarepipe.stages.adjudicate.disclosure import DisclosureRefused, check_query
+from rarepipe.stages.adjudicate.disclosure import (
+    DisclosureRefused, PublicResidueProvenance, check_query,
+)
 from rarepipe.stages.mechanism.model import QueryRecord, RetrievedDocument
 
 SEARCH_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
@@ -79,13 +81,14 @@ class RetrievalRefused(ValueError):
     pass
 
 
-def check_search_query(query: str) -> str:
+def check_search_query(query: str, *, provenance: PublicResidueProvenance | None = None,
+                       private_residues: frozenset[str] = frozenset()) -> str:
     """Two gates: no case identity out, no therapeutic intent in.
 
     Perturbation vocabulary is deliberately allowed: inhibition, knockdown, depletion and degradation
     are how experimental biology establishes a mechanism. Therapeutic framing is still refused.
     """
-    check_query(query)
+    check_query(query, provenance=provenance, private_residues=private_residues)
     if THERAPEUTIC_INTENT_TERMS.search(query):
         raise RetrievalRefused(
             f"query carries therapeutic intent, which Stage 06 must not start: {query!r}. Searching for a "

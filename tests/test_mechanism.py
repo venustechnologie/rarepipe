@@ -566,3 +566,80 @@ def test_a_superseding_analysis_session_replaces_the_earlier_one(tmp_path):
         (folder / f"{sid}.json").write_text(_json.dumps({"session": session, **base}))
     sessions, *_ = load_analyses(tmp_path)
     assert [s.session_id for s in sessions] == ["LLMRS_0002"]
+
+
+# ── provenance-aware residue release ────────────────────────────────────────
+
+def test_a_residue_leaves_the_boundary_only_when_a_stored_source_attests_it():
+    """Not a whitelist of residue syntax. Positive, checkable evidence that the residue is published.
+
+    The default stays fail-closed. A residue token may go out only when the caller names the public
+    source and that source's committed text carries the token — so the licence is per token, per
+    source, and auditable after the fact rather than a claim made at call time.
+    """
+    from pathlib import Path
+
+    from rarepipe.stages.adjudicate.disclosure import PublicResidueProvenance
+
+    root = Path(__file__).resolve().parents[1] / "data/literature/mva-bypass-v1"
+    good = PublicResidueProvenance(residues=("K668", "L669", "I672", "E674"),
+                                   source_id="PMID:33892776", corpus_roots=(root,),
+                                   reason="published KARD/B56 motif residues")
+    assert check_search_query("BubR1 K668 B56 binding", provenance=good)
+    assert check_search_query("BubR1 L669 I672 E674 motif", provenance=good)
+
+    # no provenance: unchanged behaviour
+    with pytest.raises(DisclosureRefused):
+        check_search_query("BubR1 K668 B56 binding")
+    # a token the provenance does not name, or that the source does not carry
+    with pytest.raises(DisclosureRefused):
+        check_search_query("BubR1 Q999 binding", provenance=good)
+    # a source that is not in the snapshot cannot attest anything
+    absent = PublicResidueProvenance(residues=("K668",), source_id="PMID:99999999",
+                                     corpus_roots=(root,))
+    with pytest.raises(DisclosureRefused):
+        check_search_query("BubR1 K668 binding", provenance=absent)
+
+
+def test_provenance_never_releases_identity_grade_patterns():
+    """A coordinate, an rsID, a ClinVar id or an HPO code is identifying whatever its origin."""
+    from pathlib import Path
+
+    from rarepipe.stages.adjudicate.disclosure import PublicResidueProvenance
+
+    root = Path(__file__).resolve().parents[1] / "data/literature/mva-bypass-v1"
+    prov = PublicResidueProvenance(residues=("K668",), source_id="PMID:33892776", corpus_roots=(root,))
+    for identifying in ("chr15:40000000 BUB1B", "rs12345678 BUB1B", "HP:0001249 BUB1B",
+                        "NM_001211.6:c.2211A>G"):
+        with pytest.raises(DisclosureRefused):
+            check_search_query(identifying, provenance=prov)
+
+
+def test_a_residue_from_the_private_case_stays_refused_however_well_attested():
+    """The private boundary is not a question of whether a string is public somewhere.
+
+    This check now runs first and on every residue-like token, which is what the provenance work
+    exposed: a bare position such as "K668" matched no pattern at all, so the cross-check against the
+    case's own residue had nothing to compare and a private position could have gone out unexamined.
+    """
+    from pathlib import Path
+
+    from rarepipe.stages.adjudicate.disclosure import PublicResidueProvenance, check_query
+
+    root = Path(__file__).resolve().parents[1] / "data/literature/mva-bypass-v1"
+    prov = PublicResidueProvenance(residues=("K668",), source_id="PMID:33892776", corpus_roots=(root,))
+    with pytest.raises(DisclosureRefused) as caught:
+        check_search_query("BubR1 K668 binding", provenance=prov,
+                           private_residues=frozenset({"K668"}))
+    assert "private case" in str(caught.value)
+    # and with no provenance at all, for a position that trips the pattern on its own
+    with pytest.raises(DisclosureRefused):
+        check_query("BUBR1 N1067 function", private_residues=frozenset({"N1067"}))
+
+
+def test_a_bare_residue_position_is_gated_at_all():
+    """It was not. "K668" matched no case-specific pattern before this work."""
+    from rarepipe.stages.adjudicate.disclosure import case_specific_reasons
+
+    assert "residue position" in case_specific_reasons("BubR1 K668 acetylation")
+    assert case_specific_reasons("BUBR1 protein abundance") == []
