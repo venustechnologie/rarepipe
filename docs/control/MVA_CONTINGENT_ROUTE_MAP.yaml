@@ -1502,6 +1502,23 @@ edges:
 # Two kinds are distinguished. A STRUCTURAL hypothesis is a claim about this graph and is verifiable
 # by reading it. A BIOLOGICAL hypothesis is a claim about the world and needs evidence or an
 # experiment before it may be believed, let alone traversed.
+# ---------------------------------------------------------------- bench handoff
+# A scheduling property, not a biological one. Each of the three may be run and read without knowing
+# either of the others' outcomes. They may well share mechanism — LV1 proposes that some of them do —
+# and nothing here claims otherwise. What is claimed is narrower: no result is a prerequisite for
+# executing or interpreting another, so they can go to a bench in any order or at once.
+bench_handoff:
+  status: NO_CROSS_PREREQUISITE
+  not_a_claim_of: "biological independence"
+  questions: [CHAR01, FLUX01, BR1_K668_ACETYLATION_TO_PHOSPHATASE_DELIVERY]
+  matrix: docs/control/MVA_BENCH_EXECUTION_MATRIX.md
+  unranked: "The three are not ordered and none is conditional on another. A matrix, not a sequence."
+  private_boundary: "CHAR01's exact substitution stays in the private layer. It is supplied to a
+    synthesis provider as a sequence through that channel and appears in no external order, report or
+    query. FLUX01 and BR1 name no case residue at all — BR1's K668 is a published residue in the
+    central region, and this child's missense allele is in the kinase domain, so they are different
+    positions and neither document discloses the other."
+
 hypotheses:
   - id: H_M1_SHARED_PLATFORM
     kind: STRUCTURAL

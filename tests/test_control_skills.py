@@ -1210,3 +1210,68 @@ def test_br1_semantics_are_frozen_and_no_readout_may_substitute():
     for forbidden in ("patient relevance", "therapeutic suitability"):
         assert forbidden in br["cannot_conclude"]
     assert not M.validate(d)
+
+
+def test_the_bench_matrix_matches_the_structured_sources():
+    """A third place to state the outcomes is a third place for them to drift.
+
+    The matrix is hand-written because a lab reads it, so nothing generates it — which means the
+    admissible outcomes it lists must be checked against the sources that declare them: CHAR01's
+    branch, FLUX01's campaign, and BR1's frozen entry.
+    """
+    M, d = _route_map()
+    text = (ROOT / "docs/control/MVA_BENCH_EXECUTION_MATRIX.md").read_text()
+    nodes = {n["id"]: n for n in d["nodes"]}
+
+    for outcome in nodes["CHAR01"]["outcomes"]:
+        assert f"`{outcome}`" in text, f"CHAR01 outcome {outcome!r} missing from the matrix"
+    flux = next(c for c in d["campaigns"] if c["id"] == "FLUX01")
+    for outcome in flux["outcomes"]:
+        assert f"`{outcome}`" in text, f"FLUX01 outcome {outcome!r} missing from the matrix"
+    br = next(h["bridge_hypothesis"] for h in d["latent_variable_hypotheses"]
+              if h.get("bridge_hypothesis"))
+    for outcome in br["outcomes"]:
+        assert f"`{outcome}`" in text, f"BR1 outcome {outcome!r} missing from the matrix"
+    assert br["primary_measurement"].lower() in text.lower()
+    for forbidden in br["may_not_substitute"]:
+        assert forbidden.replace("_", " ") in text.lower(), (
+            f"the matrix omits {forbidden!r} from the substitutions BR1 must refuse")
+
+
+def test_the_three_are_declared_no_cross_prerequisite_and_not_independent():
+    """The claim is about scheduling, and overclaiming it would be the easy mistake.
+
+    LV1 proposes that some of these districts share mechanism and BR1 exists because one such
+    connection is plausible. So the matrix may say no result gates another's execution; it may not say
+    the three are biologically unrelated.
+    """
+    M, d = _route_map()
+    handoff = d["bench_handoff"]
+    assert handoff["status"] == "NO_CROSS_PREREQUISITE"
+    assert handoff["not_a_claim_of"] == "biological independence"
+    assert len(handoff["questions"]) == 3
+    assert "unranked" in handoff and "not ordered" in handoff["unranked"]
+    text = (ROOT / "docs/control/MVA_BENCH_EXECUTION_MATRIX.md").read_text()
+    assert "not biological independence" in text.lower()
+    assert "not ranked" in text.lower()
+    for banned in ("shortest", "highest leverage", "first experiment", "best next"):
+        assert banned not in text.lower(), f"the matrix ranks the three: {banned!r}"
+
+
+def test_the_matrix_does_not_externalise_the_private_substitution():
+    """CHAR01's substitution stays local. The handoff names a panel, not a residue.
+
+    The published reference residues are fine — they are attested in the committed snapshot. What must
+    not appear is anything that would localise this child's position.
+    """
+    import re
+
+    text = (ROOT / "docs/control/MVA_BENCH_EXECUTION_MATRIX.md").read_text()
+    published = {"I909T", "L1012P", "Y155C", "R550Q", "Q921H", "K668", "L669", "I672", "E674"}
+    # First letter restricted to the amino-acid single-letter codes, as the disclosure guard does.
+    # Without that, subunit names like B56 read as residues and the check cries wolf.
+    found = set(re.findall(r"\b[ACDEFGHIKLMNPQRSTVWY]\d{2,5}[A-Z]?\b", text))
+    assert found <= published, f"unexpected residue tokens in the handoff: {sorted(found - published)}"
+    assert "stays local" in text or "stays in the private layer" in text
+    for leak in ("hgvs", "chr15", "p.(", "NM_"):
+        assert leak.lower() not in text.lower(), f"identity-grade token in the handoff: {leak!r}"
