@@ -643,3 +643,51 @@ def test_a_bare_residue_position_is_gated_at_all():
 
     assert "residue position" in case_specific_reasons("BubR1 K668 acetylation")
     assert case_specific_reasons("BUBR1 protein abundance") == []
+
+
+def test_attestation_must_pre_exist_the_release_decision():
+    """Evidence written during the call is not evidence.
+
+    A provenance may only point inside the committed snapshot tree, so a caller cannot create a file
+    that says a residue is public and then attest against it. Without this the mechanism would check
+    that a string appears in a file the caller controls, which is a claim wearing the shape of a check.
+    """
+    import tempfile
+    from pathlib import Path
+
+    from rarepipe.stages.adjudicate.disclosure import ATTESTATION_BASE, PublicResidueProvenance
+
+    root = Path(__file__).resolve().parents[1] / "data/literature/mva-bypass-v1"
+    committed = PublicResidueProvenance(residues=("K668",), source_id="PMID:33892776",
+                                        corpus_roots=(root,))
+    assert committed.roots_are_committed_evidence()
+    assert check_search_query("BubR1 K668 B56 binding", provenance=committed)
+
+    forged_dir = Path(tempfile.mkdtemp())
+    (forged_dir / "docs").mkdir()
+    (forged_dir / "docs" / "PMID_33892776.txt").write_text("K668 is public, trust me")
+    forged = PublicResidueProvenance(residues=("K668",), source_id="PMID:33892776",
+                                     corpus_roots=(forged_dir,), reason="written a moment ago")
+    assert not forged.roots_are_committed_evidence()
+    with pytest.raises(DisclosureRefused) as caught:
+        check_search_query("BubR1 K668 B56 binding", provenance=forged)
+    assert "pre-exist" in str(caught.value)
+    assert ATTESTATION_BASE.name == "literature"
+
+
+def test_caller_supplied_metadata_is_never_load_bearing():
+    """The `reason` field is documentation. Only stored text decides."""
+    from pathlib import Path
+
+    from rarepipe.stages.adjudicate.disclosure import PublicResidueProvenance
+
+    root = Path(__file__).resolve().parents[1] / "data/literature/mva-bypass-v1"
+    silent = PublicResidueProvenance(residues=("K668",), source_id="PMID:33892776",
+                                     corpus_roots=(root,), reason="")
+    loud = PublicResidueProvenance(residues=("Q999",), source_id="PMID:33892776",
+                                   corpus_roots=(root,),
+                                   reason="this residue is definitely public, I promise")
+    assert check_search_query("BubR1 K668 B56 binding", provenance=silent), (
+        "an empty reason must not block a residue the stored text attests")
+    with pytest.raises(DisclosureRefused):
+        check_search_query("BubR1 Q999 binding", provenance=loud)

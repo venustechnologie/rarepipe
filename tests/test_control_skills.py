@@ -1185,3 +1185,28 @@ def test_structural_proximity_does_not_promote_br1():
     assert "leans against" in br["promotion_rule"] or "against" in br["promotion_rule"]
     assert br.get("inherits_nothing"), "BR1 must state that it inherits no support from LV1"
     assert not M.validate(d)
+
+
+def test_br1_semantics_are_frozen_and_no_readout_may_substitute():
+    """Frozen means the fields are fixed and the forbidden substitutions are named.
+
+    Alignment, cohesion, silencing and missegregation are precisely the readouts LV1 predicts co-move.
+    Accepting any of them as evidence for BR1 would confirm the bridge from the observations that
+    motivated the parent, which is the back door the firewall exists to close.
+    """
+    M, d = _route_map()
+    br = next(h["bridge_hypothesis"] for h in d["latent_variable_hypotheses"]
+              if h.get("bridge_hypothesis"))
+    assert br.get("frozen") is True
+    assert "matched BubR1 abundance" in br["discriminating_question"]
+    assert "PP2A-B56" in br["primary_measurement"]
+    assert set(br["may_not_substitute"]) == {"chromosome_alignment", "cohesion",
+                                             "checkpoint_silencing", "missegregation"}
+    assert br["primary_measurement"] not in br["may_not_substitute"]
+    assert len(br["supporting_measurements"]) >= 4
+    assert any("viability" in m for m in br["supporting_measurements"])
+    assert "NON_INFORMATIVE_FOR_BR1" in br["outcomes"]["abundance_not_matched"]
+    assert "never negative" in br["outcomes"]["abundance_not_matched"]
+    for forbidden in ("patient relevance", "therapeutic suitability"):
+        assert forbidden in br["cannot_conclude"]
+    assert not M.validate(d)

@@ -2126,7 +2126,7 @@ not be able to borrow the parent's support.
 
 **Not established.** Any relation between the acetylation state and recruitment. No retrieved source connects them, and the structural fact argues mildly against it: K668 lies outside the three positions that carry B56 binding.
 
-**Discriminating question.** Does K668 acetylation state alter kinetochore PP2A-B56 recruitment independently of BubR1 abundance?
+**Discriminating question.** At experimentally matched BubR1 abundance, does K668 state alter kinetochore PP2A-B56 recruitment?
 
 **Experiment.** Compare acetylation-mimetic and non-acetylatable K668 constructs at MATCHED abundance, and measure kinetochore PP2A-B56 per kinetochore. Matched abundance is the whole design: without it the known stability effect confounds the recruitment readout.
 
@@ -2140,9 +2140,15 @@ not be able to borrow the parent's support.
 |---|---|
 | `recruitment_changes_at_matched_abundance` | BR1 supported. Opens a downstream co-movement test: whether the recruitment change moves the four LV1 readouts together. |
 | `recruitment_unchanged_at_matched_abundance` | BR1 closed. LV1 untouched — it rests on four neighbourhoods sharing a phosphatase substrate and on the four-allele retrodiction, neither of which involves K668. |
-| `abundance_not_matched` | Validity failure. No BR1 conclusion in either direction, and in particular no negative one. |
+| `abundance_not_matched` | NON_INFORMATIVE_FOR_BR1. No BR1 conclusion in either direction, and explicitly never negative evidence: an unmatched comparison cannot close this bridge. |
 
 **Promotion rule.** Structural proximity does not promote this. K668 sitting at the B56 interface is already established and is not evidence that its acetylation state changes recruitment — the residue is outside the three positions that carry binding, so the structural fact leans against. Only the matched-abundance result promotes it.
+
+**Supporting measurements.** total BubR1 abundance; kinetochore BubR1; K668-state or target-engagement measurement, where one is experimentally available; standard viability, cell death and division safeguards.
+
+**May not substitute for the primary measurement:** `chromosome_alignment`, `cohesion`, `checkpoint_silencing`, `missegregation`. None of those four may stand in for the primary recruitment measurement. They are the readouts LV1 predicts co-move, so accepting one of them as evidence for BR1 would let the bridge borrow the parent's support through the back door — and it would confirm BR1 from exactly the observations that motivated LV1 instead of from the recruitment question BR1 actually asks. A change in any of them, with recruitment unmeasured, leaves BR1 unresolved.
+
+**Cannot conclude.** patient relevance, therapeutic suitability, anything about LV1, in either direction.
 
 *F1 and LV1 stay separate. This bridge is not in `edges`, not in `control_variables`, and contributes nothing to reachability.*
 

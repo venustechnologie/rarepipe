@@ -237,6 +237,24 @@ def validate(d: dict) -> list[str]:
                 problems.append(f"{h['id']}: a bridge hypothesis must be NOT_ESTABLISHED")
             if br["id"] in node_ids or br["id"] in (d.get("control_variables") or {}):
                 problems.append(f"{br['id']} is part of the city")
+            if br.get("frozen"):
+                for field in ("primary_measurement", "supporting_measurements", "may_not_substitute",
+                              "substitution_prohibition", "cannot_conclude"):
+                    if not br.get(field):
+                        problems.append(f"{br['id']}: frozen semantics require {field}")
+                if br.get("primary_measurement") in (br.get("may_not_substitute") or []):
+                    problems.append(f"{br['id']}: the primary measurement cannot also be forbidden")
+                # The outcomes speak of recruitment and the primary measurement names the quantity
+                # that recruitment is read from. What must hold is that they are about the same thing,
+                # not that they use the same word.
+                if any("recruitment" in k for k in (br.get("outcomes") or {})) and \
+                        "PP2A-B56" not in br["primary_measurement"]:
+                    problems.append(f"{br['id']}: the outcomes turn on recruitment, so the primary "
+                                    "measurement must be the PP2A-B56 quantity it is read from")
+                nonneg = (br.get("outcomes") or {}).get("abundance_not_matched", "")
+                if "NON_INFORMATIVE_FOR_BR1" not in nonneg or "never negative" not in nonneg:
+                    problems.append(f"{br['id']}: the unmatched outcome must be labelled "
+                                    "NON_INFORMATIVE_FOR_BR1 and stated never to be negative evidence")
             if br.get("outcomes") and set(br["outcomes"]) != {
                     "recruitment_changes_at_matched_abundance",
                     "recruitment_unchanged_at_matched_abundance", "abundance_not_matched"}:
@@ -1505,6 +1523,15 @@ def render(d: dict) -> str:
                     A(f"| `{k}` | {' '.join(v.split())} |")
                 A("")
                 A(f"**Promotion rule.** {' '.join(br['promotion_rule'].split())}")
+                A("")
+            if br.get("frozen"):
+                A("**Supporting measurements.** " + "; ".join(br["supporting_measurements"]) + ".")
+                A("")
+                A("**May not substitute for the primary measurement:** "
+                  + ", ".join("`" + x + "`" for x in br["may_not_substitute"]) + ". "
+                  + " ".join(br["substitution_prohibition"].split()))
+                A("")
+                A("**Cannot conclude.** " + ", ".join(br["cannot_conclude"]) + ".")
                 A("")
             A(f"*{' '.join(br['does_not_merge'].split())}*")
             A("")

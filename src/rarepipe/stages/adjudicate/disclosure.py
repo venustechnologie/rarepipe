@@ -35,6 +35,11 @@ CASE_SPECIFIC_PATTERNS: list[tuple[str, re.Pattern]] = [
 
 # Residue-shaped patterns are the only ones a public provenance can release. A coordinate, an rsID, a
 # ClinVar id or an HPO code is identity-grade whatever its origin, so provenance never unlocks those.
+# Attestation must pre-exist the release decision. A provenance may therefore only point at the
+# committed literature snapshots: a caller cannot write a file during the call and attest against it,
+# and nothing it supplies as metadata is consulted — only the stored text is.
+ATTESTATION_BASE = Path(__file__).resolve().parents[4] / "data" / "literature"
+
 RESIDUE_SHAPED = {"protein change shorthand", "residue position", "HGVS protein"}
 RESIDUE_TOKEN = re.compile(
     r"\b[A-Z]\d{2,5}[A-Z]\b"                      # K668A
@@ -57,6 +62,21 @@ class PublicResidueProvenance:
     corpus_roots: tuple[Path, ...]
     reason: str = ""
 
+    def roots_are_committed_evidence(self) -> bool:
+        """Every root must lie inside the committed snapshot tree.
+
+        This is what makes the attestation pre-existing rather than manufactured: a scratch directory
+        written during the call cannot attest anything, however the provenance describes itself.
+        """
+        if not self.corpus_roots:
+            return False
+        for root in self.corpus_roots:
+            try:
+                Path(root).resolve().relative_to(ATTESTATION_BASE)
+            except (ValueError, OSError):
+                return False
+        return True
+
     def attested(self, token: str) -> bool:
         """The token must be found verbatim in committed text that also names the attesting source.
 
@@ -66,7 +86,7 @@ class PublicResidueProvenance:
         committed, auditable attestation rather than a claim made at call time. The manifest must name
         both the token and the source, so one source's record cannot attest another's residue.
         """
-        if token not in self.residues:
+        if token not in self.residues or not self.roots_are_committed_evidence():
             return False
         stem = self.source_id.replace(":", "_")
         for root in self.corpus_roots:
@@ -120,6 +140,10 @@ def check_query(query: str, *, provenance: PublicResidueProvenance | None = None
         return query
     if provenance is None or set(reasons) - RESIDUE_SHAPED or not tokens:
         raise DisclosureRefused(query, ", ".join(reasons))
+    if not provenance.roots_are_committed_evidence():
+        raise DisclosureRefused(
+            query, "the provenance does not point at committed snapshot evidence, so its attestation "
+                   "does not pre-exist this release decision")
     unattested = sorted(t for t in tokens if not provenance.attested(t))
     if unattested:
         raise DisclosureRefused(
