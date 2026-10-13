@@ -117,13 +117,55 @@ def build(count: int = DEFAULT_COUNT, horizon: int = DEFAULT_HORIZON) -> dict:
         sealed[source["name"]] = split_set.describe()
 
     # ---- the Arm E baseline, which is a self-test and never a competitive claim ----
-    # Reuses the episodes already generated above. Regenerating them would double the most
-    # expensive part of this build for an identical set.
-    baseline_splits = splits.split_episodes(episodes, salt=f"{SPLIT_SALT}:MVA_001")
-    baseline = runner.run(
-        graph, baseline_splits, (arms.engine_only(),), campaigns=campaigns,
-        split=splits.DEVELOPMENT, horizon=horizon, repeats=2,
-        constraints=constraints, graph_ref=graph_ref)
+    # Run across every source, not only the real map. On MVA at this horizon no robust policy
+    # exists, so there is no plan to judge and outcome coverage and safety error would read "never
+    # applied" — and a metric that is never applied in the published report is one no reader can
+    # tell works. The synthetic sources do have policies, so every metric gets exercised here.
+    runnable: list[tuple[str, object, tuple, int, object]] = [
+        ("MVA_001", graph, campaigns, horizon, constraints)
+    ]
+    for case in synthetic.catalogue():
+        runnable.append((case.name, case.graph, case.campaigns, 4, Constraints()))
+
+    by_source: dict[str, dict] = {}
+    all_responses: list = []
+    all_scores: list = []
+    for name, source_graph, source_campaigns, source_horizon, source_constraints in runnable:
+        source = next(s for s in sources if s["name"] == name)
+        rebuilt = _reload(source)
+        if not rebuilt:
+            continue
+        source_splits = splits.split_episodes(rebuilt, salt=f"{SPLIT_SALT}:{name}")
+        if not source_splits.development.episodes:
+            continue
+        outcome = runner.run(
+            source_graph, source_splits, (arms.engine_only(),), campaigns=source_campaigns,
+            split=splits.DEVELOPMENT, horizon=source_horizon, repeats=2,
+            constraints=source_constraints, graph_ref=source["graph_ref"])
+        by_source[name] = outcome.describe()["per_arm"].get(arms.ENGINE_ONLY, {})
+        all_responses.extend(outcome.responses)
+        all_scores.extend(outcome.scores)
+
+    # Aggregated directly rather than through a synthetic RunResult: a combined run spans
+    # several separately sealed sets, so a single locked_seal field cannot identify it, and
+    # putting prose where a digest belongs would defeat the point of recording provenance.
+    combined = {
+        "provenance": {
+            "split": splits.DEVELOPMENT,
+            "split_salt": SPLIT_SALT,
+            "repeats": 2,
+            "arms": [arms.ENGINE_ONLY],
+            "sources": {
+                name: {"locked_seal": sealed[name]["locked_seal"],
+                       "episodes": entry.get("episodes", 0)}
+                for name, entry in sorted(by_source.items())
+            },
+            "note": ("One run per source, aggregated. Each source has its own sealed set, so "
+                     "provenance is per source rather than a single seal."),
+        },
+        "per_arm": metrics.aggregate(tuple(all_scores)),
+        "reproducibility": metrics.reproducibility(tuple(all_scores)),
+    }
 
     return {
         "schema": {"name": "PolicyBenchmark", "version": "0.1.0"},
@@ -131,7 +173,8 @@ def build(count: int = DEFAULT_COUNT, horizon: int = DEFAULT_HORIZON) -> dict:
         "seed": SEED,
         "sources": sources,
         "splits": sealed,
-        "arm_e_baseline": baseline.describe(),
+        "arm_e_baseline": combined,
+        "arm_e_by_source": by_source,
         "note": ("Arm E is the engine answering with the engine's own answer. It measures the "
                  "harness and the solver, never an advantage over anything — the competitive "
                  "question needs the other arms and a locked split."),
@@ -242,6 +285,19 @@ def render(data: dict) -> str:
         mean = row.get("mean")
         A(f"| `{name}` | {'—' if mean is None else f'{mean:.3f}'} | {row.get('applied_to', 0)} "
           f"| {row.get('not_applicable', 0)} |")
+    A("")
+    A("Across every source's development split. Per-source, so a metric that does not apply")
+    A("can be traced to the sources where there was genuinely no plan to judge:")
+    A("")
+    A("| source | episodes | coverage | safety error | route completeness |")
+    A("|---|---|---|---|---|")
+    for name, entry in sorted(data.get("arm_e_by_source", {}).items()):
+        def cell(metric: str) -> str:
+            row = entry.get(metric) or {}
+            value = row.get("mean")
+            return "—" if value is None else f"{value:.3f}"
+        A(f"| `{name}` | {entry.get('episodes', 0)} | {cell('outcome_coverage')} "
+          f"| {cell('safety_error')} | {cell('route_completeness')} |")
     A("")
     A(f"- malformed responses: {summary.get('malformed', 0)} of {summary.get('episodes', 0)}")
     A(f"- returned a strict subset of the tied optima: "
