@@ -33,6 +33,13 @@
 > guarantees the most progress and why the answer is no. The answer is three-valued: "no policy
 > within this budget" and "the search could not tell" are not "no policy". Runs with no language
 > model in the path, because the mathematical result has to exist without one.
+>
+> **A benchmark whose scorer is unverified measures nothing.** So the
+> [harness](docs/policy_benchmark.md) is built before the claim: an oracle that refuses rather than
+> rounds, episodes confined to where the exhaustive solver is exact, synthetic graphs whose answers
+> follow from their construction, and a locked split sealed over its own contents so a published
+> number can be traced to the set it was measured on. No competitive comparison has been run, and
+> nothing in it should be read as one.
 
 A reproducible, stage-by-stage pipeline for working toward resolving difficult rare-disease cases.
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.

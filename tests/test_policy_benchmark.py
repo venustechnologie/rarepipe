@@ -393,3 +393,201 @@ def test_the_response_schema_requires_every_scored_field():
     schema = contracts.response_schema()
     assert set(schema["required"]) == set(contracts.REQUIRED_FIELDS)
     assert schema["properties"]["robust_reachable"]["enum"] == list(contracts.VERDICTS)
+
+
+# ── the runner, and Arm E as the harness's own self-test ────────────────────────────────────
+
+def _runnable(count: int = 10):
+    from rarepipe.stages.control.benchmark.episodes import generate as gen
+    case = synthetic.tied_optima(4)
+    episodes, _ = gen(case.graph, graph_ref="synthetic:tied_optima_4",
+                      campaigns=case.campaigns, seed=42, count=count, max_depth=3, horizon=3)
+    return case, splits.split_episodes(episodes, salt="enigma-002a")
+
+
+def test_the_engine_arm_recomputes_rather_than_echoing_the_stored_oracle():
+    """Reading the answer out of the episode would make Arm E pass even if the solver broke."""
+    from rarepipe.stages.control.benchmark import arms
+
+    case, split_set = _runnable()
+    episode = split_set.development.episodes[0]
+    context = arms.ArmContext(graph=case.graph, campaigns=case.campaigns, horizon=3,
+                              constraints=Constraints())
+    response = arms.engine_only()(episode, context)
+    assert response.scorable
+    assert response.robust_reachable == episode.oracle.verdict
+    assert response.latency_seconds is not None, "a recomputed answer takes measurable time"
+
+
+def test_arm_e_scores_perfectly_which_is_the_harness_self_test():
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+    result = runner.run(case.graph, split_set, (arms.engine_only(),),
+                        campaigns=case.campaigns, horizon=3,
+                        graph_ref="synthetic:tied_optima_4")
+    summary = result.describe()["per_arm"][arms.ENGINE_ONLY]
+    assert summary["malformed"] == 0
+    assert summary["robust_reachability_accuracy"]["mean"] == 1.0
+    assert summary["route_completeness"]["mean"] == 1.0
+    assert summary["optimality_regret"]["mean"] == 0.0
+    assert summary["invented_unique_optimum"] == 0
+
+
+def test_a_run_records_what_it_was_measured_on():
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+    provenance = runner.run(case.graph, split_set, (arms.engine_only(),),
+                            campaigns=case.campaigns, horizon=3,
+                            graph_ref="synthetic:tied_optima_4").describe()["provenance"]
+    assert provenance["locked_seal"] == split_set.locked_seal
+    assert provenance["split_salt"] == "enigma-002a"
+    assert provenance["graph_ref"] == "synthetic:tied_optima_4"
+    assert provenance["horizon"] == 3
+
+
+def test_the_locked_split_needs_an_explicit_opt_in():
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+    with pytest.raises(runner.RunnerError, match="allow_locked"):
+        runner.run(case.graph, split_set, (arms.engine_only(),), campaigns=case.campaigns,
+                   split=splits.LOCKED)
+    allowed = runner.run(case.graph, split_set, (arms.engine_only(),),
+                         campaigns=case.campaigns, split=splits.LOCKED, allow_locked=True)
+    assert allowed.split == splits.LOCKED
+
+
+def test_a_run_against_a_broken_seal_is_refused():
+    from dataclasses import replace
+
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+    tampered = replace(split_set, locked_seal="sha256:" + "0" * 64)
+    with pytest.raises(splits.SealError, match="does not match its seal"):
+        runner.run(case.graph, tampered, (arms.engine_only(),), campaigns=case.campaigns)
+
+
+def test_repeats_produce_a_reproducibility_measurement():
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+    once = runner.run(case.graph, split_set, (arms.engine_only(),), campaigns=case.campaigns,
+                      repeats=1).describe()["reproducibility"]
+    assert once["repeated_episodes"] == 0
+
+    twice = runner.run(case.graph, split_set, (arms.engine_only(),), campaigns=case.campaigns,
+                       repeats=2).describe()["reproducibility"]
+    assert twice["repeated_episodes"] == len(split_set.development.episodes)
+    assert twice["per_arm"][arms.ENGINE_ONLY] == 1.0, "a deterministic arm must agree with itself"
+
+
+def test_an_arm_that_raises_becomes_a_malformed_response_not_a_crash():
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+
+    def broken(episode, context):
+        raise RuntimeError("the model fell over")
+
+    result = runner.run(case.graph, split_set,
+                        (arms.from_callable("A_broken", broken),),
+                        campaigns=case.campaigns)
+    summary = result.describe()["per_arm"]["A_broken"]
+    assert summary["malformed"] == summary["episodes"] > 0
+    assert summary["malformed_rate"] == 1.0
+    assert any("the model fell over" in (r.malformed_reason or "") for r in result.responses)
+
+
+def test_an_arm_returning_prose_instead_of_the_schema_is_malformed():
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+    result = runner.run(case.graph, split_set,
+                        (arms.from_callable("A_prose", lambda e, c: {"answer": "it depends"}),),
+                        campaigns=case.campaigns)
+    assert result.describe()["per_arm"]["A_prose"]["malformed_rate"] == 1.0
+
+
+def test_secondary_costs_are_recorded_beside_the_scores():
+    from rarepipe.stages.control.benchmark import arms, runner
+
+    case, split_set = _runnable()
+    secondary = runner.run(case.graph, split_set, (arms.engine_only(),),
+                           campaigns=case.campaigns).describe()["secondary"]
+    latency = secondary[arms.ENGINE_ONLY]["latency_seconds"]
+    assert latency["reported_by"] > 0 and latency["mean"] is not None
+    assert secondary[arms.ENGINE_ONLY]["engine_calls"]["mean"] == 1.0
+
+
+# ── the committed episode set is safe to publish ────────────────────────────────────────────
+
+def test_the_committed_episode_set_contains_nothing_beyond_the_map(tmp_path):
+    """Every identifier in the frozen set must already exist in the committed route map.
+
+    This repository becomes public, and the episode set is derived from a map whose private
+    boundary is explicit: the child's exact substitution is deliberately not in it. The guard is
+    that episodes introduce no identifier of their own — anything in them traces to a node, an
+    outcome or an action that is already committed.
+
+    Skipped when the set has not been built, so a fresh checkout does not fail on a missing
+    artifact; CI builds it before this runs.
+    """
+    import importlib.util
+    import json
+    import re
+
+    episodes_file = Path(__file__).resolve().parents[1] / "data/policy_benchmark/episodes.json"
+    if not episodes_file.exists():
+        pytest.skip("the benchmark has not been built in this checkout")
+
+    spec = importlib.util.spec_from_file_location(
+        "solve_mva_policy",
+        Path(__file__).resolve().parents[1] / "tools/control/solve_mva_policy.py")
+    adapter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(adapter)
+    document = adapter.load()
+
+    known = {node["id"] for node in document["nodes"]}
+    known |= {name for node in document["nodes"] for name in (node.get("outcomes") or {})}
+    known |= {campaign["id"] for campaign in document["campaigns"]}
+    known |= {f"RESOLVE::{node['id']}" for node in document["nodes"]}
+    known |= set(document.get("control_variables") or {})
+    known |= set(document.get("families") or {})
+
+    stored = json.loads(episodes_file.read_text())
+    mva = next((s for s in stored["sources"] if s["name"] == "MVA_001"), None)
+    if mva is None:
+        pytest.skip("the committed set has no MVA source")
+
+    # Identifier-shaped tokens: upper-case or snake_case words long enough to be a name.
+    pattern = re.compile(r"\b[A-Za-z][A-Za-z0-9_:]{3,}\b")
+    harness_vocabulary = {
+        "EXACT", "TRUE", "FALSE", "NOT_ESTABLISHED", "HORIZON", "BUDGET", "ROUTE_CLOSED",
+        "ALL_ACTIONS_DEFEATED", "RESOLVE", "None", "true", "false", "null",
+    }
+    unknown: set[str] = set()
+    for episode in mva["episodes"]:
+        for token in pattern.findall(json.dumps(episode)):
+            bare = token.removeprefix("RESOLVE::")
+            if bare in known or token in known or token in harness_vocabulary:
+                continue
+            if bare.isdigit() or token.startswith("ep_") or token.startswith("sha256"):
+                continue
+            unknown.add(token)
+
+    # Field names of the record itself are expected; anything else would be new information.
+    field_names = {
+        "id", "graph_ref", "target", "horizon", "depth", "decided", "actions_taken", "oracle",
+        "verdict", "verdict_reason", "exactness", "searched_exhaustively_to",
+        "conditional_reachable", "minimal_robust_horizon", "recommended_actions",
+        "tied_minimal_branch_sets", "remaining_frontiers", "minimal_target_cut_sets",
+        "minimal_target_success_sets", "unsafe_routes", "worst_case_depth", "action_costs",
+        "states_considered", "branch", "outcome", "terminal", "MVA_001",
+    }
+    unknown -= field_names
+    assert not unknown, (
+        f"the committed episode set introduces identifiers that are not in the route map: "
+        f"{sorted(unknown)[:12]}")
