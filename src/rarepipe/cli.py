@@ -973,5 +973,57 @@ def fixtures(
         typer.echo(f"{name}: {output / name}")
 
 
+@app.command()
+def reason(
+    model_id: Annotated[str, typer.Option(help="Which compiled map to solve. Only MVA_001 is wired.")] = "MVA_001",
+    target: Annotated[str | None, typer.Option(help="Node to solve for; defaults to the map's declared target.")] = None,
+    horizon: Annotated[int, typer.Option(help="Maximum number of campaigns a policy may use.")] = 6,
+    max_states: Annotated[int, typer.Option(help="Budget in state evaluations. Exhausting it reports NOT_ESTABLISHED/BUDGET, never FALSE.")] = 3_000_000,
+    include_invalid_runs: Annotated[bool, typer.Option(help="Quantify over assay-validity failures as if they were results.")] = False,
+    output: Annotated[Path | None, typer.Option(help="Write the full machine-readable answer here.")] = None,
+) -> None:
+    """Is there a contingent policy that reaches the target whatever the admissible results are?
+
+    Runs with no language model anywhere in the path. That is the point: the mathematical result
+    has to exist without one, and only then is it handed to a model for explanation.
+    """
+    if model_id != "MVA_001":
+        typer.echo(f"error: no adapter for {model_id!r}; only MVA_001 is wired", err=True)
+        raise typer.Exit(EXIT_USAGE)
+
+    import importlib.util
+
+    adapter_path = Path(__file__).resolve().parents[2] / "tools/control/solve_mva_policy.py"
+    if not adapter_path.exists():
+        typer.echo(f"error: adapter missing at {adapter_path}", err=True)
+        raise typer.Exit(EXIT_USAGE)
+    spec = importlib.util.spec_from_file_location("solve_mva_policy", adapter_path)
+    adapter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(adapter)
+
+    document = adapter.load()
+    _, _, _, result = adapter.solve(document, horizon=horizon,
+                                    include_non_informative=include_invalid_runs,
+                                    max_states=max_states)
+    answer = result.describe()
+    verdict = answer["robust_reachable"]
+    typer.echo(f"map              {adapter.digest()}")
+    typer.echo(f"target           {answer['target']}")
+    typer.echo(f"conditional      {answer['conditional_reachable']}")
+    typer.echo(f"robust           {verdict}")
+    typer.echo(f"minimal horizon  {answer['minimal_robust_horizon']}")
+    typer.echo(f"none within      {answer['no_robust_policy_within']} campaigns (searched exhaustively)")
+    typer.echo(f"mode             {answer['mode']}")
+    typer.echo(f"recommended      {', '.join(answer['recommended_actions']) or 'none'}"
+               f"  ({answer['tied_action_count']} tied)")
+    typer.echo(f"states           {answer['trace']['states_considered']}"
+               f"{'  BUDGET EXHAUSTED' if answer['trace']['budget_exhausted'] else ''}")
+    for combo in answer["failure_certificates"].get("minimal_closing_combinations", [])[:8]:
+        typer.echo("closes target    " + " + ".join(f"{c['branch']}={c['outcome']}" for c in combo))
+    if output:
+        output.write_text(json.dumps(answer, indent=2, sort_keys=True) + "\n")
+        typer.echo(f"wrote            {output}")
+
+
 def main() -> None:
     app()

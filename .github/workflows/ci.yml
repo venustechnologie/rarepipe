@@ -85,3 +85,15 @@ jobs:
       - name: Contingent route map is valid and not stale
         run: |
           uv run python tools/control/compile_route_map.py --check
+
+      # The robust-policy answer is computed from the frozen route map, so a change to the map must
+      # change this document too. Pinned to the same horizon the committed document was generated
+      # at: the verdict is horizon-dependent, so checking at a different one would compare two
+      # different questions and report a spurious staleness.
+      #
+      # Horizon 2 rather than 3 because this step re-derives the document, and the search costs
+      # roughly thirty times more per unit of horizon: two is seconds, three is minutes. The
+      # horizon-3 result is recorded in docs/policy.md with the command that reproduces it.
+      - name: Robust contingent policy is not stale
+        run: |
+          uv run python tools/control/solve_mva_policy.py --check --horizon 2

@@ -26,6 +26,13 @@
 > now against [a real external evidence source](docs/control/EXTERNAL_DESIGN.md) — retrieval is a
 > separate step that freezes a corpus snapshot, and finding a source is never the same as grounding a
 > claim
+>
+> **A route that works if the results are favourable is not a plan.** Given the compiled decision
+> graph, [robust contingent policy search](docs/policy.md) asks whether a policy exists that reaches
+> the target under *every* admissible combination of results — and when none does, which experiment
+> guarantees the most progress and why the answer is no. The answer is three-valued: "no policy
+> within this budget" and "the search could not tell" are not "no policy". Runs with no language
+> model in the path, because the mathematical result has to exist without one.
 
 A reproducible, stage-by-stage pipeline for working toward resolving difficult rare-disease cases.
 It is being discovered bottom-up: stages are added only when a real case shows they are needed.
