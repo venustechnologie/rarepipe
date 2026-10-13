@@ -587,6 +587,8 @@ def test_the_committed_episode_set_contains_nothing_beyond_the_map(tmp_path):
     harness_vocabulary = {
         "EXACT", "TRUE", "FALSE", "NOT_ESTABLISHED", "HORIZON", "BUDGET", "ROUTE_CLOSED",
         "ALL_ACTIONS_DEFEATED", "RESOLVE", "None", "true", "false", "null",
+        # PolicyNode statuses, which the stored contingent plan carries.
+        "GOAL_REACHED", "CLOSED", "FRONTIER", "ACTION",
     }
     unknown: set[str] = set()
     for episode in mva["episodes"]:
@@ -606,6 +608,8 @@ def test_the_committed_episode_set_contains_nothing_beyond_the_map(tmp_path):
         "tied_minimal_branch_sets", "remaining_frontiers", "minimal_target_cut_sets",
         "minimal_target_success_sets", "unsafe_routes", "worst_case_depth", "action_costs",
         "states_considered", "branch", "outcome", "terminal", "MVA_001",
+        # The stored contingent plan and its own structure.
+        "policy", "status", "action", "then",
     }
     unknown -= field_names
     assert not unknown, (

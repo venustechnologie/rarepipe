@@ -97,3 +97,11 @@ jobs:
       - name: Robust contingent policy is not stale
         run: |
           uv run python tools/control/solve_mva_policy.py --check --horizon 2
+
+      # The benchmark's locked splits are sealed over their episodes and oracle answers. This
+      # recomputes the seals from the committed set without regenerating anything, so an edited
+      # or re-split locked set fails here rather than quietly invalidating a published number.
+      # Rebuilding the set is deliberate and changes the seals; that is the point.
+      - name: Policy benchmark seals verify
+        run: |
+          uv run python tools/control/build_policy_benchmark.py --check
