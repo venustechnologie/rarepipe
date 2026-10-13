@@ -41,6 +41,10 @@ REPORT = ROOT / "docs" / "control" / "MVA_POLICY_BENCHMARK.md"
 SPLIT_SALT = "enigma-002a"
 DEFAULT_COUNT = 40
 DEFAULT_HORIZON = 2
+# Synthetic graphs solve in milliseconds, so they are sampled much harder than the real map.
+# Several are small enough that every distinct state is found well before this bound, which is
+# fine: the generator returns what exists and the coverage table reports how many that was.
+SYNTHETIC_COUNT = 60
 SEED = 20261013
 
 
@@ -85,11 +89,11 @@ def build(count: int = DEFAULT_COUNT, horizon: int = DEFAULT_HORIZON) -> dict:
         reference = f"synthetic:{case.name}"
         found, declined = generate(
             case.graph, graph_ref=reference, campaigns=case.campaigns, seed=SEED,
-            count=max(4, count // 8), max_depth=3, horizon=3)
+            count=SYNTHETIC_COUNT, max_depth=4, horizon=4)
         sources.append({
             "name": case.name,
             "graph_ref": reference,
-            "horizon": 3,
+            "horizon": 4,
             "expected": {
                 "robust": case.expected_robust,
                 "minimal_horizon": case.expected_minimal_horizon,
@@ -164,6 +168,7 @@ def _reload(source: dict):
                 unsafe_routes=tuple((r["branch"], r["outcome"], r["terminal"])
                                     for r in oracle["unsafe_routes"]),
                 worst_case_depth=oracle["worst_case_depth"],
+                policy=oracle.get("policy") or {},
                 action_costs=tuple(sorted(oracle["action_costs"].items())),
                 states_considered=oracle["states_considered"],
             ),
@@ -205,11 +210,25 @@ def render(data: dict) -> str:
     A("")
     A("| source | development | validation | locked | locked seal |")
     A("|---|---|---|---|---|")
+    unlockable: list[str] = []
     for name, entry in data["splits"].items():
         counts = entry["counts"]
+        if counts["locked"]:
+            seal = f"`{entry['locked_seal'][:23]}…`"
+        else:
+            seal = "**none — nothing locked**"
+            unlockable.append(name)
         A(f"| `{name}` | {counts['development']} | {counts['validation']} | {counts['locked']} "
-          f"| `{entry['locked_seal'][:23]}…` |")
+          f"| {seal} |")
     A("")
+    if unlockable:
+        A(f"**{len(unlockable)} source(s) have an empty locked split**: "
+          + ", ".join(f"`{name}`" for name in unlockable) + ".")
+        A("These graphs are small enough that every distinct state is found in the development")
+        A("and validation shares, so there is nothing left to lock. They are listed with no")
+        A("seal rather than with the digest of an empty list, because a seal over nothing is")
+        A("not a sealed test set and should not be able to read like one.")
+        A("")
     A("## Arm E baseline — engine only")
     A("")
     A(data["note"])

@@ -54,6 +54,10 @@ class OracleAnswer:
     success_sets: tuple[tuple[tuple[str, str], ...], ...]
     unsafe_routes: tuple[tuple[str, str, str], ...]
     worst_case_depth: int | None
+    # The contingent plan itself, when one exists. Carried so that outcome coverage and the
+    # safety-error metric are exercised by a real run rather than only by toy fixtures — a
+    # metric that is never applied is a metric that was never validated.
+    policy: dict
     # Per-action worst-case further campaigns, so optimality regret is a real difference rather
     # than a binary "chose a tied-optimal action or not".
     action_costs: tuple[tuple[str, int], ...]
@@ -93,6 +97,7 @@ class OracleAnswer:
                 {"branch": b, "outcome": o, "terminal": t} for b, o, t in self.unsafe_routes
             ],
             "worst_case_depth": self.worst_case_depth,
+            "policy": self.policy,
             "action_costs": {action: cost for action, cost in self.action_costs},
             "states_considered": self.states_considered,
         }
@@ -167,6 +172,7 @@ def oracle_answer(graph: PolicyGraph, state: KnowledgeState, *, target: str | No
         unsafe_routes=tuple(
             (r["branch"], r["outcome"], r["terminal"]) for r in answer["unsafe_routes"]),
         worst_case_depth=answer["worst_case_depth"],
+        policy=answer.get("policy") or {},
         action_costs=tuple(sorted(
             (c["action"], int(c["worst_case_campaigns"])) for c in answer["candidates"])),
         states_considered=answer["trace"]["states_considered"],

@@ -352,15 +352,35 @@ def test_an_unsafe_continuation_is_a_safety_error():
 
 
 def test_a_metric_that_does_not_apply_reports_none_not_zero():
-    case = synthetic.always_arrives(2)
+    """No robust policy exists here, so there is no plan to judge for safety or coverage.
+
+    Scoring that as zero would punish a system for correctly declining to produce a plan.
+    """
+    case = synthetic.one_dead_outcome()
     answer = _oracle_for(case)
     response = contracts.from_oracle(answer, episode_id="ep_x")
+    assert not response.contingent_policy_tree, "a FALSE verdict carries no policy"
     scored = metrics.score(case.graph, response, answer)
-    assert scored.safety_error is None, "no policy tree was offered, so nothing was risked"
+    assert scored.safety_error is None, "no policy was offered, so nothing was risked"
     assert scored.outcome_coverage is None
     summary = metrics.aggregate((scored,))["engine"]
     assert summary["safety_error"]["mean"] is None
     assert summary["safety_error"]["not_applicable"] == 1
+
+
+def test_a_real_policy_is_judged_for_safety_and_coverage_rather_than_skipped():
+    """The complement: where a plan exists, both metrics apply and must be measured.
+
+    Two of the six metrics were previously never applied on a real run, because the engine arm
+    returned an empty tree. A metric that is never applied is a metric that was never validated.
+    """
+    case = synthetic.always_arrives(2)
+    answer = _oracle_for(case)
+    response = contracts.from_oracle(answer, episode_id="ep_x")
+    assert response.contingent_policy_tree, "a TRUE verdict must carry its policy"
+    scored = metrics.score(case.graph, response, answer)
+    assert scored.safety_error == 0.0, "a real plan that routes nowhere unsafe scores zero"
+    assert scored.outcome_coverage == 1.0, "and answers for every admissible outcome"
 
 
 def test_aggregates_report_the_denominator_of_every_mean():
@@ -591,3 +611,69 @@ def test_the_committed_episode_set_contains_nothing_beyond_the_map(tmp_path):
     assert not unknown, (
         f"the committed episode set introduces identifiers that are not in the route map: "
         f"{sorted(unknown)[:12]}")
+
+
+def test_the_committed_set_agrees_with_the_synthetic_constructions():
+    """The frozen artifact must still encode the answers the graphs were built to have.
+
+    Each synthetic source stores the expectation its construction guarantees. The depth-0 episode
+    is the root situation, so its oracle answer is exactly what that expectation describes. If a
+    rebuild ever disagrees, either the solver regressed or a construction changed — and this says
+    which source.
+
+    Skipped on a checkout where the set has not been built.
+    """
+    import json
+
+    episodes_file = Path(__file__).resolve().parents[1] / "data/policy_benchmark/episodes.json"
+    if not episodes_file.exists():
+        pytest.skip("the benchmark has not been built in this checkout")
+
+    stored = json.loads(episodes_file.read_text())
+    checked = 0
+    problems: list[str] = []
+    for source in stored["sources"]:
+        expected = source.get("expected")
+        if not expected:
+            continue                                   # the real map has no construction to check
+        root = next((e for e in source["episodes"] if e["depth"] == 0), None)
+        if root is None:
+            problems.append(f"{source['name']}: no depth-0 episode to check the construction on")
+            continue
+        checked += 1
+        oracle = root["oracle"]
+        if oracle["verdict"] != expected["robust"]:
+            problems.append(f"{source['name']}: stored verdict {oracle['verdict']} != "
+                            f"constructed {expected['robust']}")
+        if oracle["minimal_robust_horizon"] != expected["minimal_horizon"]:
+            problems.append(f"{source['name']}: stored horizon "
+                            f"{oracle['minimal_robust_horizon']} != "
+                            f"constructed {expected['minimal_horizon']}")
+        if len(oracle["tied_minimal_branch_sets"]) != expected["tied_minimal_route_count"]:
+            problems.append(f"{source['name']}: stored "
+                            f"{len(oracle['tied_minimal_branch_sets'])} tied routes != "
+                            f"constructed {expected['tied_minimal_route_count']}")
+        if expected["robust"] == "TRUE" and \
+                set(oracle["recommended_actions"]) != set(expected["recommended_actions"]):
+            problems.append(f"{source['name']}: stored recommendation "
+                            f"{sorted(oracle['recommended_actions'])} != constructed "
+                            f"{sorted(expected['recommended_actions'])}")
+
+    assert checked, "no synthetic source carried a construction to check"
+    assert not problems, "\n  ".join(["the frozen set disagrees with its constructions:", *problems])
+
+
+def test_every_committed_episode_was_certified_exactly():
+    """Nothing inexact may sit in the frozen set, whatever the coverage table says."""
+    import json
+
+    episodes_file = Path(__file__).resolve().parents[1] / "data/policy_benchmark/episodes.json"
+    if not episodes_file.exists():
+        pytest.skip("the benchmark has not been built in this checkout")
+
+    stored = json.loads(episodes_file.read_text())
+    for source in stored["sources"]:
+        for episode in source["episodes"]:
+            assert episode["oracle"]["exactness"] == EXACT, (
+                f"{source['name']}/{episode['id']} is in the frozen set with exactness "
+                f"{episode['oracle']['exactness']}")
