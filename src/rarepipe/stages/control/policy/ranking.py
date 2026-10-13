@@ -53,6 +53,12 @@ class ProgressVector:
     """Guaranteed progress, one component per declared measure. ``None`` means no data supports it.
 
     Every component is oriented so that **more is better**.
+
+    ``distance_reduction`` may be **negative**, and that is a real measurement rather than a
+    sign error: an outcome can leave the target further away than it was, by removing the
+    cheapest route and leaving only a longer one. An action whose worst outcome guarantees
+    regress should lose to one whose worst outcome guarantees a step, and the maximin ordering
+    gets that right only because the sign is kept.
     """
     hypotheses_eliminated: int | None = None
     families_resolved: int | None = None

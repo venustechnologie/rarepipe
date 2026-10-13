@@ -304,15 +304,39 @@ def test_optimised_and_reference_solvers_agree_on_every_toy():
     assert not disagreements, "; ".join(disagreements)
 
 
-def test_tied_first_actions_match_the_reference_enumeration():
-    for graph, campaigns in (toys.tied_optima(), ()), (toys.component_discovery_route(), ()):
+def test_recommended_actions_are_always_among_the_robust_first_actions():
+    """The relationship is containment, not equality, and the difference is deliberate.
+
+    The reference solver enumerates every action that *begins* a robust policy. The engine then
+    *ranks* them, and ranking may legitimately narrow that set — an action can be robust while
+    guaranteeing less progress than another, which is exactly what separates a one-step gamble from
+    a route that advances whatever happens. What must never happen is a recommendation that is not
+    robust at all, and that is what this pins.
+    """
+    for graph, campaigns in ((toys.tied_optima(), ()),
+                             (toys.component_discovery_route(), ()),
+                             (toys.deterministic_route(), ()),
+                             toys.campaign_resolves_two()):
         state = KnowledgeState.initial()
         optimised = solve_policy(graph, state, horizon=HORIZON, campaigns=campaigns)
         if optimised.robust_reachable.value != TRUE:
             continue
-        reference = all_robust_first_actions(graph, _space(graph, campaigns), state,
-                                             graph.goal, HORIZON)
-        assert set(optimised.recommended_actions) == set(reference)
+        reference = set(all_robust_first_actions(graph, _space(graph, campaigns), state,
+                                                 graph.goal, HORIZON))
+        recommended = set(optimised.recommended_actions)
+        assert recommended, "a robust verdict must come with at least one action to take"
+        assert recommended <= reference, (
+            f"recommended {sorted(recommended - reference)} does not begin a robust policy")
+
+
+def test_symmetric_tied_optima_are_neither_narrowed_nor_dropped():
+    """Where nothing distinguishes the options, every one of them must come back."""
+    graph = toys.tied_optima()
+    state = KnowledgeState.initial()
+    optimised = solve_policy(graph, state, horizon=HORIZON)
+    reference = all_robust_first_actions(graph, _space(graph), state, graph.goal, HORIZON)
+    assert set(optimised.recommended_actions) == set(reference) == {"RESOLVE::LEFT",
+                                                                    "RESOLVE::RIGHT"}
 
 
 # ── the three-valued verdict ─────────────────────────────────────────────────────────────────
