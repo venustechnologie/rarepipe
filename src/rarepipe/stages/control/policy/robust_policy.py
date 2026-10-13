@@ -37,6 +37,7 @@ from rarepipe.stages.control.policy.actions import (Action, ActionSpace, admissi
                                                     admissible_outcomes, build_action_space,
                                                     campaign_cover, excluded_non_informative)
 from rarepipe.stages.control.policy.certificates import (AdversaryWitness, ClosingCombinations,
+                                                         CutSetAnalysis, cut_set_analysis,
                                                          minimal_closing_combinations,
                                                          robust_subset, unreached_frontiers)
 from rarepipe.stages.control.policy.graph import PolicyGraph
@@ -77,7 +78,7 @@ class Constraints:
     # Domain annotations for the progress vector. Absent means the component is reported unavailable
     # rather than assumed zero.
     hypothesis_discriminators: Mapping[str, frozenset[str]] = field(default_factory=dict)
-    node_families: Mapping[str, str] = field(default_factory=dict)
+    node_families: Mapping[str, frozenset[str]] = field(default_factory=dict)
 
     def describe(self) -> dict:
         return {
@@ -451,6 +452,7 @@ class PolicyResult:
     remaining_frontiers: tuple[str, ...]
     unsafe_routes: tuple[tuple[str, str, str], ...]
     closing_combinations: ClosingCombinations | None
+    cut_sets: CutSetAnalysis | None
     robust_conjuncts: dict
     witness: AdversaryWitness | None
     candidates: tuple[Candidate, ...]
@@ -482,13 +484,21 @@ class PolicyResult:
             "blocking_single_outcomes": [
                 {"branch": b, "outcome": o} for b, o in self.blocking_single_outcomes
             ],
-            "tied_minimal_branch_sets": [sorted(s) for s in self.tied_minimal_branch_sets],
+            "tied_minimal_branch_sets": {
+                "optimal_sets": [sorted(s) for s in self.tied_minimal_branch_sets],
+                "count": len(self.tied_minimal_branch_sets),
+                # Always false here by construction: the published frontier is uncapped. A
+                # renderer that shows fewer reports display_truncated on its own output; a cap
+                # invisible at this layer is how a tied optimum silently disappears.
+                "truncated": False,
+            },
             "remaining_frontiers": list(self.remaining_frontiers),
             "unsafe_routes": [
                 {"branch": b, "outcome": o, "terminal": t} for b, o, t in self.unsafe_routes
             ],
             "failure_certificates": {
                 **(self.closing_combinations.describe() if self.closing_combinations else {}),
+                "cut_set_analysis": self.cut_sets.describe() if self.cut_sets else None,
                 "robust_subset": self.robust_conjuncts,
                 "adversary_witness": self.witness.describe() if self.witness else None,
             },
@@ -574,10 +584,15 @@ def solve_policy(graph: PolicyGraph, knowledge_state: KnowledgeState | None = No
 
     witness = None
     closing = None
+    cuts = None
     conjuncts: dict = {}
     if verdict.value != TRUE:
         witness = solver.adversary(state, max(horizon, 1))
         closing = minimal_closing_combinations(
+            graph, destination=target,
+            max_size=constraints.max_closing_combination_size,
+            restrict_to=relevant)
+        cuts = cut_set_analysis(
             graph, destination=target,
             max_size=constraints.max_closing_combination_size,
             restrict_to=relevant)
@@ -613,6 +628,7 @@ def solve_policy(graph: PolicyGraph, knowledge_state: KnowledgeState | None = No
         remaining_frontiers=unreached_frontiers(graph, state.resolved, target),
         unsafe_routes=unsafe_routes(graph),
         closing_combinations=closing,
+        cut_sets=cuts,
         robust_conjuncts=conjuncts,
         witness=witness,
         candidates=tuple(ordered),

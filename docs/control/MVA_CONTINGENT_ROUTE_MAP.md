@@ -1137,7 +1137,7 @@ evidence speaks to the variable itself.
 | control variable | actuators tried | identified, untried | intrinsically unsafe? |
 |---|---|---|---|
 | `CV_BUBR1_ABUNDANCE` | `HSP90_folding`, `proteasomal_clearance`, `SIRT2_K668`, `FBXW7_T620` | `CHIP_STUB1_triage`, `autophagy_lysosomal`, `HSP70_DNAJ_cochaperone` | NOT_ESTABLISHED |
-| `CV_POLEWARD_FLUX` | none | `low_dose_taxol`, `HAUS8_depletion`, `NuMA_depletion`, `KIF4A_depletion` | NOT_ESTABLISHED |
+| `CV_POLEWARD_FLUX` | none | `low_dose_paclitaxel`, `HAUS8_depletion`, `NuMA_depletion`, `KIF4A_depletion` | NOT_ESTABLISHED |
 | `CV_CHROMOSOME_ALIGNMENT` | none | `CENP_E`, `KIF18A`, `poleward_flux` | NOT_ESTABLISHED |
 | `CV_CHECKPOINT_ACTIVATION` | none | `MPS1_phosphorylation_cascade` | PARTLY — chronic activation causes myelosuppression and gastrointestinal atrophy in vivo, so the sustained form of this variable carries organism-leve |
 | `CV_CHECKPOINT_SILENCING` | none | `TRIP13_APC15`, `UBR5` | NOT_ESTABLISHED |

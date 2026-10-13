@@ -160,6 +160,49 @@ campaign_note: "SAFE01 appears in two campaigns because it is component-specific
   introduces a component establishes safety for that component and no other."
 # A branch either INTERVENES on the system or OBSERVES it. An observation can change what we know and
 # how we read the target; it cannot create a physically improved biological state. Enforced.
+# ---------------------------------------------------------------- analysis annotations
+# Structural metadata for analysis and scoring. The rule, enforced by a test:
+#
+#   These annotations may affect scoring and analysis, but never biological traversability.
+#
+# Nothing here creates an edge, removes one, or changes what is reachable. They exist so the
+# guaranteed-progress vector can say "this result closed a route family" or "this result settled a
+# hypothesis" instead of reporting those components as unavailable.
+#
+# Every value carries a basis:
+#   DECLARED — asserted by the case's authors. The only basis that may stand alone.
+#   DERIVED  — computed from something already in the map, with the derivation named.
+#
+# `family_membership` goes on a node, inside `analysis`, and is a LIST because a node shared
+# between two strategies is the normal case:
+#
+#   analysis:
+#     family_membership:
+#       value: [F3_EXPLOIT_AND_ALTER]
+#       basis: DECLARED
+#
+# No node carries one yet. Membership is not derivable here — there are no family entry nodes, and
+# the only remaining signal is identifier spelling, which this project has already been wrong about
+# once. So Δ's `families_resolved` reports unavailable rather than guessing, and these are the
+# values the authors must supply.
+# On a hypothesis there are TWO distinct branch references, and conflating them would make Δ wrong:
+#
+#   related_branches  — the branches the hypothesis is *about*. Navigational. May be DERIVED, e.g.
+#                       from branch ids the hypothesis's own claim already names verbatim.
+#   discriminated_by  — the branches whose resolution would *settle* it. DECLARED only, and the
+#                       only one Δ's `hypotheses_eliminated` may consume.
+#
+# A hypothesis about three branches is not thereby settled by resolving those three. Treating
+# relatedness as discrimination would let Δ report a hypothesis eliminated by experiments that
+# cannot speak to it, which is worse than reporting the component unavailable.
+#
+# No hypothesis declares `discriminated_by` yet. The structural ones (H_M*) mostly declare
+# themselves unpromotable — "a statement about the graph, not about biology" — so they are not
+# eliminable by any experiment and must never feed Δ. The latent-variable hypotheses (LV1-LV4) are
+# the eliminable ones, and each describes its smallest discriminating experiment in prose rather
+# than as branch ids. Those four are what the authors must supply for Δ to compute this component.
+analysis_basis_vocabulary: [DECLARED, DERIVED]
+
 branch_role_vocabulary: [INTERVENTION, OBSERVATION]
 # State classes exist so the second invariant is decidable: a mechanistic intermediate may not imply a
 # terminal endpoint without an edge that names the measurement establishing the step.
@@ -184,6 +227,28 @@ terminal_vocabulary: [FUNCTIONAL_TARGET_REACHED, ORGANISM_TARGET_REACHED_IN_MODE
                       SEARCHED_EXTERNAL_UNIVERSE_EXHAUSTED, DECLARED_SCIENTIFIC_FRONTIER,
                       UNEXPANDED_FRONTIER, NOT_IN_LOCAL_CASE_CORPUS, CONTEXT_TRANSFER_REQUIRED,
                       BOUNDED_FRONTIER]
+# ---------------------------------------------------------------- actuator identity
+# Two names for one actuator is not a cosmetic problem. A control variable closes only when every
+# one of its actuators has failed conclusively, so a duplicate entry is an arm that can never be
+# closed, and the variable with it. Identity is therefore declared here and resolved before any
+# computation runs — see `tools/control/solve_mva_policy.py`, and the invariant test that alias
+# resolution cannot change a reachability or policy result.
+#
+# An alias is a claim that two names denote the same experimental regime. It is only ever DECLARED,
+# never inferred from spelling: if a second name carried a different dose, schedule or context it
+# would be a different actuator, and merging the two would erase a real distinction.
+actuators:
+  - id: low_dose_paclitaxel
+    label: "Low-dose paclitaxel"
+    aliases: [low_dose_taxol, Taxol, taxol]
+    basis: DECLARED
+    note: "Paclitaxel is taxol. Both spellings in this map trace to the same regime in the same
+      source — PMID:39541344's low-dose taxol, one of three mechanistically independent flux
+      perturbations — appearing as the campaign component text, as FLUX01 arm F_a, and in
+      CV_POLEWARD_FLUX's own actuator list. Same dose class, same schedule, same context, so this
+      is nomenclature rather than two actuators."
+    evidence: ["PMID:39541344"]
+
 # Rule 3. A control variable is a biological quantity; an actuator is a way of moving it. A failed or
 # unsafe actuator closes the actuator, never the variable, unless the evidence speaks to the variable
 # itself. Every "no actuator" terminal in the previous map violated this.
@@ -197,7 +262,9 @@ control_variables:
   CV_POLEWARD_FLUX:
     state_variable: "k-fibre poleward flux rate, set by antiparallel overlap length"
     actuators_tried: []
-    actuators_identified_not_tried: [low_dose_taxol, HAUS8_depletion, NuMA_depletion, KIF4A_depletion]
+    # Canonical ids only; `low_dose_taxol` is retained as a declared alias in `actuators` above.
+    actuators_identified_not_tried: [low_dose_paclitaxel, HAUS8_depletion, NuMA_depletion,
+                                     KIF4A_depletion]
     evidence: ["PMID:39541344"]
     intrinsically_unsafe: NOT_ESTABLISHED
   CV_CHROMOSOME_ALIGNMENT:
@@ -1529,6 +1596,13 @@ hypotheses:
     consequence: "The expensive object in this map is not any experiment; it is the platform, and it is
       shared. A view that ranked experiments individually would never surface this."
     status: NOT_TRAVERSABLE
+    related_branches:
+      value: [CENPE_F3, DEP_ATTACH_TURNOVER, DEP_CELL_SIZE, DEP_COHESION, DEP_FLUX, DEP_KIF18A,
+              LIMFN01, POOL01, TRIP13_F3]
+      basis: DERIVED
+      derivation: "the branch ids this hypothesis's own claim names verbatim"
+    # Deliberately no `discriminated_by`: this hypothesis declares itself unpromotable by any
+    # experiment, so nothing settles it and it may never contribute to Δ's hypotheses_eliminated.
     what_would_promote_it: "Nothing — it is a statement about the graph, not about biology, and it is
       already checked by a test. It is recorded here because it is an analysis output, not a route."
   - id: H_M2_ISOMORPHIC_ADJUDICATION

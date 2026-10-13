@@ -72,6 +72,136 @@ class ClosingCombinations:
         }
 
 
+Assignment = tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class CutSetAnalysis:
+    """Minimal cut sets and minimal success sets over branch outcomes.
+
+    The two questions reliability engineering asks of a fault tree, asked of a decision graph:
+
+    * **cut sets** — minimal combinations of future results that destroy *every* route to the
+      target. What has to go wrong for this to be over.
+    * **success sets** — minimal combinations of results that are *sufficient* to establish it.
+      What has to go right for this to be done.
+
+    Both are bounded by size, and the bound is reported rather than implied. The distinction
+    matters for how a member frequency may be worded: a branch appearing in every cut set *found*
+    at size ≤ 2 is not thereby necessary to every failure of every size, and
+    ``common_cut_members`` says so in its own scope field rather than leaving the reader to assume.
+    """
+    cut_sets: tuple[Assignment, ...] = ()
+    success_sets: tuple[Assignment, ...] = ()
+    searched_up_to: int = 0
+    exhaustive: bool = False
+    common_cut_members: tuple[dict, ...] = ()
+    common_success_members: tuple[dict, ...] = ()
+
+    def describe(self) -> dict:
+        scope = (f"minimal sets of size at most {self.searched_up_to}"
+                 + ("" if self.exhaustive else ", which is a bound on the search, not on the graph"))
+        return {
+            "minimal_target_cut_sets": [
+                [{"branch": b, "outcome": o} for b, o in combo] for combo in self.cut_sets
+            ],
+            "minimal_target_success_sets": [
+                [{"branch": b, "outcome": o} for b, o in combo] for combo in self.success_sets
+            ],
+            "common_cut_members": list(self.common_cut_members),
+            "common_success_members": list(self.common_success_members),
+            "searched_up_to_size": self.searched_up_to,
+            "exhaustive": self.exhaustive,
+            "scope": scope,
+            "note": (
+                "A cut set is a combination of results after which no route to the target remains. "
+                "A success set is one after which the target is established. Frequencies in "
+                "common_cut_members are over the sets found within the searched size and carry "
+                "that scope; a member common to every cut set of size two is not thereby "
+                "necessary to every failure of every size."
+            ),
+        }
+
+
+def _common_members(sets: tuple[Assignment, ...], searched_up_to: int, kind: str) -> tuple[dict, ...]:
+    """Members shared by every set found, with the frequency and the scope that frequency has."""
+    if not sets:
+        return ()
+    counts: dict[tuple[str, str], int] = {}
+    for combo in sets:
+        for member in combo:
+            counts[member] = counts.get(member, 0) + 1
+    total = len(sets)
+    return tuple(
+        {
+            "branch": branch,
+            "outcome": outcome,
+            "frequency": f"{count}/{total}",
+            "in_every_set_found": count == total,
+            "scope": f"over the minimal {kind} sets of size at most {searched_up_to} that were found",
+        }
+        for (branch, outcome), count in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        if count > 1
+    )
+
+
+def cut_set_analysis(graph: PolicyGraph, *, destination: str | None = None, max_size: int = 2,
+                     restrict_to: frozenset[str] | None = None) -> CutSetAnalysis:
+    """Minimal cut sets and minimal success sets, both bounded by the same declared size.
+
+    One enumeration serves both: for every assignment of results to a combination of branches, ask
+    the cheap relaxation whether the destination is still establishable (a cut set when it is not)
+    and whether it is already established (a success set when it is). Minimality is in the subset
+    sense, computed separately for each family, so a size-2 answer is never padded to size 3.
+
+    Only informative outcomes take part. A cut set resting on an assay voiding its own validity
+    gates is not a fact about the biology, and listing it would make every target look fragile for
+    a reason no experiment can fix.
+    """
+    destination = destination or graph.goal
+    pool = sorted(node.id for node in graph.branches()
+                  if restrict_to is None or node.id in restrict_to)
+    cuts: list[frozenset[tuple[str, str]]] = []
+    successes: list[frozenset[tuple[str, str]]] = []
+    searched = 0
+
+    for size in range(1, max_size + 1):
+        searched = size
+        for branch_combo in combinations(pool, size):
+            option_lists = [
+                [(branch, name) for name in graph.nodes[branch].outcome_names
+                 if name not in graph.nodes[branch].non_informative]
+                for branch in branch_combo
+            ]
+            for assignment in product(*option_lists):
+                candidate = frozenset(assignment)
+                cut_known = any(existing <= candidate for existing in cuts)
+                win_known = any(existing <= candidate for existing in successes)
+                if cut_known and win_known:
+                    continue
+                establishable, established = can_establish(
+                    graph, decided=dict(assignment), destination=destination)
+                if not establishable and not cut_known:
+                    cuts.append(candidate)
+                elif established and not win_known:
+                    successes.append(candidate)
+
+    def order(found: list[frozenset[tuple[str, str]]]) -> tuple[Assignment, ...]:
+        return tuple(tuple(sorted(combo))
+                     for combo in sorted(found, key=lambda c: (len(c), sorted(c))))
+
+    cut_sets, success_sets = order(cuts), order(successes)
+    exhaustive = max_size >= len(pool)
+    return CutSetAnalysis(
+        cut_sets=cut_sets,
+        success_sets=success_sets,
+        searched_up_to=searched,
+        exhaustive=exhaustive,
+        common_cut_members=_common_members(cut_sets, searched, "cut"),
+        common_success_members=_common_members(success_sets, searched, "success"),
+    )
+
+
 def minimal_closing_combinations(graph: PolicyGraph, *, destination: str | None = None,
                                  max_size: int = 2,
                                  restrict_to: frozenset[str] | None = None) -> ClosingCombinations:

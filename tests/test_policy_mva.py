@@ -177,6 +177,68 @@ def test_the_target_falls_to_exactly_six_pairs_every_one_involving_the_same_safe
     assert found.searched_up_to == 2
 
 
+def test_cut_sets_and_success_sets_pivot_on_the_same_branch(graph):
+    """The symmetric result: `SAFE01` decides the target in both directions, at size two.
+
+    Six minimal cut sets, every one containing `SAFE01=harm`; seven minimal success sets, every one
+    containing `SAFE01=preserved`. That is a far stronger statement than "SAFE01 matters", and it is
+    the kind of structure a graph of 154 edges does not hand you by inspection.
+
+    The wording of the frequency is load-bearing and is checked: it is scoped to the sets *found*
+    within the searched size, not to every failure of every size.
+    """
+    from rarepipe.stages.control.policy.certificates import cut_set_analysis
+
+    relevant = frozenset(graph.target_relevant_branches(graph.goal))
+    analysis = cut_set_analysis(graph, destination=graph.goal, max_size=2, restrict_to=relevant)
+
+    assert len(analysis.cut_sets) == 6
+    assert all(("SAFE01", "harm") in combo for combo in analysis.cut_sets)
+    assert len(analysis.success_sets) == 7
+    assert all(("SAFE01", "preserved") in combo for combo in analysis.success_sets)
+
+    cut_member = next(m for m in analysis.common_cut_members if m["branch"] == "SAFE01")
+    assert cut_member["outcome"] == "harm"
+    assert cut_member["frequency"] == "6/6"
+    assert cut_member["in_every_set_found"] is True
+    assert "size at most 2" in cut_member["scope"], (
+        "the frequency must carry its own scope; a member common to every size-2 cut set is not "
+        "thereby necessary to every failure of every size")
+
+    assert analysis.exhaustive is False
+    assert "bound on the search, not on the graph" in analysis.describe()["scope"]
+
+
+def test_a_success_set_does_not_require_avoiding_the_altered_protein(graph):
+    """Independent corroboration of the map's own target audit, from the outcome structure alone.
+
+    `benefit_requires_residual_bubr1` appears in minimal success sets alongside
+    `independent_of_bubr1`. The functional target never required avoiding the protein, and the cut
+    analysis reaches that conclusion without being told it.
+    """
+    from rarepipe.stages.control.policy.certificates import cut_set_analysis
+
+    relevant = frozenset(graph.target_relevant_branches(graph.goal))
+    analysis = cut_set_analysis(graph, destination=graph.goal, max_size=2, restrict_to=relevant)
+    outcomes = {outcome for combo in analysis.success_sets for _, outcome in combo}
+    assert "benefit_requires_residual_bubr1" in outcomes
+    assert "independent_of_bubr1" in outcomes
+
+
+def test_the_tied_optimum_output_reports_its_own_count_and_truncation(graph, adapter, document):
+    """The mathematical layer never truncates a semantic result, and says so in the output."""
+    from rarepipe.stages.control.policy import Constraints, KnowledgeState, seed_actuators, solve_policy
+
+    campaigns = adapter.build_campaigns(document)
+    state = KnowledgeState.initial(seed_actuators(adapter.actuator_registry(document, campaigns)))
+    answer = solve_policy(graph, state, horizon=1, campaigns=campaigns,
+                          constraints=Constraints(max_states=200_000)).describe()
+    tied = answer["tied_minimal_branch_sets"]
+    assert tied["count"] == 4
+    assert len(tied["optimal_sets"]) == 4, "every tied optimum is present, not a display subset"
+    assert tied["truncated"] is False
+
+
 def test_no_returned_policy_may_route_through_an_unsafe_terminal(graph):
     from rarepipe.stages.control.policy import unsafe_routes
 
@@ -188,21 +250,93 @@ def test_no_returned_policy_may_route_through_an_unsafe_terminal(graph):
 
 # ── consistency findings ────────────────────────────────────────────────────────────────────
 
-def test_the_duplicated_actuator_name_is_reported_and_not_aliased(adapter, document):
-    """`low_dose_paclitaxel` in FLUX01's arms against `low_dose_taxol` in the control variable.
+def test_the_paclitaxel_taxol_identity_is_declared_and_resolved(adapter, document):
+    """One drug, one canonical id, the historical spellings kept as declared aliases.
 
-    The same drug under two names. Left as a reported finding because declaring two names to be one
-    actuator is a claim only the case's authors can make — and because a control variable whose
-    closure requires closing a phantom actuator could never be reported closed.
+    Paclitaxel is taxol, and in this map both names trace to the same regime in the same source.
+    The identity is DECLARED rather than inferred from spelling, because a second name carrying a
+    different dose or schedule would be a different actuator and merging them would erase that.
     """
+    aliases = adapter.actuator_aliases(document)
+    assert aliases["low_dose_taxol"] == "low_dose_paclitaxel"
+    assert aliases["Taxol"] == "low_dose_paclitaxel"
+    assert aliases["low_dose_paclitaxel"] == "low_dose_paclitaxel", "canonical maps to itself"
+
+    registry = adapter.actuator_registry(document, adapter.build_campaigns(document))
+    flux = registry["CV_POLEWARD_FLUX"]
+    assert "low_dose_taxol" not in flux, "the alias must not survive as a second entry"
+    assert "low_dose_paclitaxel" in flux
+    assert len(flux) == 4, (
+        "four actuators, not five — a duplicate would be an arm nothing can close, and with it a "
+        "control variable that can never be reported closed")
+
+
+def test_the_duplicate_actuator_finding_is_resolved_not_suppressed(adapter, document):
+    """The drift guard stays armed; it simply has nothing to report now."""
     findings = adapter.consistency_findings(document, adapter.build_campaigns(document))
-    kinds = [f["kind"] for f in findings]
+    assert "ACTUATOR_NAME_NOT_IN_CONTROL_VARIABLE_REGISTRY" not in [f["kind"] for f in findings]
+
+    # An *undeclared* mismatch must still be caught, or the guard has been disarmed rather than
+    # satisfied.
+    drifted = {**document, "campaigns": [
+        {**c, "arms": {k: {**v, "actuator": "some_unregistered_actuator"}
+                       for k, v in (c.get("arms") or {}).items()}}
+        if c.get("arms") else c
+        for c in document["campaigns"]]}
+    kinds = [f["kind"] for f in adapter.consistency_findings(drifted,
+                                                             adapter.build_campaigns(drifted))]
     assert "ACTUATOR_NAME_NOT_IN_CONTROL_VARIABLE_REGISTRY" in kinds
-    naming = next(f for f in findings
-                  if f["kind"] == "ACTUATOR_NAME_NOT_IN_CONTROL_VARIABLE_REGISTRY")
-    assert naming["arm_actuator"] == "low_dose_paclitaxel"
-    assert naming["control_variable"] == "CV_POLEWARD_FLUX"
-    assert "low_dose_taxol" in naming["registry"]
+
+
+def test_an_alias_set_must_be_declared_never_inferred(adapter, document):
+    mutated = {**document, "actuators": [
+        {**entry, "basis": "DERIVED"} for entry in document["actuators"]]}
+    with pytest.raises(adapter.AdapterError, match="never inferred from spelling"):
+        adapter.actuator_aliases(mutated)
+
+
+def test_two_registry_entries_cannot_claim_the_same_alias(adapter, document):
+    mutated = {**document, "actuators": [
+        *document["actuators"],
+        {"id": "some_other_actuator", "aliases": ["low_dose_taxol"], "basis": "DECLARED"},
+    ]}
+    with pytest.raises(adapter.AdapterError, match="claimed by both"):
+        adapter.actuator_aliases(mutated)
+
+
+def test_alias_resolution_cannot_change_a_reachability_or_policy_result(adapter, document, graph):
+    """The invariant: which spelling a reference used must not reach any computed answer.
+
+    Canonicalisation runs before anything computes, so this holds by construction — and it is
+    asserted rather than argued, because the day arms become first-class actions is the day a
+    duplicate identity could start changing a verdict.
+    """
+    from rarepipe.stages.control.policy import (Constraints, KnowledgeState, seed_actuators,
+                                                solve_policy)
+
+    # The same map with FLUX01's arm written under the historical spelling instead.
+    spelled_as_alias = {**document, "campaigns": [
+        {**c, "arms": {k: {**v, "actuator": "low_dose_taxol"} if v.get(
+            "actuator") == "low_dose_paclitaxel" else v
+            for k, v in (c.get("arms") or {}).items()}}
+        if c.get("arms") else c
+        for c in document["campaigns"]]}
+
+    def answer(doc):
+        campaigns = adapter.build_campaigns(doc)
+        registry = adapter.actuator_registry(doc, campaigns)
+        state = KnowledgeState.initial(seed_actuators(registry))
+        result = solve_policy(adapter.build_graph(doc), state, horizon=1, campaigns=campaigns,
+                              constraints=Constraints(max_states=200_000))
+        return registry, result.describe()
+
+    canonical_registry, canonical_answer = answer(document)
+    alias_registry, alias_answer = answer(spelled_as_alias)
+
+    assert alias_registry == canonical_registry, "the registry resolves to one identity either way"
+    assert alias_answer == canonical_answer, (
+        "two spellings of one actuator produced different answers; entity canonicalisation is not "
+        "acting as a preprocessing invariant")
 
 
 def test_no_terminal_closes_a_whole_control_variable(document):
@@ -222,14 +356,147 @@ def test_the_two_unbacked_progress_components_are_declared_unavailable(adapter, 
     assert unbacked["components"] == ["hypotheses_eliminated", "families_resolved"]
 
 
+# ── analysis annotations: they may move scoring, never traversability ────────────────────────
+
+def test_the_annotation_schema_exists_and_is_unpopulated(adapter, document):
+    """The mechanism is in place; the values are the authors' to supply.
+
+    `null` rather than `0` is the correct report while they are absent, so these stay empty until
+    somebody declares them.
+    """
+    assert document["analysis_basis_vocabulary"] == ["DECLARED", "DERIVED"]
+    assert adapter.node_families(document) == {}
+    assert adapter.hypothesis_discriminators(document) == {}
+
+
+def test_relatedness_is_not_treated_as_discrimination(adapter, document):
+    """`H_M1` names nine branches and is settled by none of them.
+
+    It declares that nothing would promote it, so nothing eliminates it either. Reading its
+    `related_branches` as discriminators would have Δ report a hypothesis eliminated by experiments
+    that cannot speak to it.
+    """
+    hypothesis = next(h for h in document["hypotheses"] if h["id"].startswith("H_M1"))
+    assert len(hypothesis["related_branches"]["value"]) == 9
+    assert hypothesis["related_branches"]["basis"] == "DERIVED"
+    assert "discriminated_by" not in hypothesis
+    assert "H_M1_SHARED_PLATFORM" not in adapter.hypothesis_discriminators(document)
+
+
+def test_a_hypothesis_that_nothing_promotes_cannot_declare_discriminators(adapter, document):
+    mutated = {**document, "hypotheses": [
+        {**h, "discriminated_by": {"value": ["DEP_FLUX"], "basis": "DECLARED"}}
+        if h["id"].startswith("H_M1") else h
+        for h in document["hypotheses"]]}
+    with pytest.raises(adapter.AdapterError, match="nothing would promote it"):
+        adapter.hypothesis_discriminators(mutated)
+
+
+def test_discriminators_must_be_declared_never_derived(adapter, document):
+    mutated = {**document, "latent_variable_hypotheses": [
+        {**h, "discriminated_by": {"value": ["DEP_FLUX"], "basis": "DERIVED"}}
+        for h in document["latent_variable_hypotheses"]]}
+    with pytest.raises(adapter.AdapterError, match="must be DECLARED"):
+        adapter.hypothesis_discriminators(mutated)
+
+
+def test_an_annotation_without_a_basis_is_refused(adapter, document):
+    mutated = {**document, "nodes": [
+        {**n, "analysis": {"family_membership": {"value": ["F1_REPAIR"]}}}
+        if n["id"] == "S0_CASE" else n
+        for n in document["nodes"]]}
+    with pytest.raises(adapter.AdapterError, match="basis must be DECLARED or DERIVED"):
+        adapter.node_families(mutated)
+
+
+def test_family_membership_must_name_declared_families(adapter, document):
+    mutated = {**document, "nodes": [
+        {**n, "analysis": {"family_membership": {"value": ["F9_INVENTED"], "basis": "DECLARED"}}}
+        if n["id"] == "S0_CASE" else n
+        for n in document["nodes"]]}
+    with pytest.raises(adapter.AdapterError, match="undeclared families"):
+        adapter.node_families(mutated)
+
+
+def test_annotations_cannot_change_reachability_or_traversability(adapter, document):
+    """The rule, enforced: these may affect scoring and analysis, never biological reachability.
+
+    The same map annotated to the hilt — every relevant branch in two families, every latent
+    hypothesis given discriminators — must produce an identical graph, identical conditional
+    reachability, identical cut sets and identical tied minimal routes.
+    """
+    from rarepipe.stages.control.policy import (blocking_outcomes, conditionally_reachable,
+                                                frontier)
+    from rarepipe.stages.control.policy.certificates import cut_set_analysis
+
+    plain = adapter.build_graph(document)
+    relevant = set(plain.target_relevant_branches(plain.goal))
+    annotated_doc = {
+        **document,
+        "nodes": [
+            {**n, "analysis": {"family_membership": {
+                "value": ["F2_REPLACE", "F3_EXPLOIT_AND_ALTER"], "basis": "DECLARED"}}}
+            if n["id"] in relevant else n
+            for n in document["nodes"]
+        ],
+        "latent_variable_hypotheses": [
+            {**h, "discriminated_by": {"value": ["DEP_FLUX", "SAFE01"], "basis": "DECLARED"}}
+            for h in document["latent_variable_hypotheses"]
+        ],
+    }
+    annotated = adapter.build_graph(annotated_doc)
+
+    # The annotations are read, so this is not a vacuous comparison.
+    assert len(adapter.node_families(annotated_doc)) == len(relevant)
+    assert len(adapter.hypothesis_discriminators(annotated_doc)) == 4
+
+    assert annotated.nodes == plain.nodes, "an annotation must not alter a node the solver sees"
+    assert annotated.edges == plain.edges, "an annotation must never create or remove an edge"
+    assert conditionally_reachable(annotated) == conditionally_reachable(plain)
+    assert blocking_outcomes(annotated, annotated.goal) == blocking_outcomes(plain, plain.goal)
+    assert (frontier(annotated, destination=annotated.goal).tied_minimal(annotated.goal)
+            == frontier(plain, destination=plain.goal).tied_minimal(plain.goal))
+    scope = frozenset(relevant)
+    assert (cut_set_analysis(annotated, destination=annotated.goal, max_size=2, restrict_to=scope)
+            == cut_set_analysis(plain, destination=plain.goal, max_size=2, restrict_to=scope))
+
+
+def test_supplying_the_annotations_makes_the_two_components_compute(adapter, document):
+    """When the metadata arrives, Δ stops reporting unavailable — without anything else moving."""
+    from rarepipe.stages.control.policy.ranking import progress_between
+
+    families = {"DEP_FLUX": frozenset({"F3_EXPLOIT_AND_ALTER"}),
+                "SAFE01": frozenset({"F2_REPLACE", "F3_EXPLOIT_AND_ALTER"})}
+    discriminators = {"LV1": frozenset({"DEP_FLUX"})}
+
+    without = progress_between(
+        before_unresolved=frozenset({"DEP_FLUX", "SAFE01"}), after_unresolved=frozenset({"SAFE01"}),
+        outcome_counts={"DEP_FLUX": 5, "SAFE01": 2}, before_distance=2, after_distance=1,
+        before_resolved=frozenset(), after_resolved=frozenset({"DEP_FLUX"}))
+    assert without.hypotheses_eliminated is None
+    assert without.families_resolved is None
+
+    with_metadata = progress_between(
+        before_unresolved=frozenset({"DEP_FLUX", "SAFE01"}), after_unresolved=frozenset({"SAFE01"}),
+        outcome_counts={"DEP_FLUX": 5, "SAFE01": 2}, before_distance=2, after_distance=1,
+        before_resolved=frozenset(), after_resolved=frozenset({"DEP_FLUX"}),
+        hypothesis_discriminators=discriminators, node_families=families)
+    assert with_metadata.hypotheses_eliminated == 1
+    # F3 is still live through SAFE01, so only nothing closes; multi-valued membership is why.
+    assert with_metadata.families_resolved == 0
+    assert with_metadata.worlds_eliminated == without.worlds_eliminated, "unrelated components fixed"
+
+
 # ── the actuator registry ───────────────────────────────────────────────────────────────────
 
 def test_the_actuator_registry_covers_every_control_variable(adapter, document):
     registry = adapter.actuator_registry(document, adapter.build_campaigns(document))
     assert len(registry) == 10, "one entry per declared control variable"
     assert "CV_POLEWARD_FLUX" in registry
-    # Both spellings are present, which is the finding above rather than a merge.
-    assert {"low_dose_taxol", "low_dose_paclitaxel"} <= set(registry["CV_POLEWARD_FLUX"])
+    # Every entry is a canonical identity: no alias survives anywhere in the registry.
+    aliases = adapter.actuator_aliases(document)
+    pure_aliases = {name for name, target in aliases.items() if name != target}
+    assert not pure_aliases & {a for actuators in registry.values() for a in actuators}
 
 
 def test_a_single_unsafe_arm_leaves_its_control_variable_open_on_the_real_registry(adapter,

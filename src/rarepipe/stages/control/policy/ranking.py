@@ -96,7 +96,7 @@ def progress_between(*, before_unresolved: frozenset[str], after_unresolved: fro
                      before_distance: int | None, after_distance: int | None,
                      before_resolved: frozenset[str], after_resolved: frozenset[str],
                      hypothesis_discriminators: Mapping[str, frozenset[str]] | None = None,
-                     node_families: Mapping[str, str] | None = None) -> ProgressVector:
+                     node_families: Mapping[str, frozenset[str]] | None = None) -> ProgressVector:
     """What is guaranteed to have been learned, moving from one state to another.
 
     Takes plain numbers rather than frontier objects, because each component has a different
@@ -106,8 +106,14 @@ def progress_between(*, before_unresolved: frozenset[str], after_unresolved: fro
     *largest* sets and so cannot change the smallest one's size.
 
     ``hypothesis_discriminators`` maps a hypothesis id to the branches whose resolution settles it.
-    ``node_families`` maps a branch id to its route family. Both are optional domain annotations;
-    when absent, their components come back ``None`` rather than zero.
+    ``node_families`` maps a branch id to the route families it belongs to — a *set*, because a
+    branch shared between two strategies is the normal case rather than the exception, and a
+    single-valued field would force a choice that erases one of them.
+
+    Both are optional analysis annotations. They may move scoring; they may never move
+    traversability, and nothing in this module can reach the graph to try. When absent, their
+    components come back ``None`` rather than zero, because zero is a measurement and absence is
+    not.
     """
     # Possible worlds: admissible joint assignments of the branches the goal still depends on. Each
     # resolved branch divides the space by its own outcome count, so the reduction is exact and
@@ -138,9 +144,15 @@ def progress_between(*, before_unresolved: frozenset[str], after_unresolved: fro
 
     families = None
     if node_families:
-        live_before = {node_families[b] for b in before_unresolved if b in node_families}
-        live_after = {node_families[b] for b in after_unresolved if b in node_families}
-        families = len(live_before - live_after)
+        def live(branches: frozenset[str]) -> set[str]:
+            found: set[str] = set()
+            for branch in branches:
+                found |= set(node_families.get(branch) or ())
+            return found
+
+        # Families no longer reachable through any outstanding branch: closed or confirmed, and
+        # either way no longer a live alternative.
+        families = len(live(before_unresolved) - live(after_unresolved))
 
     return ProgressVector(
         hypotheses_eliminated=hypotheses,

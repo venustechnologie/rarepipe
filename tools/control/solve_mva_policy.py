@@ -163,12 +163,126 @@ def build_graph(d: dict, available=DEFAULT_AVAILABLE) -> PolicyGraph:
 # ---------------------------------------------------------------- campaigns and actuators
 
 
+UNPROMOTABLE = "nothing"
+
+
+def _annotation(raw, field: str) -> tuple[frozenset[str], str | None]:
+    """Read a provenance-wrapped annotation: ``{value: [...], basis: DECLARED|DERIVED}``.
+
+    Returns the empty set when absent, so a missing annotation makes its Δ component unavailable
+    rather than zero. A value without a basis is refused: an annotation whose provenance nobody
+    recorded is indistinguishable from a guess.
+    """
+    entry = (raw or {}).get(field)
+    if entry is None:
+        return frozenset(), None
+    if not isinstance(entry, dict) or "value" not in entry:
+        raise AdapterError(f"{field} must be a mapping with `value` and `basis`, got {entry!r}")
+    basis = entry.get("basis")
+    if basis not in ("DECLARED", "DERIVED"):
+        raise AdapterError(f"{field}: basis must be DECLARED or DERIVED, got {basis!r}")
+    return frozenset(entry["value"] or ()), basis
+
+
+def node_families(d: dict) -> dict[str, frozenset[str]]:
+    """``{node: {family, ...}}`` from each node's ``analysis.family_membership``.
+
+    Set-valued, because a node shared between two strategies is the normal case. Analysis metadata
+    only: it reaches the guaranteed-progress vector and nothing else, and ``build_graph`` never
+    looks at it, so no annotation can move what is reachable.
+    """
+    declared = set(d.get("families") or {})
+    out: dict[str, frozenset[str]] = {}
+    for raw in d["nodes"]:
+        families, _ = _annotation(raw.get("analysis"), "family_membership")
+        if not families:
+            continue
+        if unknown := sorted(families - declared):
+            raise AdapterError(
+                f"{raw['id']}: family_membership names undeclared families {unknown}")
+        out[raw["id"]] = families
+    return out
+
+
+def hypothesis_discriminators(d: dict) -> dict[str, frozenset[str]]:
+    """``{hypothesis: {branch, ...}}`` from ``discriminated_by`` — never from ``related_branches``.
+
+    The two are different claims. ``related_branches`` says what a hypothesis is *about*;
+    ``discriminated_by`` says what would *settle* it. A hypothesis about three branches is not
+    settled by resolving those three, and letting relatedness stand in for discrimination would
+    report a hypothesis eliminated by experiments that cannot speak to it.
+
+    A hypothesis that declares itself unpromotable is excluded whatever it carries: if nothing can
+    promote it, nothing can eliminate it either, and counting it as progress would be a fiction.
+    """
+    branches = {n["id"] for n in d["nodes"] if n["kind"] == "branch"}
+    out: dict[str, frozenset[str]] = {}
+    for group in ("hypotheses", "latent_variable_hypotheses"):
+        for raw in d.get(group) or []:
+            discriminators, basis = _annotation(raw, "discriminated_by")
+            if not discriminators:
+                continue
+            if basis != "DECLARED":
+                raise AdapterError(
+                    f"{raw['id']}: discriminated_by must be DECLARED — which experiments settle a "
+                    f"hypothesis is not derivable from the graph")
+            if unknown := sorted(discriminators - branches):
+                raise AdapterError(f"{raw['id']}: discriminated_by names unknown branches {unknown}")
+            promote = str(raw.get("what_would_promote_it")
+                          or raw.get("promotion_requires") or "").strip().lower()
+            if promote.startswith(UNPROMOTABLE):
+                raise AdapterError(
+                    f"{raw['id']} declares that nothing would promote it, yet names branches that "
+                    f"would settle it. One of the two is wrong, and the engine will not choose.")
+            out[raw["id"]] = discriminators
+    return out
+
+
+def actuator_aliases(d: dict) -> dict[str, str]:
+    """``{alias: canonical}`` from the declared registry, validated on the way through.
+
+    Entity canonicalisation is a **preprocessing invariant**: it happens before anything computes,
+    so no downstream result can depend on which spelling a reference happened to use. The failure
+    it prevents is specific — a control variable closes only when every one of its actuators has
+    failed conclusively, so an actuator present twice under two names is an arm nothing can ever
+    close, and the variable is then uncloseable too.
+
+    Aliases are DECLARED only. Inferring them from spelling would risk merging two genuinely
+    different regimes, which is the one mistake here that destroys information rather than just
+    duplicating it.
+    """
+    canonical: dict[str, str] = {}
+    problems: list[str] = []
+    for entry in d.get("actuators") or []:
+        target = entry.get("id")
+        if not target:
+            problems.append("an actuator registry entry has no id")
+            continue
+        if entry.get("basis") != "DECLARED":
+            problems.append(f"{target}: an alias set must be DECLARED, not "
+                            f"{entry.get('basis')!r} — identity is never inferred from spelling")
+        canonical[target] = target
+        for alias in entry.get("aliases") or []:
+            if alias in canonical and canonical[alias] != target:
+                problems.append(f"{alias!r} is claimed by both {canonical[alias]} and {target}")
+            canonical[alias] = target
+    if problems:
+        raise AdapterError("; ".join(problems))
+    return canonical
+
+
+def canonical_actuator(name: str, aliases: dict[str, str]) -> str:
+    return aliases.get(name, name)
+
+
 def build_campaigns(d: dict) -> tuple[Action, ...]:
+    aliases = actuator_aliases(d)
     out: list[Action] = []
     for raw in d.get("campaigns") or []:
         resolves = raw["resolves"] if isinstance(raw["resolves"], list) else [raw["resolves"]]
         arms = tuple(
-            Arm(id=arm_id, control_variable=spec["control_variable"], actuator=spec["actuator"],
+            Arm(id=arm_id, control_variable=spec["control_variable"],
+                actuator=canonical_actuator(spec["actuator"], aliases),
                 engagement_readout=str(spec.get("engagement_readout", "")))
             for arm_id, spec in sorted((raw.get("arms") or {}).items())
         )
@@ -182,14 +296,23 @@ def build_campaigns(d: dict) -> tuple[Action, ...]:
 
 
 def actuator_registry(d: dict, campaigns) -> dict[str, list[str]]:
-    """Every actuator the map names for each control variable, from both places it names them."""
+    """Every actuator the map names per control variable, resolved to canonical identities.
+
+    Both places the map names actuators feed this, and both are canonicalised, so the same
+    actuator written two ways collapses to one entry instead of surviving as a phantom arm that
+    nothing can close.
+    """
+    aliases = actuator_aliases(d)
     registry: dict[str, set[str]] = {}
     for cv, spec in (d.get("control_variables") or {}).items():
-        registry.setdefault(cv, set()).update(spec.get("actuators_tried") or ())
-        registry[cv].update(spec.get("actuators_identified_not_tried") or ())
+        named = list(spec.get("actuators_tried") or ()) + \
+            list(spec.get("actuators_identified_not_tried") or ())
+        registry.setdefault(cv, set()).update(
+            canonical_actuator(name, aliases) for name in named)
     for action in campaigns:
         for arm in action.arms:
-            registry.setdefault(arm.control_variable, set()).add(arm.actuator)
+            registry.setdefault(arm.control_variable, set()).add(
+                canonical_actuator(arm.actuator, aliases))
     return {cv: sorted(actuators) for cv, actuators in sorted(registry.items())}
 
 
@@ -207,19 +330,24 @@ def consistency_findings(d: dict, campaigns) -> list[dict]:
     # 1. The same physical actuator under two names. Paclitaxel and taxol are one drug, so the
     #    registry carries five entries for a control variable with four actuators — and a control
     #    variable whose closure requires closing a duplicate can never be correctly closed.
+    aliases = actuator_aliases(d)
     declared = {
-        cv: set(spec.get("actuators_tried") or ()) | set(spec.get("actuators_identified_not_tried") or ())
+        cv: {canonical_actuator(name, aliases)
+             for name in (list(spec.get("actuators_tried") or ())
+                          + list(spec.get("actuators_identified_not_tried") or ()))}
         for cv, spec in (d.get("control_variables") or {}).items()
     }
     for action in campaigns:
         for arm in action.arms:
             known = declared.get(arm.control_variable, set())
-            if known and arm.actuator not in known:
+            resolved = canonical_actuator(arm.actuator, aliases)
+            if known and resolved not in known:
                 findings.append({
                     "kind": "ACTUATOR_NAME_NOT_IN_CONTROL_VARIABLE_REGISTRY",
                     "campaign": action.id,
                     "arm": arm.id,
                     "arm_actuator": arm.actuator,
+                    "resolved_to": resolved,
                     "control_variable": arm.control_variable,
                     "registry": sorted(known),
                     "consequence": (
@@ -250,14 +378,19 @@ def consistency_findings(d: dict, campaigns) -> list[dict]:
         "kind": "PROGRESS_COMPONENTS_WITHOUT_DATA",
         "components": ["hypotheses_eliminated", "families_resolved"],
         "consequence": (
-            "Guaranteed-progress ranking is computed on three of its five declared components. The "
-            "other two are reported unavailable rather than assumed zero."),
+            "Guaranteed-progress ranking is computed on three of its five declared components. "
+            "The other two are reported unavailable rather than assumed zero, and begin "
+            "computing as soon as the annotations are declared."),
         "resolution": (
-            "hypotheses_eliminated needs each hypothesis to name the branch ids that discriminate "
-            "it; the latent-variable hypotheses describe their smallest discriminating experiment "
-            "in prose. families_resolved needs a family field on nodes; membership is currently "
-            "recoverable only from identifier spelling, which this repository has already been "
-            "burned by once and which is not used here."),
+            "The schema and the engine's consumption of it are in place; the values are the "
+            "authors' to declare. hypotheses_eliminated reads `discriminated_by` on a hypothesis "
+            "(DECLARED only, and never `related_branches`, which records what a hypothesis is "
+            "about rather than what settles it); the four latent-variable hypotheses describe "
+            "their smallest discriminating experiment in prose and are the ones to supply. "
+            "families_resolved reads `analysis.family_membership` on a node, set-valued with a "
+            "DECLARED or DERIVED basis; membership is not derivable here, because there are no "
+            "family entry nodes and the only remaining signal is identifier spelling, which this "
+            "repository has already been wrong about once."),
     })
     return findings
 
@@ -272,7 +405,9 @@ def solve(d: dict, horizon: int = 6, *, available=DEFAULT_AVAILABLE,
     registry = actuator_registry(d, campaigns)
     state = KnowledgeState.initial(seed_actuators(registry))
     constraints = Constraints(include_non_informative=include_non_informative,
-                              max_states=max_states)
+                              max_states=max_states,
+                              hypothesis_discriminators=hypothesis_discriminators(d),
+                              node_families=node_families(d))
     result = solve_policy(graph, state, target=graph.goal, constraints=constraints,
                           horizon=horizon, campaigns=campaigns, model_id=d.get("case_ref", ""))
     return graph, campaigns, registry, result
@@ -371,11 +506,17 @@ def render(data: dict) -> str:
     A("")
     A("Every smallest set of unresolved branches that would establish the target — all of them.")
     A("")
-    for branch_set in answer["tied_minimal_branch_sets"]:
+    tied = answer["tied_minimal_branch_sets"]
+    for branch_set in tied["optimal_sets"]:
         A(f"- {', '.join(f'`{b}`' for b in branch_set)}")
     A("")
-    if len(answer["tied_minimal_branch_sets"]) > 1:
-        A(f"There are **{len(answer['tied_minimal_branch_sets'])} tied minimal routes**, not one.")
+    A(f"Reported in full: **{tied['count']}** optimal set(s), "
+      f"`truncated: {str(tied['truncated']).lower()}`.")
+    A("The mathematical layer never drops a tied optimum. Only a renderer may show fewer, and then")
+    A("it reports its own `display_truncated` rather than letting the maths say fewer exist.")
+    A("")
+    if tied["count"] > 1:
+        A(f"There are **{tied['count']} tied minimal routes**, not one.")
         A("Naming any single one of them as \"the\" shortest route would be the specific ambiguity")
         A("this computation exists to remove.")
         A("")
@@ -414,6 +555,14 @@ def render(data: dict) -> str:
         A("")
         for action in answer["recommended_actions"]:
             A(f"- `{action}`")
+        A("")
+        A("**On the agreement with the route map's own appendix.** Where this selection coincides")
+        A("with the priority a human reading of the map arrived at, that is *convergent internal")
+        A("validation* — two different methods over the same formal model reaching the same answer —")
+        A("and not a benchmark result. It says the model and the computation are coherent with each")
+        A("other. It says nothing about whether this engine beats a language model, with or without")
+        A("generic tools, because no such comparison has been run. The competitive question needs")
+        A("the baselines and an oracle, and those are a separate deliverable.")
     A("")
     A(f"Ranking compared on: {', '.join(f'`{c}`' for c in answer['ranking']['compared_on'])}.")
     if answer["ranking"].get("skipped"):
@@ -440,6 +589,32 @@ def render(data: dict) -> str:
     A("")
     A(certificates.get("note", ""))
     A("")
+    cuts = certificates.get("cut_set_analysis")
+    if cuts:
+        A("### Minimal cut sets and minimal success sets")
+        A("")
+        A("The two questions a fault tree asks, asked of a decision graph: which minimal")
+        A("combinations of future results destroy every route to the target, and which minimal")
+        A(f"combinations establish it. Scope: {cuts['scope']}.")
+        A("")
+        A("| kind | combination |")
+        A("|---|---|")
+        for combo in cuts["minimal_target_cut_sets"]:
+            members = " + ".join(f"`{c['branch']}`=`{c['outcome']}`" for c in combo)
+            A(f"| cut | {members} |")
+        for combo in cuts["minimal_target_success_sets"]:
+            members = " + ".join(f"`{c['branch']}`=`{c['outcome']}`" for c in combo)
+            A(f"| success | {members} |")
+        A("")
+        for member in cuts["common_cut_members"]:
+            A(f"- `{member['branch']}`=`{member['outcome']}` appears in **{member['frequency']}** "
+              f"of the minimal cut sets found — {member['scope']}.")
+        for member in cuts["common_success_members"]:
+            A(f"- `{member['branch']}`=`{member['outcome']}` appears in **{member['frequency']}** "
+              f"of the minimal success sets found — {member['scope']}.")
+        A("")
+        A(cuts["note"])
+        A("")
     if certificates.get("robust_subset", {}).get("goal_is_conjunction"):
         A("### Which conjuncts of the target are robustly reachable")
         A("")
@@ -537,7 +712,7 @@ def main() -> int:
     print("ROBUST_POLICY")
     print(f"  conditional_reachable  {answer['conditional_reachable']}")
     print(f"  robust_reachable       {_verdict(answer['robust_reachable'])}")
-    print(f"  tied minimal routes    {len(answer['tied_minimal_branch_sets'])}")
+    print(f"  tied minimal routes    {answer['tied_minimal_branch_sets']['count']}")
     print(f"  recommended            {', '.join(answer['recommended_actions']) or 'none'}")
     print(f"  states considered      {answer['trace']['states_considered']}")
     print(f"  wrote {OUT.relative_to(ROOT)}")

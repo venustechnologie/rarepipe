@@ -150,7 +150,21 @@ hundred candidate successors, and those are what cost the time and fill the memo
 counting entries bounded neither, and let a search report twenty thousand states while holding over
 a gigabyte of cached statuses.
 
-## No silent truncation
+## Never truncate a semantic result; only a presentation
+
+The mathematical layer always keeps and reports every tied optimum, together with its own count and
+an always-present flag:
+
+```json
+{"optimal_sets": ["..."], "count": 4, "truncated": false}
+```
+
+A renderer may show fewer, and then *it* reports `display_truncated` on its own output. What it may
+not do is make the mathematics say fewer exist. An invisible cap must never be able to change the
+scientific interpretation of a result — which is exactly what happened before, and is the next
+section.
+
+
 
 An earlier implementation of the minimal-set frontier elsewhere in this repository capped candidate
 sets at eight per node to bound the cross-product at conjunctions, and the cap was invisible in the
@@ -164,9 +178,75 @@ discards the *largest* sets and so cannot change the smallest one's size. It wou
 set of outstanding branches, which is why that number comes from the graph instead. Both properties
 are tested.
 
+## Entity canonicalisation is a preprocessing invariant
+
+Two names for one actuator is not cosmetic. A control variable closes only when *every* one of its
+actuators has failed conclusively, so a duplicate identity is an arm nothing can ever close — and
+the variable with it. Identity is therefore declared in the map's `actuators` registry and resolved
+before anything computes:
+
+```yaml
+actuators:
+  - id: low_dose_paclitaxel
+    aliases: [low_dose_taxol, Taxol, taxol]
+    basis: DECLARED
+```
+
+An alias is a claim that two names denote the same experimental regime, and it is `DECLARED` only —
+never inferred from spelling, because a second name carrying a different dose, schedule or context
+would be a different actuator and merging them would erase a real distinction. The invariant that
+matters is asserted rather than argued: `test_alias_resolution_cannot_change_a_reachability_or_policy_result`
+solves the same map twice, once with the arm written under each spelling, and requires the answers
+to be identical.
+
+## Analysis annotations, and the line they may not cross
+
+> These annotations may affect scoring and analysis, but never biological traversability.
+
+Two optional, provenance-carrying annotations feed the guaranteed-progress vector. Neither creates
+an edge, removes one, or changes what is reachable, and
+`test_annotations_cannot_change_reachability_or_traversability` pins that by annotating the map to
+the hilt and requiring the graph, the conditional reachability, the cut sets and the tied minimal
+routes to come out identical.
+
+```yaml
+analysis:
+  family_membership:
+    value: [F2_REPLACE, F3_EXPLOIT_AND_ALTER]   # a list: shared nodes are the normal case
+    basis: DECLARED                             # or DERIVED, with the derivation named
+```
+
+On a hypothesis there are **two different** branch references, and conflating them would make Δ
+wrong:
+
+| field | claim | basis | feeds Δ |
+|---|---|---|---|
+| `related_branches` | what the hypothesis is *about* | `DECLARED` or `DERIVED` | no |
+| `discriminated_by` | what would *settle* it | `DECLARED` only | yes |
+
+A hypothesis about three branches is not thereby settled by resolving those three. A hypothesis
+that declares nothing would promote it cannot be eliminated by anything either, so it never
+contributes — and declaring both is refused rather than reconciled.
+
+Nothing populates these yet, so both components still report `null`. What the authors must supply
+is exact: `discriminated_by` for the four latent-variable hypotheses, whose smallest discriminating
+experiments are currently prose, and `family_membership` wherever membership is a real claim.
+
 ## Certificates
 
 When the answer is not `TRUE`, the output carries:
+
+- **minimal cut sets and minimal success sets** — the two questions a fault tree asks, asked of a
+  decision graph. A *cut set* is a minimal combination of future results after which no route to
+  the target remains; a *success set* is one after which the target is established. Both are
+  bounded by the same declared size, and the bound is reported.
+
+  On MVA this is the engine's sharpest structural result. Six minimal cut sets, every one
+  containing `SAFE01=harm`; seven minimal success sets, every one containing `SAFE01=preserved`.
+  The bypass component's population safety is the pivot in both directions. `common_cut_members`
+  carries the frequency **and its scope**, because the wording matters: a member common to every
+  cut set of size two is *not* thereby necessary to every failure of every size, and the output
+  states that rather than leaving a reader to assume it.
 
 - **minimal closing combinations** — sets of results that leave the target structurally
   unreachable, smallest first, with the searched size stated. Absence from the list is not evidence
